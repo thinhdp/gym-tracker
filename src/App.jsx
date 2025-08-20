@@ -1,3 +1,14 @@
+Here’s the full updated single-file React app (`src/App.jsx`) with:
+
+* blue accent on primary actions,
+* KG/LB toggle,
+* “0” auto-clears on mobile number inputs,
+* **unit header** above the set table (both in planner and history),
+* calendar view, import/export, last-set prefill, recommend-rep hints.
+
+Just paste this over your current `App.jsx`.
+
+```jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /* ================= Simple, dependency-free UI bits ================= */
@@ -303,7 +314,7 @@ export default function MobileGymApp() {
       <footer className="fixed inset-x-0 bottom-0 border-t bg-white/80">
         <div className="mx-auto flex max-w-md items-center justify-between gap-2 p-3 text-xs text-neutral-500">
           <span>Data stored in your browser</span>
-          <span>v1.3</span>
+          <span>v1.4</span>
         </div>
       </footer>
     </div>
@@ -621,7 +632,6 @@ function NumberInputAutoClear({ valueNumber, onNumberChange, step = "1", min = "
       className={className}
       value={display}
       onFocus={(e) => {
-        // Clear if the current value is zero; select text for quick overwrite otherwise
         if (Number(e.target.value || 0) === 0) {
           setClear(true);
         } else {
@@ -631,7 +641,6 @@ function NumberInputAutoClear({ valueNumber, onNumberChange, step = "1", min = "
       onBlur={() => setClear(false)}
       onChange={(e) => {
         const raw = e.target.value;
-        // Allow empty while editing; treat empty as 0 for state
         const num = raw === "" ? 0 : Number(raw);
         if (Number.isFinite(num)) onNumberChange(num);
       }}
@@ -664,6 +673,17 @@ function WorkoutExerciseEditor({ item, onChange, onRemove, unit, recommendRep })
           </Button>
         </div>
       </div>
+
+      {/* Column headers with dynamic unit */}
+      <div className="flex items-center gap-3 px-3 py-1 text-xs text-neutral-500">
+        <span className="w-16" />
+        <div className="flex-1 grid grid-cols-2 gap-3">
+          <div>Weight ({unit})</div>
+          <div>Reps</div>
+        </div>
+        <span className="w-10" />
+      </div>
+
       <div className="grid gap-2">
         {sets.map((s, idx) => (
           <div key={idx} className="flex items-center gap-3 rounded-xl border px-3 py-2">
@@ -746,7 +766,7 @@ function WorkoutHistory({ workouts, setWorkouts, exercises, setExercises, unit }
           </div>
 
           {expandedId === w.id && (
-            <div className="space-y-3 border-top p-4 border-t">
+            <div className="space-y-3 p-4 border-t">
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <label className="text-xs text-neutral-600">Date</label>
@@ -795,6 +815,16 @@ function WorkoutHistory({ workouts, setWorkouts, exercises, setExercises, unit }
                     </div>
 
                     <div className="grid gap-2">
+                      {/* Column headers with dynamic unit */}
+                      <div className="flex items-center gap-3 px-3 py-1 text-xs text-neutral-500">
+                        <span className="w-16" />
+                        <div className="flex-1 grid grid-cols-2 gap-3">
+                          <div>Weight ({unit})</div>
+                          <div>Reps</div>
+                        </div>
+                        <span className="w-10" />
+                      </div>
+
                       {we.sets.map((s, sidx) => (
                         <div key={sidx} className="flex items-center gap-3 rounded-xl border px-3 py-2">
                           <span className="w-16 text-sm text-neutral-600">Set {sidx + 1}</span>
@@ -1058,3 +1088,4 @@ function CalendarView({ workouts, setWorkouts, exercises, setExercises, unit }) 
     </div>
   );
 }
+```
