@@ -1,14 +1,3 @@
-Here’s the full updated single-file React app (`src/App.jsx`) with:
-
-* blue accent on primary actions,
-* KG/LB toggle,
-* “0” auto-clears on mobile number inputs,
-* **unit header** above the set table (both in planner and history),
-* calendar view, import/export, last-set prefill, recommend-rep hints.
-
-Just paste this over your current `App.jsx`.
-
-```jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /* ================= Simple, dependency-free UI bits ================= */
@@ -1088,4 +1077,3 @@ function CalendarView({ workouts, setWorkouts, exercises, setExercises, unit }) 
     </div>
   );
 }
-```
