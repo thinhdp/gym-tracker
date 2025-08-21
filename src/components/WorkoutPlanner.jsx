@@ -6,11 +6,13 @@ import { Badge } from "./ui/Badge";
 import AddExerciseInput from "./AddExerciseInput";
 import WorkoutExerciseEditor from "./WorkoutExerciseEditor";
 import { todayStr, uuid } from "../lib/storage";
+import { useConfirm } from "./ConfirmDialog";
 
 export default function WorkoutPlanner({ exercises, setExercises, workouts, setWorkouts, unit, onCreated }) {
   const [dates, setDates] = useState([todayStr()]);
   const [name, setName] = useState("");
   const [items, setItems] = useState([]);
+  const confirm = useConfirm();
 
   const addDate = () => setDates((prev)=>[...prev, todayStr()]);
   const removeDate = (idx) => setDates((prev)=> prev.filter((_,i)=>i!==idx));
@@ -57,7 +59,15 @@ export default function WorkoutPlanner({ exercises, setExercises, workouts, setW
           {dates.map((d,idx)=>(
             <div key={idx} className="flex items-center gap-2">
               <Input type="date" value={d} onChange={(e)=>setDateAt(idx, e.target.value)} />
-              <Button variant="ghost" onClick={()=>removeDate(idx)}>Remove</Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  confirm({ title: "Remove this date?", message: "This only removes the date from the plan.", confirmText: "Remove", tone: "destructive" })
+                    .then((ok) => { if (ok) removeDate(idx); });
+                }}
+              >
+                Remove
+              </Button>
             </div>
           ))}
           <Button variant="secondary" onClick={addDate}>Add another date</Button>
@@ -75,9 +85,17 @@ export default function WorkoutPlanner({ exercises, setExercises, workouts, setW
           {items.map((it)=> {
             const rec = exercises.find((e)=> e.name===it.exerciseName)?.recommendRep || "";
             return (
-              <WorkoutExerciseEditor key={it.exerciseName} item={it} unit={unit} recommendRep={rec}
+              <WorkoutExerciseEditor
+                key={it.exerciseName}
+                item={it}
+                unit={unit}
+                recommendRep={rec}
                 onChange={(patch)=> setItems((prev)=> prev.map((x)=> x.exerciseName===it.exerciseName ? { ...x, ...patch } : x))}
-                onRemove={()=> setItems((prev)=> prev.filter((x)=> x.exerciseName!==it.exerciseName))} />
+                onRemove={() => {
+                  confirm({ title: `Remove "${it.exerciseName}"?`, message: "This removes it from the current plan.", confirmText: "Remove", tone: "destructive" })
+                    .then((ok) => { if (ok) setItems((prev)=> prev.filter((x)=> x.exerciseName!==it.exerciseName)); });
+                }}
+              />
             );
           })}
         </div>

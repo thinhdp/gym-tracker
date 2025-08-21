@@ -5,9 +5,12 @@ import { Plus, Trash2, ChevronDown } from "./ui/Icons";
 import AddExerciseInput from "./AddExerciseInput";
 import NumberInputAutoClear from "./NumberInputAutoClear";
 import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
+import { useConfirm } from "./ConfirmDialog";
 
 export default function WorkoutHistory({ workouts, setWorkouts, exercises, setExercises, unit }) {
   const [expandedId, setExpandedId] = useState(null);
+  const confirm = useConfirm();
+
   const updateWorkout = (id, patch) => {
     setWorkouts((prev)=> prev.map((w)=> w.id===id ? { ...w, ...patch } : w).sort((a,b)=> (a.date<b.date?1:-1)));
   };
@@ -34,7 +37,15 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
             <div><div className="text-base font-medium">{w.name}</div><div className="text-xs text-neutral-600">{w.date}</div></div>
             <div className="flex items-center gap-2">
               <Button variant="secondary" onClick={()=> setExpandedId((prev)=> prev===w.id? null : w.id)}>Details <ChevronDown open={expandedId===w.id} /></Button>
-              <Button variant="ghost" onClick={()=> deleteWorkout(w.id)}><Trash2 /></Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  confirm({ title: "Delete this workout?", message: "This can't be undone.", confirmText: "Delete", tone: "destructive" })
+                    .then((ok) => { if (ok) deleteWorkout(w.id); });
+                }}
+              >
+                <Trash2 />
+              </Button>
             </div>
           </div>
 
@@ -65,7 +76,15 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                           const newName=(prompt("Rename exercise to:", we.exerciseName)||"").trim(); if(!newName) return;
                           updateWorkout(w.id, { exercises: w.exercises.map((e2,i2)=> i2===idx ? { ...e2, exerciseName:newName } : e2) });
                         }}>Rename</Button>
-                        <Button variant="ghost" onClick={()=> updateWorkout(w.id, { exercises: w.exercises.filter((_,i2)=> i2!==idx) })}><Trash2 /></Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            confirm({ title: `Remove "${we.exerciseName}"?`, message: "This removes the exercise from this workout.", confirmText: "Remove", tone: "destructive" })
+                              .then((ok) => { if (ok) updateWorkout(w.id, { exercises: w.exercises.filter((_,i2)=> i2!==idx) }); });
+                          }}
+                        >
+                          <Trash2 />
+                        </Button>
                       </div>
                     </div>
 
@@ -94,10 +113,22 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                               <span className="text-xs text-neutral-500">reps</span>
                             </div>
                           </div>
-                          <Button variant="ghost" disabled={we.sets.length<=1}
-                            onClick={()=> updateWorkout(w.id, {
-                              exercises: w.exercises.map((e2,i2)=> i2===idx ? { ...e2, sets: e2.sets.filter((_,j)=> j!==sidx).map((ss,j)=> ({ ...ss, set:j+1 })) } : e2)
-                            })}><Trash2 /></Button>
+                          <Button
+                            variant="ghost"
+                            disabled={we.sets.length<=1}
+                            onClick={() => {
+                              if (we.sets.length <= 1) return;
+                              confirm({ title: "Delete this set?", message: "This can't be undone.", confirmText: "Delete", tone: "destructive" })
+                                .then((ok) => {
+                                  if (!ok) return;
+                                  updateWorkout(w.id, {
+                                    exercises: w.exercises.map((e2,i2)=> i2===idx
+                                      ? { ...e2, sets: e2.sets.filter((_,j)=> j!==sidx).map((ss,j)=> ({ ...ss, set:j+1 })) }
+                                      : e2)
+                                  });
+                                });
+                            }}
+                          ><Trash2 /></Button>
                         </div>
                       ))}
 
