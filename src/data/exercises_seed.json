@@ -1,0 +1,762 @@
+[
+  {
+    "name": "Hip Abduction Machine",
+    "recommendRep": "",
+    "mainMuscle": "Abductors",
+    "secondaryMuscles": "Glutes",
+    "type": "Isolation",
+    "equipment": "Machine",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Lateral Band Walks",
+    "recommendRep": "",
+    "mainMuscle": "Abductors",
+    "secondaryMuscles": "Hips",
+    "type": "Isolation",
+    "equipment": "Band",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Crunch",
+    "recommendRep": "",
+    "mainMuscle": "Abs",
+    "secondaryMuscles": "Obliques",
+    "type": "Isolation",
+    "equipment": "Bodyweight",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Sit-ups",
+    "recommendRep": "",
+    "mainMuscle": "Abs",
+    "secondaryMuscles": "Hip flexors",
+    "type": "Compound",
+    "equipment": "Bodyweight",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Russian Twist Bodyweight",
+    "recommendRep": "",
+    "mainMuscle": "Abs, Obliques",
+    "secondaryMuscles": "Core",
+    "type": "Compound",
+    "equipment": "Bodyweight",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Russian Twist Med ball",
+    "recommendRep": "",
+    "mainMuscle": "Abs, Obliques",
+    "secondaryMuscles": "Core",
+    "type": "Compound",
+    "equipment": "Med ball",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Leg Raises (lying, hanging)",
+    "recommendRep": "",
+    "mainMuscle": "Abs, Hip flexors",
+    "secondaryMuscles": "Obliques",
+    "type": "Compound",
+    "equipment": "Bodyweight",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Plank",
+    "recommendRep": "",
+    "mainMuscle": "Core",
+    "secondaryMuscles": "Shoulders, glutes",
+    "type": "Isometric",
+    "equipment": "Bodyweight",
+    "force": "Static",
+    "lastWorkout": null
+  },
+  {
+    "name": "Bicycle Crunch",
+    "recommendRep": "",
+    "mainMuscle": "Abs",
+    "secondaryMuscles": "Obliques, hips",
+    "type": "Compound",
+    "equipment": "Bodyweight",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Lateral Lunge Bodyweight",
+    "recommendRep": "",
+    "mainMuscle": "Adductors",
+    "secondaryMuscles": "Quads, glutes, hamstrings",
+    "type": "Compound",
+    "equipment": "Bodyweight",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Lateral Lunge Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Adductors",
+    "secondaryMuscles": "Quads, glutes, hamstrings",
+    "type": "Compound",
+    "equipment": "Dumbbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Sumo Deadlift",
+    "recommendRep": "",
+    "mainMuscle": "Adductors, Hamstrings",
+    "secondaryMuscles": "Glutes, back",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Adductor Machine",
+    "recommendRep": "",
+    "mainMuscle": "Adductors",
+    "secondaryMuscles": "-",
+    "type": "Isolation",
+    "equipment": "Machine",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Barbell Curl",
+    "recommendRep": "",
+    "mainMuscle": "Biceps",
+    "secondaryMuscles": "Forearms",
+    "type": "Isolation",
+    "equipment": "Barbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Dumbbell Curl",
+    "recommendRep": "",
+    "mainMuscle": "Biceps",
+    "secondaryMuscles": "Forearms",
+    "type": "Isolation",
+    "equipment": "Dumbbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Chin-ups",
+    "recommendRep": "",
+    "mainMuscle": "Biceps",
+    "secondaryMuscles": "Back, forearms",
+    "type": "Compound",
+    "equipment": "Bar",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Pull-up",
+    "recommendRep": "",
+    "mainMuscle": "Back (Lats)",
+    "secondaryMuscles": "Biceps, shoulders",
+    "type": "Compound",
+    "equipment": "Bar",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Lat Pulldown",
+    "recommendRep": "",
+    "mainMuscle": "Back (Lats)",
+    "secondaryMuscles": "Biceps, shoulders",
+    "type": "Compound",
+    "equipment": "Cable",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Bent-over Row Barbell",
+    "recommendRep": "",
+    "mainMuscle": "Back",
+    "secondaryMuscles": "Biceps, rear shoulders",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Bent-over Row Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Back",
+    "secondaryMuscles": "Biceps, rear shoulders",
+    "type": "Compound",
+    "equipment": "Dumbbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Seated Row Cable",
+    "recommendRep": "",
+    "mainMuscle": "Back",
+    "secondaryMuscles": "Biceps, rear shoulders",
+    "type": "Compound",
+    "equipment": "Cable",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Seated Row Machine",
+    "recommendRep": "",
+    "mainMuscle": "Back",
+    "secondaryMuscles": "Biceps, rear shoulders",
+    "type": "Compound",
+    "equipment": "Machine",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "One-arm Row",
+    "recommendRep": "",
+    "mainMuscle": "Back",
+    "secondaryMuscles": "Biceps, shoulders",
+    "type": "Compound",
+    "equipment": "Dumbbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Standing Calf Raise Bodyweight",
+    "recommendRep": "",
+    "mainMuscle": "Calves",
+    "secondaryMuscles": "-",
+    "type": "Isolation",
+    "equipment": "Bodyweight",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Standing Calf Raise Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Calves",
+    "secondaryMuscles": "-",
+    "type": "Isolation",
+    "equipment": "Dumbbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Standing Calf Raise Barbell",
+    "recommendRep": "",
+    "mainMuscle": "Calves",
+    "secondaryMuscles": "-",
+    "type": "Isolation",
+    "equipment": "Barbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Seated Calf Raise Machine",
+    "recommendRep": "",
+    "mainMuscle": "Calves",
+    "secondaryMuscles": "-",
+    "type": "Isolation",
+    "equipment": "Machine",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Seated Calf Raise Barbell",
+    "recommendRep": "",
+    "mainMuscle": "Calves",
+    "secondaryMuscles": "-",
+    "type": "Isolation",
+    "equipment": "Barbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Bench Press Barbell",
+    "recommendRep": "",
+    "mainMuscle": "Chest",
+    "secondaryMuscles": "Shoulders, triceps",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Bench Press Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Chest",
+    "secondaryMuscles": "Shoulders, triceps",
+    "type": "Compound",
+    "equipment": "Dumbbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Push-ups",
+    "recommendRep": "",
+    "mainMuscle": "Chest",
+    "secondaryMuscles": "Triceps, shoulders",
+    "type": "Compound",
+    "equipment": "Bodyweight",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Chest Fly Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Chest",
+    "secondaryMuscles": "Shoulders",
+    "type": "Isolation",
+    "equipment": "Dumbbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Chest Fly Cable",
+    "recommendRep": "",
+    "mainMuscle": "Chest",
+    "secondaryMuscles": "Shoulders",
+    "type": "Isolation",
+    "equipment": "Cable",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Chest Fly Machine",
+    "recommendRep": "",
+    "mainMuscle": "Chest",
+    "secondaryMuscles": "Shoulders",
+    "type": "Isolation",
+    "equipment": "Machine",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Dips (chest lean)",
+    "recommendRep": "",
+    "mainMuscle": "Chest",
+    "secondaryMuscles": "Triceps, shoulders",
+    "type": "Compound",
+    "equipment": "Bars",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Squat Barbell",
+    "recommendRep": "",
+    "mainMuscle": "Glutes, Quads",
+    "secondaryMuscles": "Hamstrings, back",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Squat Bodyweight",
+    "recommendRep": "",
+    "mainMuscle": "Glutes, Quads",
+    "secondaryMuscles": "Hamstrings, back",
+    "type": "Compound",
+    "equipment": "Bodyweight",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Deadlift",
+    "recommendRep": "",
+    "mainMuscle": "Glutes, Hamstrings",
+    "secondaryMuscles": "Back, traps",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Bulgarian Split Squat Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Glutes, Quads",
+    "secondaryMuscles": "Hamstrings, core",
+    "type": "Compound",
+    "equipment": "Dumbbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Bulgarian Split Squat Bodyweight",
+    "recommendRep": "",
+    "mainMuscle": "Glutes, Quads",
+    "secondaryMuscles": "Hamstrings, core",
+    "type": "Compound",
+    "equipment": "Bodyweight",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Hip Thrust Barbell",
+    "recommendRep": "",
+    "mainMuscle": "Glutes",
+    "secondaryMuscles": "Hamstrings, core",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Hip Thrust Bodyweight",
+    "recommendRep": "",
+    "mainMuscle": "Glutes",
+    "secondaryMuscles": "Hamstrings, core",
+    "type": "Compound",
+    "equipment": "Bodyweight",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Glute Bridge Bodyweight",
+    "recommendRep": "",
+    "mainMuscle": "Glutes",
+    "secondaryMuscles": "Hamstrings, back",
+    "type": "Compound",
+    "equipment": "Bodyweight",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Glute Bridge Barbell",
+    "recommendRep": "",
+    "mainMuscle": "Glutes",
+    "secondaryMuscles": "Hamstrings, back",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Romanian Deadlift Barbell",
+    "recommendRep": "",
+    "mainMuscle": "Hamstrings",
+    "secondaryMuscles": "Glutes, back",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Romanian Deadlift Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Hamstrings",
+    "secondaryMuscles": "Glutes, back",
+    "type": "Compound",
+    "equipment": "Dumbbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Lying Leg Curl",
+    "recommendRep": "",
+    "mainMuscle": "Hamstrings",
+    "secondaryMuscles": "Calves",
+    "type": "Isolation",
+    "equipment": "Machine",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Seated Leg Curl",
+    "recommendRep": "",
+    "mainMuscle": "Hamstrings",
+    "secondaryMuscles": "Glutes",
+    "type": "Isolation",
+    "equipment": "Machine",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Hanging Leg Raise",
+    "recommendRep": "",
+    "mainMuscle": "Hip Flexors",
+    "secondaryMuscles": "Abs",
+    "type": "Compound",
+    "equipment": "Bodyweight",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Pull-up (wide grip)",
+    "recommendRep": "",
+    "mainMuscle": "Lats",
+    "secondaryMuscles": "Biceps, shoulders",
+    "type": "Compound",
+    "equipment": "Bar",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Back Extension Bench",
+    "recommendRep": "",
+    "mainMuscle": "Lower Back",
+    "secondaryMuscles": "Glutes, hamstrings",
+    "type": "Isolation",
+    "equipment": "Bench",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Back Extension Machine",
+    "recommendRep": "",
+    "mainMuscle": "Lower Back",
+    "secondaryMuscles": "Glutes, hamstrings",
+    "type": "Isolation",
+    "equipment": "Machine",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Good Mornings",
+    "recommendRep": "",
+    "mainMuscle": "Lower Back",
+    "secondaryMuscles": "Hamstrings, glutes",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Back Squat",
+    "recommendRep": "",
+    "mainMuscle": "Quads",
+    "secondaryMuscles": "Glutes, hamstrings",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Front Squat",
+    "recommendRep": "",
+    "mainMuscle": "Quads",
+    "secondaryMuscles": "Glutes, back",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Leg Press",
+    "recommendRep": "",
+    "mainMuscle": "Quads",
+    "secondaryMuscles": "Glutes, hamstrings",
+    "type": "Compound",
+    "equipment": "Machine",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Lunges Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Quads, Glutes",
+    "secondaryMuscles": "Hamstrings, calves",
+    "type": "Compound",
+    "equipment": "Dumbbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Lunges Bodyweight",
+    "recommendRep": "",
+    "mainMuscle": "Quads, Glutes",
+    "secondaryMuscles": "Hamstrings, calves",
+    "type": "Compound",
+    "equipment": "Bodyweight",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Leg Extension",
+    "recommendRep": "",
+    "mainMuscle": "Quads",
+    "secondaryMuscles": "-",
+    "type": "Isolation",
+    "equipment": "Machine",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Wall Sit",
+    "recommendRep": "",
+    "mainMuscle": "Quads",
+    "secondaryMuscles": "Glutes",
+    "type": "Isometric",
+    "equipment": "Bodyweight",
+    "force": "Static",
+    "lastWorkout": null
+  },
+  {
+    "name": "Shoulder Press Barbell",
+    "recommendRep": "",
+    "mainMuscle": "Shoulders",
+    "secondaryMuscles": "Triceps, traps",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Shoulder Press Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Shoulders",
+    "secondaryMuscles": "Triceps, traps",
+    "type": "Compound",
+    "equipment": "Dumbbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Lateral Raise Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Shoulders (side)",
+    "secondaryMuscles": "Traps",
+    "type": "Isolation",
+    "equipment": "Dumbbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Lateral Raise Cable",
+    "recommendRep": "",
+    "mainMuscle": "Shoulders (side)",
+    "secondaryMuscles": "Traps",
+    "type": "Isolation",
+    "equipment": "Cable",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Front Raise Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Shoulders (front)",
+    "secondaryMuscles": "Traps",
+    "type": "Isolation",
+    "equipment": "Dumbbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Front Raise Cable",
+    "recommendRep": "",
+    "mainMuscle": "Shoulders (front)",
+    "secondaryMuscles": "Traps",
+    "type": "Isolation",
+    "equipment": "Cable",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Upright Row Barbell",
+    "recommendRep": "",
+    "mainMuscle": "Shoulders, Traps",
+    "secondaryMuscles": "Biceps",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Upright Row Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Shoulders, Traps",
+    "secondaryMuscles": "Biceps",
+    "type": "Compound",
+    "equipment": "Dumbbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Rear Delt Raise Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Shoulders (rear)",
+    "secondaryMuscles": "Traps, back",
+    "type": "Isolation",
+    "equipment": "Dumbbell",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Rear Delt Raise Cable",
+    "recommendRep": "",
+    "mainMuscle": "Shoulders (rear)",
+    "secondaryMuscles": "Traps, back",
+    "type": "Isolation",
+    "equipment": "Cable",
+    "force": "Pull",
+    "lastWorkout": null
+  },
+  {
+    "name": "Close-grip Bench Press",
+    "recommendRep": "",
+    "mainMuscle": "Triceps",
+    "secondaryMuscles": "Chest, shoulders",
+    "type": "Compound",
+    "equipment": "Barbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Dips (vertical)",
+    "recommendRep": "",
+    "mainMuscle": "Triceps",
+    "secondaryMuscles": "Chest, shoulders",
+    "type": "Compound",
+    "equipment": "Bars",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Triceps Pushdown",
+    "recommendRep": "",
+    "mainMuscle": "Triceps",
+    "secondaryMuscles": "-",
+    "type": "Isolation",
+    "equipment": "Cable",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Overhead Extension Dumbbell",
+    "recommendRep": "",
+    "mainMuscle": "Triceps",
+    "secondaryMuscles": "Shoulders",
+    "type": "Isolation",
+    "equipment": "Dumbbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Overhead Extension Barbell",
+    "recommendRep": "",
+    "mainMuscle": "Triceps",
+    "secondaryMuscles": "Shoulders",
+    "type": "Isolation",
+    "equipment": "Barbell",
+    "force": "Push",
+    "lastWorkout": null
+  },
+  {
+    "name": "Overhead Extension Cable",
+    "recommendRep": "",
+    "mainMuscle": "Triceps",
+    "secondaryMuscles": "Shoulders",
+    "type": "Isolation",
+    "equipment": "Cable",
+    "force": "Push",
+    "lastWorkout": null
+  }
+]
