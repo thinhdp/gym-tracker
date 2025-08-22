@@ -90,7 +90,7 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
           key={w.id}
           className="relative rounded-2xl border border-cyan-300 bg-gradient-to-b from-white to-cyan-50 shadow-sm"
         >
-          <div className="absolute left-0 top-0 h-full w-1 bg-cyan-300 rounded-tl-2xl rounded-bl-2xl"></div>
+          div className="absolute inset-y-0 left-0 w-1 bg-cyan-300 rounded-l-2xl"></div>
           <div className="flex items-center justify-between px-4 py-3">
             <div>
               <div className="text-base font-medium">{w.name}</div>
@@ -241,7 +241,7 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                           key={sidx}
                           className="relative flex items-center gap-3 rounded-xl border border-cyan-200 bg-gradient-to-b from-white to-cyan-50 px-3 py-2 shadow-sm"
                         >
-                          <div className="absolute left-0 top-0 h-full w-1 bg-cyan-200 rounded-tl-xl rounded-bl-xl"></div>
+                          <div className="absolute inset-y-0 left-0 w-1 bg-cyan-200 rounded-l-xl"></div>
                           <span className="w-16 text-sm text-neutral-600">Set {sidx + 1}</span>
                           <WeightRepInputs
                             weight={toDisplayWeight(s.weight, unit)}
