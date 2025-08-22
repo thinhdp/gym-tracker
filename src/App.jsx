@@ -10,6 +10,7 @@ import WorkoutPlanner from "./components/WorkoutPlanner";
 import WorkoutHistory from "./components/WorkoutHistory";
 import CalendarView from "./components/CalendarView";
 import ExerciseManager from "./components/ExerciseManager";
+import Notepad from "./components/Notepad";
 
 export default function App() {
   const [tab, setTab] = useState("workouts");
@@ -48,6 +49,7 @@ export default function App() {
             <Button variant={tab==="workouts" ? "primary" : "secondary"} onClick={()=>setTab("workouts")}>Workouts</Button>
             <Button variant={tab==="calendar" ? "primary" : "secondary"} onClick={()=>setTab("calendar")}>Calendar</Button>
             <Button variant={tab==="exercises" ? "primary" : "secondary"} onClick={()=>setTab("exercises")}>Exercises</Button>
+            <Button variant={tab==="notepad" ? "primary" : "secondary"} onClick={()=>setTab("notepad")}>Notepad</Button>
           </div>
 
           <div className="flex justify-end mb-2">
@@ -64,6 +66,7 @@ export default function App() {
           )}
           {tab==="calendar" && <CalendarView workouts={workouts} setWorkouts={setWorkouts} exercises={exercises} setExercises={setExercises} unit={unit} />}
           {tab==="exercises" && <ExerciseManager exercises={exercises} setExercises={setExercises} workouts={workouts} unit={unit} />}
+          {tab==="notepad" && <Notepad />}
         </main>
       </div>
 
