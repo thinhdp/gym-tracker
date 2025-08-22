@@ -14,6 +14,18 @@ export default function WorkoutPlanner({ exercises, setExercises, workouts, setW
   const [items, setItems] = useState([]);
   const confirm = useConfirm();
 
+  // Helper to move an element in an array
+  const moveItem = (arr, from, to) => {
+    if (to < 0 || to >= arr.length) return arr;
+    const next = arr.slice();
+    const [it] = next.splice(from, 1);
+    next.splice(to, 0, it);
+    return next;
+  };
+
+  const moveItemUp = (idx) => setItems((prev) => moveItem(prev, idx, idx - 1));
+  const moveItemDown = (idx) => setItems((prev) => moveItem(prev, idx, idx + 1));
+
   const addDate = () => setDates((prev)=>[...prev, todayStr()]);
   const removeDate = (idx) => setDates((prev)=> prev.filter((_,i)=>i!==idx));
   const setDateAt = (idx, val) => setDates((prev)=> prev.map((d,i)=> i===idx ? val : d));
@@ -82,22 +94,30 @@ export default function WorkoutPlanner({ exercises, setExercises, workouts, setW
 
         <div className="space-y-2">
           {items.length===0 && <p className="text-sm text-neutral-500">No exercises added yet.</p>}
-          {items.map((it)=> {
-            const rec = exercises.find((e)=> e.name===it.exerciseName)?.recommendRep || "";
-            return (
-              <WorkoutExerciseEditor
-                key={it.exerciseName}
-                item={it}
-                unit={unit}
-                recommendRep={rec}
-                onChange={(patch)=> setItems((prev)=> prev.map((x)=> x.exerciseName===it.exerciseName ? { ...x, ...patch } : x))}
-                onRemove={() => {
-                  confirm({ title: `Remove "${it.exerciseName}"?`, message: "This removes it from the current plan.", confirmText: "Remove", tone: "destructive" })
-                    .then((ok) => { if (ok) setItems((prev)=> prev.filter((x)=> x.exerciseName!==it.exerciseName)); });
-                }}
-              />
-            );
-          })}
+              {items.map((it, idx)=> {
+                 const rec = exercises.find((e)=> e.name===it.exerciseName)?.recommendRep || "";
+                 return (
+                   <div key={it.exerciseName} className="flex items-start gap-2">
+                     {/* Reorder controls */}
+                     <div className="flex flex-col">
+                       <Button variant="ghost" size="sm" onClick={() => moveItemUp(idx)} disabled={idx===0}>▲</Button>
+                       <Button variant="ghost" size="sm" onClick={() => moveItemDown(idx)} disabled={idx===items.length - 1}>▼</Button>
+                     </div>
+                     <div className="flex-1">
+                       <WorkoutExerciseEditor
+                         item={it}
+                         unit={unit}
+                         recommendRep={rec}
+                         onChange={(patch)=> setItems((prev)=> prev.map((x)=> x.exerciseName===it.exerciseName ? { ...x, ...patch } : x))}
+                         onRemove={() => {
+                           confirm({ title: `Remove "${it.exerciseName}"?`, message: "This removes it from the current plan.", confirmText: "Remove", tone: "destructive" })
+                             .then((ok) => { if (ok) setItems((prev)=> prev.filter((x)=> x.exerciseName!==it.exerciseName)); });
+                         }}
+                       />
+                     </div>
+                   </div>
+                 );
+               })}
         </div>
 
         <div className="flex justify-end gap-2">
