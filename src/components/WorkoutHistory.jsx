@@ -157,7 +157,7 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                     key={idx}
                     className="relative rounded-xl border border-cyan-300 bg-gradient-to-b from-white to-cyan-50 shadow-sm p-3"
                   >
-                    <div className="absolute left-0 top-0 h-full w-1 bg-cyan-300 rounded-tl-xl rounded-bl-xl"></div>
+                    <div className="absolute inset-y-0 left-0 w-1 bg-cyan-300 rounded-l-xl"></div>
                     <div className="mb-2 flex items-center justify-between">
                       <div className="font-medium">
                         {we.exerciseName}
