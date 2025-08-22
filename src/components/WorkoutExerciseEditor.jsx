@@ -67,7 +67,6 @@ export default function WorkoutExerciseEditor({ item, onChange, onRemove, unit, 
                         )
                       }
                     />
-                <span className="text-xs text-neutral-500">{unit}</span>
               </div>
               <div className="flex items-center gap-2">
                     <NumberInputAutoClear
@@ -87,7 +86,6 @@ export default function WorkoutExerciseEditor({ item, onChange, onRemove, unit, 
                       }
                     />
 
-                <span className="text-xs text-neutral-500">reps</span>
               </div>
             </div>
             <Button variant="ghost" onClick={() => delSet(idx)} disabled={sets.length <= 1}><Trash2 /></Button>
