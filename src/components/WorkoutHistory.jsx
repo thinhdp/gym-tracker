@@ -142,7 +142,6 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                                 onNumberChange={(v)=> updateWorkout(w.id, {
                                   exercises: w.exercises.map((e2,i2)=> i2===idx ? { ...e2, sets: e2.sets.map((ss,j)=> j===sidx ? { ...ss, weight: fromDisplayWeight(v, unit) } : ss) } : e2)
                                 })}/>
-                              <span className="text-xs text-neutral-500">{unit}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                    <NumberInputAutoClear step="1" min="0"
@@ -152,7 +151,6 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                                      onNumberChange={(v)=> updateWorkout(w.id, {
                                        exercises: w.exercises.map((e2,i2)=> i2===idx ? { ...e2, sets: e2.sets.map((ss,j)=> j===sidx ? { ...ss, reps: v } : ss) } : e2)
                                      })}/>
-                              <span className="text-xs text-neutral-500">reps</span>
                             </div>
                           </div>
                           <Button
