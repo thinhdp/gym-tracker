@@ -27,6 +27,38 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
     updateWorkout(workout.id, { exercises: [...workout.exercises, newExercise] });
   };
 
+      // Helpers to move an item in an array.
+      const moveItem = (arr, from, to) => {
+        if (to < 0 || to >= arr.length) return arr;
+        const next = arr.slice();
+        const [it] = next.splice(from, 1);
+        next.splice(to, 0, it);
+        return next;
+      };
+      // Move an exercise up or down within its workout
+      const moveExerciseUp = (workoutId, idx) => {
+        setWorkouts((prev) =>
+          prev
+            .map((w) =>
+              w.id === workoutId
+                ? { ...w, exercises: moveItem(w.exercises, idx, idx - 1) }
+                : w
+            )
+            .sort((a, b) => (a.date < b.date ? 1 : -1))
+        );
+      };
+      const moveExerciseDown = (workoutId, idx) => {
+        setWorkouts((prev) =>
+          prev
+            .map((w) =>
+              w.id === workoutId
+                ? { ...w, exercises: moveItem(w.exercises, idx, idx + 1) }
+                : w
+            )
+            .sort((a, b) => (a.date < b.date ? 1 : -1))
+        );
+      };
+  
   return (
     <div className="mt-4 space-y-3">
       <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-600">History</h3>
@@ -71,22 +103,27 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                         {we.exerciseName}
                         {(()=>{ const rec = exercises.find((e)=> e.name===we.exerciseName)?.recommendRep || ""; return rec? <span className="ml-2 text-xs text-neutral-500">({rec})</span> : null; })()}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="secondary" onClick={()=>{
-                          const newName=(prompt("Rename exercise to:", we.exerciseName)||"").trim(); if(!newName) return;
-                          updateWorkout(w.id, { exercises: w.exercises.map((e2,i2)=> i2===idx ? { ...e2, exerciseName:newName } : e2) });
-                        }}>Rename</Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            confirm({ title: `Remove "${we.exerciseName}"?`, message: "This removes the exercise from this workout.", confirmText: "Remove", tone: "destructive" })
-                              .then((ok) => { if (ok) updateWorkout(w.id, { exercises: w.exercises.filter((_,i2)=> i2!==idx) }); });
-                          }}
-                        >
-                          <Trash2 />
-                        </Button>
-                      </div>
-                    </div>
+                           <div className="flex items-center gap-2">
+                             {/* Reorder controls */}
+                             <Button variant="ghost" size="sm" onClick={() => moveExerciseUp(w.id, idx)} disabled={idx === 0}>▲</Button>
+                             <Button variant="ghost" size="sm" onClick={() => moveExerciseDown(w.id, idx)} disabled={idx === w.exercises.length - 1}>▼</Button>
+                             {/* Rename and delete */}
+                             <Button variant="secondary" onClick={()=>{
+                               const newName=(prompt("Rename exercise to:", we.exerciseName)||"").trim();
+                               if(!newName) return;
+                               updateWorkout(w.id, { exercises: w.exercises.map((e2,i2)=> i2===idx ? { ...e2, exerciseName:newName } : e2) });
+                             }}>Rename</Button>
+                             <Button
+                               variant="ghost"
+                               onClick={() => {
+                                 confirm({ title: `Remove "${we.exerciseName}"?`, message: "This removes the exercise from this workout.", confirmText: "Remove", tone: "destructive" })
+                                   .then((ok) => { if (ok) updateWorkout(w.id, { exercises: w.exercises.filter((_,i2)=> i2!==idx) }); });
+                               }}
+                             >
+                               <Trash2 />
+                             </Button>
+                           </div>
+                         </div>
 
                     <div className="grid gap-2">
                       <div className="flex items-center gap-3 px-3 py-1 text-xs text-neutral-500">
@@ -98,7 +135,9 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                           <span className="w-16 text-sm text-neutral-600">Set {sidx+1}</span>
                           <div className="flex-1 grid grid-cols-2 gap-3">
                             <div className="flex items-center gap-2">
-                              <NumberInputAutoClear step="0.5" min="0" className="w-24"
+                                   <NumberInputAutoClear step="0.5" min="0"
+                                     /* Compact width: replicate Input styling but limit to ~5 characters */
+                                     className="border rounded-xl px-3 py-1.5 text-sm w-20"
                                 valueNumber={toDisplayWeight(s.weight, unit)}
                                 onNumberChange={(v)=> updateWorkout(w.id, {
                                   exercises: w.exercises.map((e2,i2)=> i2===idx ? { ...e2, sets: e2.sets.map((ss,j)=> j===sidx ? { ...ss, weight: fromDisplayWeight(v, unit) } : ss) } : e2)
@@ -106,10 +145,13 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                               <span className="text-xs text-neutral-500">{unit}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <NumberInputAutoClear step="1" min="0" className="w-24" valueNumber={s.reps}
-                                onNumberChange={(v)=> updateWorkout(w.id, {
-                                  exercises: w.exercises.map((e2,i2)=> i2===idx ? { ...e2, sets: e2.sets.map((ss,j)=> j===sidx ? { ...ss, reps: v } : ss) } : e2)
-                                })}/>
+                                   <NumberInputAutoClear step="1" min="0"
+                                     /* Compact width: replicate Input styling but limit to ~5 characters */
+                                     className="border rounded-xl px-3 py-1.5 text-sm w-20"
+                                     valueNumber={s.reps}
+                                     onNumberChange={(v)=> updateWorkout(w.id, {
+                                       exercises: w.exercises.map((e2,i2)=> i2===idx ? { ...e2, sets: e2.sets.map((ss,j)=> j===sidx ? { ...ss, reps: v } : ss) } : e2)
+                                     })}/>
                               <span className="text-xs text-neutral-500">reps</span>
                             </div>
                           </div>
