@@ -8,7 +8,7 @@ const K_NOTE = "mgym.note.v1";
 
 /**
  * Standalone notepad that stores its content in localStorage.
- * This component is simple: one free-form note that persists between sessions.
+ * This version allows the textarea to expand freely as you type.
  */
 export default function Notepad() {
   // Load existing note from localStorage on mount
