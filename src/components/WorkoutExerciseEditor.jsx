@@ -40,7 +40,7 @@ export default function WorkoutExerciseEditor({
   return (
     // Outer card with cyan accent bar and gradient background
     <div className="relative rounded-2xl border border-cyan-300 bg-gradient-to-b from-white to-cyan-50 shadow-sm p-3">
-      <div className="absolute left-0 top-0 h-full w-1 bg-cyan-300 rounded-tl-2xl rounded-bl-2xl"></div>
+      <div className="absolute inset-y-0 left-0 w-1 bg-cyan-300 rounded-l-2xl"></div>
       <div className="mb-2 flex items-center justify-between">
         <div className="font-medium">
           {item.exerciseName}
@@ -74,7 +74,7 @@ export default function WorkoutExerciseEditor({
             className="relative flex items-center gap-3 rounded-xl border border-cyan-200 bg-gradient-to-b from-white to-cyan-50 px-3 py-2 shadow-sm"
           >
             {/* Left accent bar for each set */}
-            <div className="absolute left-0 top-0 h-full w-1 bg-cyan-200 rounded-tl-xl rounded-bl-xl"></div>
+            <div className="absolute inset-y-0 left-0 w-1 bg-cyan-200 rounded-l-xl"></div>
             <span className="w-16 text-sm text-neutral-600">Set {idx + 1}</span>
             <WeightRepInputs
               weight={toDisplayWeight(s.weight, unit)}
