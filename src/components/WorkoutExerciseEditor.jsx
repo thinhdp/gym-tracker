@@ -32,16 +32,17 @@ export default function WorkoutExerciseEditor({
     }).then((ok) => {
       if (!ok) return;
       setSets((prev) =>
-        prev.filter((_, idx) => idx !== i).map((s, idx) => ({ ...s, set: idx + 1 }))
+        prev
+          .filter((_, idx) => idx !== i)
+          .map((s, idx) => ({ ...s, set: idx + 1 }))
       );
     });
   };
 
   return (
-    // Outer card with cyan accent bar and gradient background
     <div className="relative rounded-2xl border p-3 overflow-hidden">
-<div className="absolute inset-y-0 left-0 w-1 bg-cyan-300"></div>
-      <div className="absolute inset-y-0 left-0 w-1 bg-cyan-300 rounded-l-2xl"></div>
+      {/* cyan accent bar for the whole exercise */}
+      <div className="absolute inset-y-0 left-0 w-1 bg-cyan-300"></div>
       <div className="mb-2 flex items-center justify-between">
         <div className="font-medium">
           {item.exerciseName}
@@ -74,23 +75,28 @@ export default function WorkoutExerciseEditor({
             key={idx}
             className="relative flex items-center gap-3 rounded-xl border px-3 py-2 shadow-sm overflow-hidden"
           >
+            {/* cyan accent bar for each set */}
             <div className="absolute inset-y-0 left-0 w-1 bg-cyan-200"></div>
             <span className="w-16 text-sm text-neutral-600">Set {idx + 1}</span>
             <WeightRepInputs
               weight={toDisplayWeight(s.weight, unit)}
               reps={s.reps}
-              onWeightChange={(v) =>
+              onWeightChange={(v) => {
                 setSets((prev) =>
-                  prev.map((p, i) =>
-                    i === idx ? { ...p, weight: fromDisplayWeight(v, unit) } : p
-                  )
-                )
-              }
-              onRepsChange={(v) =>
+                  prev.map((p, i) => {
+                    if (i !== idx) return p;
+                    return { ...p, weight: fromDisplayWeight(v, unit) };
+                  })
+                );
+              }}
+              onRepsChange={(v) => {
                 setSets((prev) =>
-                  prev.map((p, i) => (i === idx ? { ...p, reps: v } : p))
-                )
-              }
+                  prev.map((p, i) => {
+                    if (i !== idx) return p;
+                    return { ...p, reps: v };
+                  })
+                );
+              }}
             />
             <Button
               variant="ghost"
