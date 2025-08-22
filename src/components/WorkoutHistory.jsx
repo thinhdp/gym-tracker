@@ -137,7 +137,7 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                             <div className="flex items-center gap-2">
                                    <NumberInputAutoClear step="0.5" min="0"
                                      /* Compact width: replicate Input styling but limit to ~5 characters */
-                                     className="border rounded-xl px-3 py-1.5 text-sm w-20"
+                                     className="border rounded-xl px-3 py-1.5 text-sm w-16"
                                 valueNumber={toDisplayWeight(s.weight, unit)}
                                 onNumberChange={(v)=> updateWorkout(w.id, {
                                   exercises: w.exercises.map((e2,i2)=> i2===idx ? { ...e2, sets: e2.sets.map((ss,j)=> j===sidx ? { ...ss, weight: fromDisplayWeight(v, unit) } : ss) } : e2)
@@ -147,7 +147,7 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                             <div className="flex items-center gap-2">
                                    <NumberInputAutoClear step="1" min="0"
                                      /* Compact width: replicate Input styling but limit to ~5 characters */
-                                     className="border rounded-xl px-3 py-1.5 text-sm w-20"
+                                     className="border rounded-xl px-3 py-1.5 text-sm w-16"
                                      valueNumber={s.reps}
                                      onNumberChange={(v)=> updateWorkout(w.id, {
                                        exercises: w.exercises.map((e2,i2)=> i2===idx ? { ...e2, sets: e2.sets.map((ss,j)=> j===sidx ? { ...ss, reps: v } : ss) } : e2)
