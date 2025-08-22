@@ -70,13 +70,23 @@ export default function WorkoutExerciseEditor({ item, onChange, onRemove, unit, 
                 <span className="text-xs text-neutral-500">{unit}</span>
               </div>
               <div className="flex items-center gap-2">
-                <NumberInputAutoClear
-                  step="1"
-                  min="0"
-                  className="w-24"
-                  valueNumber={s.reps}
-                  onNumberChange={(v) => setSets((prev) => prev.map((p, i) => (i === idx ? { ...p, reps: v } : p)))}
-                />
+                    <NumberInputAutoClear
+                      step="1"
+                      min="0"
+                      /* Compact width: replicate Input styling but limit to ~5 characters */
+                      className="border rounded-xl px-3 py-1.5 text-sm w-20"
+                      valueNumber={s.reps}
+                      onNumberChange={(v) =>
+                        setSets((prev) =>
+                          prev.map((p, i) =>
+                            i === idx
+                              ? { ...p, reps: v }
+                              : p
+                          )
+                        )
+                      }
+                    />
+
                 <span className="text-xs text-neutral-500">reps</span>
               </div>
             </div>
