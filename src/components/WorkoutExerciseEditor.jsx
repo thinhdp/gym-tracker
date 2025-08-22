@@ -55,7 +55,7 @@ export default function WorkoutExerciseEditor({ item, onChange, onRemove, unit, 
                       step="0.5"
                       min="0"
                       /* Compact width: replicate Input styling but limit to ~5 characters */
-                      className="border rounded-xl px-3 py-1.5 text-sm w-20"
+                      className="border rounded-xl px-3 py-1.5 text-sm w-16"
                       valueNumber={toDisplayWeight(s.weight, unit)}
                       onNumberChange={(v) =>
                         setSets((prev) =>
@@ -74,7 +74,7 @@ export default function WorkoutExerciseEditor({ item, onChange, onRemove, unit, 
                       step="1"
                       min="0"
                       /* Compact width: replicate Input styling but limit to ~5 characters */
-                      className="border rounded-xl px-3 py-1.5 text-sm w-20"
+                      className="border rounded-xl px-3 py-1.5 text-sm w-16"
                       valueNumber={s.reps}
                       onNumberChange={(v) =>
                         setSets((prev) =>
