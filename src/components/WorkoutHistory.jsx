@@ -8,7 +8,13 @@ import WeightRepInputs from "./WeightRepInputs";
 import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
 import { useConfirm } from "./ConfirmDialog";
 
-export default function WorkoutHistory({ workouts, setWorkouts, exercises, setExercises, unit }) {
+export default function WorkoutHistory({
+  workouts,
+  setWorkouts,
+  exercises,
+  setExercises,
+  unit,
+}) {
   const [expandedId, setExpandedId] = useState(null);
   const confirm = useConfirm();
 
@@ -19,11 +25,15 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
         .sort((a, b) => (a.date < b.date ? 1 : -1))
     );
   };
-  const deleteWorkout = (id) =>
+
+  const deleteWorkout = (id) => {
     setWorkouts((prev) => prev.filter((w) => w.id !== id));
+  };
 
   const addExerciseToWorkout = (workout, exerciseName) => {
-    const exists = exercises.find((e) => e.name.toLowerCase() === exerciseName.toLowerCase());
+    const exists = exercises.find(
+      (e) => e.name.toLowerCase() === exerciseName.toLowerCase()
+    );
     if (!exists) {
       const created = {
         name: exerciseName,
@@ -37,15 +47,18 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
       };
       setExercises((prev) => [...prev, created]);
     }
-    const last = exists?.lastWorkout?.sets?.length ? exists.lastWorkout.sets.at(-1) : null;
+    const last = exists?.lastWorkout?.sets?.length
+      ? exists.lastWorkout.sets.at(-1)
+      : null;
     const newExercise = {
       exerciseName,
-      sets: [{ set: 1, weight: last?.weight || 0, reps: last?.reps || 0 }],
+      sets: [
+        { set: 1, weight: last?.weight || 0, reps: last?.reps || 0 },
+      ],
     };
     updateWorkout(workout.id, { exercises: [...workout.exercises, newExercise] });
   };
 
-  // Helpers to move an item in an array.
   const moveItem = (arr, from, to) => {
     if (to < 0 || to >= arr.length) return arr;
     const next = arr.slice();
@@ -53,7 +66,7 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
     next.splice(to, 0, it);
     return next;
   };
-  // Move an exercise up or down within its workout
+
   const moveExerciseUp = (workoutId, idx) => {
     setWorkouts((prev) =>
       prev
@@ -65,6 +78,7 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
         .sort((a, b) => (a.date < b.date ? 1 : -1))
     );
   };
+
   const moveExerciseDown = (workoutId, idx) => {
     setWorkouts((prev) =>
       prev
@@ -86,11 +100,7 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
         <p className="text-sm text-neutral-500">No workouts logged yet.</p>
       )}
       {workouts.map((w) => (
-        <div
-          key={w.id}
-          className="relative rounded-2xl border border-cyan-300 bg-gradient-to-b from-white to-cyan-50 shadow-sm"
-        >
-          div className="absolute inset-y-0 left-0 w-1 bg-cyan-300 rounded-l-2xl"></div>
+        <div key={w.id} className="rounded-2xl border">
           <div className="flex items-center justify-between px-4 py-3">
             <div>
               <div className="text-base font-medium">{w.name}</div>
@@ -99,7 +109,9 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
             <div className="flex items-center gap-2">
               <Button
                 variant="secondary"
-                onClick={() => setExpandedId((prev) => (prev === w.id ? null : w.id))}
+                onClick={() =>
+                  setExpandedId((prev) => (prev === w.id ? null : w.id))
+                }
               >
                 Details <ChevronDown open={expandedId === w.id} />
               </Button>
@@ -129,7 +141,9 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                   <Input
                     type="date"
                     value={w.date}
-                    onChange={(e) => updateWorkout(w.id, { date: e.target.value })}
+                    onChange={(e) =>
+                      updateWorkout(w.id, { date: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -144,7 +158,9 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
               </div>
 
               <div className="rounded-xl border p-3">
-                <div className="mb-2 font-medium text-sm">Add exercise to this workout</div>
+                <div className="mb-2 font-medium text-sm">
+                  Add exercise to this workout
+                </div>
                 <AddExerciseInput
                   allExercises={exercises}
                   onAdd={(name) => addExerciseToWorkout(w, name)}
@@ -155,22 +171,26 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                 {w.exercises.map((we, idx) => (
                   <div
                     key={idx}
-                    className="relative rounded-xl border border-cyan-300 bg-gradient-to-b from-white to-cyan-50 shadow-sm p-3"
+                    className="relative rounded-xl border p-3 overflow-hidden"
                   >
-                    <div className="absolute inset-y-0 left-0 w-1 bg-cyan-300 rounded-l-xl"></div>
+                    {/* cyan accent bar for each exercise */}
+                    <div className="absolute inset-y-0 left-0 w-1 bg-cyan-300"></div>
                     <div className="mb-2 flex items-center justify-between">
                       <div className="font-medium">
                         {we.exerciseName}
                         {(() => {
                           const rec =
-                            exercises.find((e) => e.name === we.exerciseName)?.recommendRep || "";
+                            exercises.find(
+                              (e) => e.name === we.exerciseName
+                            )?.recommendRep || "";
                           return rec ? (
-                            <span className="ml-2 text-xs text-neutral-500">({rec})</span>
+                            <span className="ml-2 text-xs text-neutral-500">
+                              ({rec})
+                            </span>
                           ) : null;
                         })()}
                       </div>
                       <div className="flex items-center gap-2">
-                        {/* Reorder controls */}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -187,7 +207,6 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                         >
                           ▼
                         </Button>
-                        {/* Rename and delete */}
                         <Button
                           variant="secondary"
                           onClick={() => {
@@ -197,7 +216,9 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                             if (!newName) return;
                             updateWorkout(w.id, {
                               exercises: w.exercises.map((e2, i2) =>
-                                i2 === idx ? { ...e2, exerciseName: newName } : e2
+                                i2 === idx
+                                  ? { ...e2, exerciseName: newName }
+                                  : e2
                               ),
                             });
                           }}
@@ -209,13 +230,16 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                           onClick={() => {
                             confirm({
                               title: `Remove "${we.exerciseName}"?`,
-                              message: "This removes the exercise from this workout.",
+                              message:
+                                "This removes the exercise from this workout.",
                               confirmText: "Remove",
                               tone: "destructive",
                             }).then((ok) => {
                               if (ok) {
                                 updateWorkout(w.id, {
-                                  exercises: w.exercises.filter((_, i2) => i2 !== idx),
+                                  exercises: w.exercises.filter(
+                                    (_, i2) => i2 !== idx
+                                  ),
                                 });
                               }
                             });
@@ -239,46 +263,50 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                       {we.sets.map((s, sidx) => (
                         <div
                           key={sidx}
-                          className="relative flex items-center gap-3 rounded-xl border border-cyan-200 bg-gradient-to-b from-white to-cyan-50 px-3 py-2 shadow-sm"
+                          className="relative flex items-center gap-3 rounded-xl border px-3 py-2 shadow-sm overflow-hidden"
                         >
-                          <div className="absolute inset-y-0 left-0 w-1 bg-cyan-200 rounded-l-xl"></div>
-                          <span className="w-16 text-sm text-neutral-600">Set {sidx + 1}</span>
+                          {/* cyan accent bar for each set */}
+                          <div className="absolute inset-y-0 left-0 w-1 bg-cyan-200"></div>
+                          <span className="w-16 text-sm text-neutral-600">
+                            Set {sidx + 1}
+                          </span>
                           <WeightRepInputs
                             weight={toDisplayWeight(s.weight, unit)}
                             reps={s.reps}
-                            onWeightChange={(v) =>
+                            onWeightChange={(v) => {
                               updateWorkout(w.id, {
-                                exercises: w.exercises.map((e2, i2) =>
-                                  i2 === idx
-                                    ? {
-                                        ...e2,
-                                        sets: e2.sets.map((ss, j) =>
-                                          j === sidx
-                                            ? {
-                                                ...ss,
-                                                weight: fromDisplayWeight(v, unit),
-                                              }
-                                            : ss
-                                        ),
-                                      }
-                                    : e2
-                                ),
-                              })
-                            }
-                            onRepsChange={(v) =>
+                                exercises: w.exercises.map((e2, i2) => {
+                                  if (i2 !== idx) return e2;
+                                  return {
+                                    ...e2,
+                                    sets: e2.sets.map((ss, j) => {
+                                      if (j !== sidx) return ss;
+                                      return {
+                                        ...ss,
+                                        weight: fromDisplayWeight(v, unit),
+                                      };
+                                    }),
+                                  };
+                                }),
+                              });
+                            }}
+                            onRepsChange={(v) => {
                               updateWorkout(w.id, {
-                                exercises: w.exercises.map((e2, i2) =>
-                                  i2 === idx
-                                    ? {
-                                        ...e2,
-                                        sets: e2.sets.map((ss, j) =>
-                                          j === sidx ? { ...ss, reps: v } : ss
-                                        ),
-                                      }
-                                    : e2
-                                ),
-                              })
-                            }
+                                exercises: w.exercises.map((e2, i2) => {
+                                  if (i2 !== idx) return e2;
+                                  return {
+                                    ...e2,
+                                    sets: e2.sets.map((ss, j) => {
+                                      if (j !== sidx) return ss;
+                                      return {
+                                        ...ss,
+                                        reps: v,
+                                      };
+                                    }),
+                                  };
+                                }),
+                              });
+                            }}
                           />
                           <Button
                             variant="ghost"
@@ -293,19 +321,18 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                               }).then((ok) => {
                                 if (!ok) return;
                                 updateWorkout(w.id, {
-                                  exercises: w.exercises.map((e2, i2) =>
-                                    i2 === idx
-                                      ? {
-                                          ...e2,
-                                          sets: e2.sets
-                                            .filter((_, j) => j !== sidx)
-                                            .map((ss, j) => ({
-                                              ...ss,
-                                              set: j + 1,
-                                            })),
-                                        }
-                                      : e2
-                                  ),
+                                  exercises: w.exercises.map((e2, i2) => {
+                                    if (i2 !== idx) return e2;
+                                    return {
+                                      ...e2,
+                                      sets: e2.sets
+                                        .filter((_, j) => j !== sidx)
+                                        .map((ss, j) => ({
+                                          ...ss,
+                                          set: j + 1,
+                                        })),
+                                    };
+                                  }),
                                 });
                               });
                             }}
@@ -321,21 +348,20 @@ export default function WorkoutHistory({ workouts, setWorkouts, exercises, setEx
                           className="w-fit"
                           onClick={() =>
                             updateWorkout(w.id, {
-                              exercises: w.exercises.map((e2, i2) =>
-                                i2 === idx
-                                  ? {
-                                      ...e2,
-                                      sets: [
-                                        ...e2.sets,
-                                        {
-                                          set: e2.sets.length + 1,
-                                          weight: 0,
-                                          reps: 0,
-                                        },
-                                      ],
-                                    }
-                                  : e2
-                              ),
+                              exercises: w.exercises.map((e2, i2) => {
+                                if (i2 !== idx) return e2;
+                                return {
+                                  ...e2,
+                                  sets: [
+                                    ...e2.sets,
+                                    {
+                                      set: e2.sets.length + 1,
+                                      weight: 0,
+                                      reps: 0,
+                                    },
+                                  ],
+                                };
+                              }),
                             })
                           }
                         >
