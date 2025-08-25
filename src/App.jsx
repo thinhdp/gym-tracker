@@ -139,7 +139,13 @@ export default function App() {
           </>
         )}
         {tab === "calendar" && (
-          <CalendarView workouts={workouts} />
+          <CalendarView
+            workouts={workouts}
+            setWorkouts={setWorkouts}
+            exercises={exercises}
+            setExercises={setExercises}
+            unit={unit}
+          />
         )}
         {tab === "exercises" && (
           <ExerciseManager
