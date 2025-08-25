@@ -66,7 +66,7 @@ export default function DataManagementMenu({ exercises, workouts, setExercises, 
   return (
     <div className="relative">
       <Button variant="secondary" onClick={() => setOpen((prev) => !prev)}>
-        <Save className="mr-1" /> Data&nbsp;Management
+        <Save className="mr-1" /> Data
       </Button>
       <input
         ref={fileRef}
