@@ -63,10 +63,19 @@ export default function App() {
     <ConfirmProvider>
       <div className="max-w-3xl mx-auto p-4 space-y-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        {/*
+         * Header layout: always place the app name and action buttons
+         * (Data management and unit toggle) on the same row. Previously
+         * this layout stacked on small screens (flex-col) and switched
+         * to a row only on medium screens (sm:flex-row). To ensure the
+         * app name, data menu and unit toggle are always aligned on a
+         * single row regardless of viewport width, we remove the
+         * flex-col behavior and use a simple flex row with space
+         * between.
+         */}
+        <div className="flex items-center justify-between gap-2">
           <h1 className="text-2xl font-bold">Gym&nbsp;Tracker</h1>
           <div className="flex items-center gap-4">
-            {/* Replace the Local • Offline indicator with the data menu */}
             <DataManagementMenu
               exercises={exercises}
               workouts={workouts}
