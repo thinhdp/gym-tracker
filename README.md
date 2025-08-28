@@ -25,32 +25,29 @@ This project requires **Node.js** (version 14 or later) and **npm**. If you don
    ```bash
    git clone https://github.com/thinhdp/gym-tracker.git
    cd gym-tracker
-Install dependencies:
+   ```
+2.	Install dependencies:
+   ```bash
+   npm install
+   ```
 
-bash
-Copy code
-npm install
-Running the app
+### Running the app
 The project uses Vite for development and build. To start a development server with hot reloading:
-
-bash
-Copy code
+```bash
 npm run dev
+```
 Vite will print a local development URL (typically http://localhost:5173). Open this in your browser to use Gym Tracker.
-
 To build a production bundle:
-
-bash
-Copy code
+```bash
 npm run build
+```
 The compiled files will be output to the dist directory. You can preview the production build locally with:
-
-bash
-Copy code
+```bash
 npm run preview
-Project Structure
-graphql
-Copy code
+```
+
+## Project Structure
+```graphql
 ├── src
 │   ├── components        # React components (planner, history, exercise manager, calendar, etc.)
 │   ├── data              # Seed data for initial exercises
@@ -61,20 +58,21 @@ Copy code
 ├── postcss.config.js     # PostCSS config for Tailwind
 ├── tailwind.config.js    # TailwindCSS configuration
 └── README.md             # Project documentation (you are here)
-Key Components
-Component	Description
-WorkoutPlanner	Plan or log workouts. Allows adding exercises, specifying sets and reps, reordering exercises and saving multiple workouts.
-WorkoutHistory	Edit existing workouts. Similar interface to the planner but operates on previously logged workouts; supports modifying dates/names and viewing past sets.
-ExerciseManager	Create, update and delete exercises. Provides a “View history” modal to see all workouts containing an exercise.
-CalendarView	Calendar‑based overview of your training sessions.
-Notepad	Standalone notepad for any free‑form notes.
-DataManagementMenu	Dropdown menu to export/import data.
+```
 
-Data Persistence
+## Key Components
+|Component|Description|
+| ----------- | ----------- |
+|WorkoutPlanner|Plan or log workouts. Allows adding exercises, specifying sets and reps, reordering exercises and saving multiple workouts.|
+|WorkoutHistory|Edit existing workouts. Similar interface to the planner but operates on previously logged workouts; supports modifying dates/names and viewing past sets.|
+|ExerciseManager|Create, update and delete exercises. Provides a “View history” modal to see all workouts containing an exercise.|
+|CalendarView|Calendar‑based overview of your training sessions.|
+|Notepad|Standalone notepad for any free‑form notes.|
+|DataManagementMenu|Dropdown menu to export/import data.|
+## Data Persistence
 Gym Tracker stores all exercises, workouts and notes in your browser’s localStorage using keys defined in src/lib/storage.js. No data is sent to any server. Clearing your browser data will remove your workouts and notes, so be sure to use the export feature to create a backup if needed.
-
-Contributing
+## Contributing
 Contributions are welcome! If you have ideas for new features, improvements or bug fixes, feel free to open an issue or submit a pull request. When making changes, please ensure that the UI remains consistent and that any new functionality adheres to the existing design patterns.
-
-License
+## License
 This project is released under the MIT License. See the LICENSE file for details.
+________________________________________
