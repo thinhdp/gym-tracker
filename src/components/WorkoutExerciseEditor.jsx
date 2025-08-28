@@ -6,24 +6,39 @@ import { Plus, Trash2 } from "./ui/Icons";
 import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
 import { useConfirm } from "./ConfirmDialog";
 
+/**
+ * Editor for a single exercise within a workout.
+ * Displays the exercise name, recommended rep range (if provided),
+ * allows reordering and removal, editing of individual sets,
+ * and tapping the exercise name to view past history.
+ */
 export default function WorkoutExerciseEditor({
   item,
   onChange,
   onRemove,
   unit,
   recommendRep,
+  // Optional props to support reordering from parent
+  onMoveUp,
+  onMoveDown,
+  canMoveUp = false,
+  canMoveDown = false,
+  onShowHistory = () => {}, // NEW: optional handler to display history
 }) {
   const [sets, setSets] = useState(item.sets);
   const confirm = useConfirm();
 
+  // Keep parent informed whenever sets change
   useEffect(() => onChange({ sets }), [sets, onChange]);
 
+  // Append a new set (up to a maximum of 5)
   const addSet = () =>
     setSets((prev) =>
       prev.length >= 5 ? prev : [...prev, { set: prev.length + 1, weight: 0, reps: 0 }]
     );
 
-  const delSet = (i) => {
+  // Delete an existing set after confirming with the user
+  const delSet = (index) => {
     confirm({
       title: "Delete this set?",
       message: "This can't be undone.",
@@ -33,7 +48,7 @@ export default function WorkoutExerciseEditor({
       if (!ok) return;
       setSets((prev) =>
         prev
-          .filter((_, idx) => idx !== i)
+          .filter((_, idx) => idx !== index)
           .map((s, idx) => ({ ...s, set: idx + 1 }))
       );
     });
@@ -44,22 +59,47 @@ export default function WorkoutExerciseEditor({
       {/* cyan accent bar for the whole exercise */}
       <div className="absolute inset-y-0 left-0 w-1 bg-cyan-300"></div>
       <div className="mb-2 flex items-center justify-between">
-        <div className="font-medium">
-          {item.exerciseName}
+        {/* Exercise title and reorder controls */}
+        <div className="flex items-center gap-2 font-medium">
+          <span
+            className="cursor-pointer underline"
+            onClick={() => onShowHistory(item.exerciseName)}
+          >
+            {item.exerciseName}
+          </span>
           {recommendRep ? (
-            <span className="ml-2 text-xs text-neutral-500">({recommendRep})</span>
+            <span className="ml-2 text-xs text-neutral-500">
+              ({recommendRep})
+            </span>
           ) : null}
+          {onMoveUp && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onMoveUp}
+              disabled={!canMoveUp}
+            >
+              ▲
+            </Button>
+          )}
+          {onMoveDown && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onMoveDown}
+              disabled={!canMoveDown}
+            >
+              ▼
+            </Button>
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={addSet} disabled={sets.length >= 5}>
-            <Plus /> Set
-          </Button>
-          <Button variant="ghost" onClick={onRemove}>
-            <Trash2 />
-          </Button>
-        </div>
+        {/* Remove exercise */}
+        <Button variant="ghost" onClick={onRemove}>
+          <Trash2 />
+        </Button>
       </div>
 
+      {/* Header row for sets */}
       <div className="flex items-center gap-3 px-3 py-1 text-xs text-neutral-500">
         <span className="w-16" />
         <div className="flex-1 grid grid-cols-2 gap-3">
@@ -69,6 +109,7 @@ export default function WorkoutExerciseEditor({
         <span className="w-10" />
       </div>
 
+      {/* List of sets */}
       <div className="grid gap-2">
         {sets.map((s, idx) => (
           <div
@@ -77,24 +118,26 @@ export default function WorkoutExerciseEditor({
           >
             {/* cyan accent bar for each set */}
             <div className="absolute inset-y-0 left-0 w-1 bg-cyan-200"></div>
-            <span className="w-16 text-sm text-neutral-600">Set {idx + 1}</span>
+            <span className="w-16 text-sm text-neutral-600">
+              Set {idx + 1}
+            </span>
             <WeightRepInputs
               weight={toDisplayWeight(s.weight, unit)}
               reps={s.reps}
               onWeightChange={(v) => {
                 setSets((prev) =>
-                  prev.map((p, i) => {
-                    if (i !== idx) return p;
-                    return { ...p, weight: fromDisplayWeight(v, unit) };
-                  })
+                  prev.map((p, i) =>
+                    i !== idx
+                      ? p
+                      : { ...p, weight: fromDisplayWeight(v, unit) }
+                  )
                 );
               }}
               onRepsChange={(v) => {
                 setSets((prev) =>
-                  prev.map((p, i) => {
-                    if (i !== idx) return p;
-                    return { ...p, reps: v };
-                  })
+                  prev.map((p, i) =>
+                    i !== idx ? p : { ...p, reps: v }
+                  )
                 );
               }}
             />
@@ -107,6 +150,17 @@ export default function WorkoutExerciseEditor({
             </Button>
           </div>
         ))}
+      </div>
+
+      {/* Add set control moved to bottom */}
+      <div className="mt-2 flex justify-end">
+        <Button
+          variant="secondary"
+          onClick={addSet}
+          disabled={sets.length >= 5}
+        >
+          <Plus /> Set
+        </Button>
       </div>
     </div>
   );

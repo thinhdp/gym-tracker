@@ -8,6 +8,11 @@ import WeightRepInputs from "./WeightRepInputs";
 import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
 import { useConfirm } from "./ConfirmDialog";
 
+/**
+ * History component for editing existing workouts. Provides controls
+ * to rename, reorder, remove exercises and log sets. Users can tap
+ * an exercise name to view past performance across all workouts.
+ */
 export default function WorkoutHistory({
   workouts,
   setWorkouts,
@@ -52,9 +57,7 @@ export default function WorkoutHistory({
       : null;
     const newExercise = {
       exerciseName,
-      sets: [
-        { set: 1, weight: last?.weight || 0, reps: last?.reps || 0 },
-      ],
+      sets: [{ set: 1, weight: last?.weight || 0, reps: last?.reps || 0 }],
     };
     updateWorkout(workout.id, { exercises: [...workout.exercises, newExercise] });
   };
@@ -89,6 +92,33 @@ export default function WorkoutHistory({
         )
         .sort((a, b) => (a.date < b.date ? 1 : -1))
     );
+  };
+
+  /**
+   * Display past performance for a given exercise across all workouts.
+   * When an exercise name is tapped, gather previous set records and show
+   * them via the confirm dialog. If none are found, a default message appears.
+   *
+   * @param {string} exerciseName Exercise to display past workouts for.
+   */
+  const showExerciseHistory = (exerciseName) => {
+    const lines = [];
+    workouts.forEach((wk) => {
+      wk.exercises.forEach((ex) => {
+        if (ex.exerciseName === exerciseName) {
+          ex.sets.forEach((s) => {
+            lines.push(`${wk.date}: ${s.weight}×${s.reps}`);
+          });
+        }
+      });
+    });
+    confirm({
+      title: `Past workouts for ${exerciseName}`,
+      message:
+        lines.length > 0 ? lines.join("\n") : "No previous records",
+      confirmText: "Close",
+      tone: "default",
+    });
   };
 
   return (
@@ -151,7 +181,9 @@ export default function WorkoutHistory({
                   <Input
                     value={w.name}
                     onChange={(e) =>
-                      updateWorkout(w.id, { name: e.target.value || w.date })
+                      updateWorkout(w.id, {
+                        name: e.target.value || w.date,
+                      })
                     }
                   />
                 </div>
@@ -177,7 +209,12 @@ export default function WorkoutHistory({
                     <div className="absolute inset-y-0 left-0 w-1 bg-cyan-300"></div>
                     <div className="mb-2 flex items-center justify-between">
                       <div className="font-medium">
-                        {we.exerciseName}
+                        <span
+                          className="cursor-pointer underline"
+                          onClick={() => showExerciseHistory(we.exerciseName)}
+                        >
+                          {we.exerciseName}
+                        </span>
                         {(() => {
                           const rec =
                             exercises.find(
