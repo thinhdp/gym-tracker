@@ -7,10 +7,10 @@ import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
 import { useConfirm } from "./ConfirmDialog";
 
 /**
- * Editor for a single exercise within a workout.  Displays the exercise name,
- * recommended rep range (if provided), and allows reordering, removal and
- * editing of individual sets.  The add‑set control is positioned at the
- * bottom of the card per updated design.
+ * Editor for a single exercise within a workout.
+ * Displays the exercise name, recommended rep range (if provided),
+ * allows reordering and removal, editing of individual sets,
+ * and tapping the exercise name to view past history.
  */
 export default function WorkoutExerciseEditor({
   item,
@@ -23,6 +23,7 @@ export default function WorkoutExerciseEditor({
   onMoveDown,
   canMoveUp = false,
   canMoveDown = false,
+  onShowHistory = () => {}, // NEW: optional handler to display history
 }) {
   const [sets, setSets] = useState(item.sets);
   const confirm = useConfirm();
@@ -60,9 +61,16 @@ export default function WorkoutExerciseEditor({
       <div className="mb-2 flex items-center justify-between">
         {/* Exercise title and reorder controls */}
         <div className="flex items-center gap-2 font-medium">
-          <span>{item.exerciseName}</span>
+          <span
+            className="cursor-pointer underline"
+            onClick={() => onShowHistory(item.exerciseName)}
+          >
+            {item.exerciseName}
+          </span>
           {recommendRep ? (
-            <span className="ml-2 text-xs text-neutral-500">({recommendRep})</span>
+            <span className="ml-2 text-xs text-neutral-500">
+              ({recommendRep})
+            </span>
           ) : null}
           {onMoveUp && (
             <Button
@@ -86,11 +94,9 @@ export default function WorkoutExerciseEditor({
           )}
         </div>
         {/* Remove exercise */}
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" onClick={onRemove}>
-            <Trash2 />
-          </Button>
-        </div>
+        <Button variant="ghost" onClick={onRemove}>
+          <Trash2 />
+        </Button>
       </div>
 
       {/* Header row for sets */}
@@ -112,24 +118,26 @@ export default function WorkoutExerciseEditor({
           >
             {/* cyan accent bar for each set */}
             <div className="absolute inset-y-0 left-0 w-1 bg-cyan-200"></div>
-            <span className="w-16 text-sm text-neutral-600">Set {idx + 1}</span>
+            <span className="w-16 text-sm text-neutral-600">
+              Set {idx + 1}
+            </span>
             <WeightRepInputs
               weight={toDisplayWeight(s.weight, unit)}
               reps={s.reps}
               onWeightChange={(v) => {
                 setSets((prev) =>
-                  prev.map((p, i) => {
-                    if (i !== idx) return p;
-                    return { ...p, weight: fromDisplayWeight(v, unit) };
-                  })
+                  prev.map((p, i) =>
+                    i !== idx
+                      ? p
+                      : { ...p, weight: fromDisplayWeight(v, unit) }
+                  )
                 );
               }}
               onRepsChange={(v) => {
                 setSets((prev) =>
-                  prev.map((p, i) => {
-                    if (i !== idx) return p;
-                    return { ...p, reps: v };
-                  })
+                  prev.map((p, i) =>
+                    i !== idx ? p : { ...p, reps: v }
+                  )
                 );
               }}
             />
@@ -146,7 +154,11 @@ export default function WorkoutExerciseEditor({
 
       {/* Add set control moved to bottom */}
       <div className="mt-2 flex justify-end">
-        <Button variant="secondary" onClick={addSet} disabled={sets.length >= 5}>
+        <Button
+          variant="secondary"
+          onClick={addSet}
+          disabled={sets.length >= 5}
+        >
           <Plus /> Set
         </Button>
       </div>
