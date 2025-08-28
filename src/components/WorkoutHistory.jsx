@@ -199,7 +199,9 @@ export default function WorkoutHistory({
                       <div className="font-medium">
                         <span
                           className="cursor-pointer underline"
-                          onClick={() => setHistoryExercise(we.exerciseName)}
+                          onClick={() =>
+                            setHistoryExercise(we.exerciseName)
+                          }
                         >
                           {we.exerciseName}
                         </span>
@@ -245,7 +247,10 @@ export default function WorkoutHistory({
                             updateWorkout(w.id, {
                               exercises: w.exercises.map((e2, i2) =>
                                 i2 === idx
-                                  ? { ...e2, exerciseName: newName }
+                                  ? {
+                                      ...e2,
+                                      exerciseName: newName,
+                                    }
                                   : e2
                               ),
                             });
@@ -303,36 +308,43 @@ export default function WorkoutHistory({
                             reps={s.reps}
                             onWeightChange={(v) => {
                               updateWorkout(w.id, {
-                                exercises: w.exercises.map((e2, i2) => {
-                                  if (i2 !== idx) return e2;
-                                  return {
-                                    ...e2,
-                                    sets: e2.sets.map((ss, j) => {
-                                      if (j !== sidx) return ss;
-                                      return {
-                                        ...ss,
-                                        weight: fromDisplayWeight(v, unit),
-                                      };
-                                    }),
-                                  };
-                                }),
+                                exercises: w.exercises.map(
+                                  (e2, i2) => {
+                                    if (i2 !== idx) return e2;
+                                    return {
+                                      ...e2,
+                                      sets: e2.sets.map((ss, j) => {
+                                        if (j !== sidx) return ss;
+                                        return {
+                                          ...ss,
+                                          weight: fromDisplayWeight(
+                                            v,
+                                            unit
+                                          ),
+                                        };
+                                      }),
+                                    };
+                                  }
+                                ),
                               });
                             }}
                             onRepsChange={(v) => {
                               updateWorkout(w.id, {
-                                exercises: w.exercises.map((e2, i2) => {
-                                  if (i2 !== idx) return e2;
-                                  return {
-                                    ...e2,
-                                    sets: e2.sets.map((ss, j) => {
-                                      if (j !== sidx) return ss;
-                                      return {
-                                        ...ss,
-                                        reps: v,
-                                      };
-                                    }),
-                                  };
-                                }),
+                                exercises: w.exercises.map(
+                                  (e2, i2) => {
+                                    if (i2 !== idx) return e2;
+                                    return {
+                                      ...e2,
+                                      sets: e2.sets.map((ss, j) => {
+                                        if (j !== sidx) return ss;
+                                        return {
+                                          ...ss,
+                                          reps: v,
+                                        };
+                                      }),
+                                    };
+                                  }
+                                ),
                               });
                             }}
                           />
