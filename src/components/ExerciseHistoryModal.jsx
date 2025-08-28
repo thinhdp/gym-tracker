@@ -1,5 +1,7 @@
 import React from "react";
 import { Button } from "./ui/Button";
+import { Badge } from "./ui/Badge";
+import { CalendarIcon } from "./ui/Icons";
 import { toDisplayWeight } from "../lib/units";
 
 /**
@@ -22,16 +24,18 @@ export default function ExerciseHistoryModal({
 }) {
   if (!exerciseName) return null;
 
+  // Filter workouts that contain the exercise
   const filtered = (workouts || []).filter((w) =>
     (w.exercises || []).some((e) => e.exerciseName === exerciseName)
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl p-4 max-w-md w-full space-y-4">
-        <div className="flex justify-between items-center">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-white max-w-lg w-full rounded-xl shadow-lg p-4 overflow-y-auto max-h-[80vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <div className="font-medium">{exerciseName}</div>
+            <div className="text-lg font-medium">{exerciseName}</div>
             <div className="text-sm text-neutral-500">
               Past workouts containing this exercise
             </div>
@@ -40,32 +44,44 @@ export default function ExerciseHistoryModal({
             Close
           </Button>
         </div>
-        {filtered.length === 0 ? (
-          <div className="text-sm text-neutral-500">
-            No past workouts.
-          </div>
-        ) : (
-          filtered.map((w) => {
+
+        {/* Body */}
+        <div className="space-y-3">
+          {filtered.length === 0 && (
+            <p className="text-sm text-neutral-500">No past workouts.</p>
+          )}
+          {filtered.map((w) => {
             const item = (w.exercises || []).find(
               (e) => e.exerciseName === exerciseName
             );
             if (!item) return null;
             return (
-              <div key={w.id} className="border rounded-md p-2 space-y-1">
-                <div className="font-semibold">{w.date}</div>
-                <div className="text-xs text-neutral-500">
-                  {w.name || w.date}
+              <div
+                key={w.id}
+                className="border rounded-lg p-3 space-y-1"
+              >
+                {/* Date and workout name */}
+                <div className="flex items-center gap-2">
+                  <Badge>
+                    <CalendarIcon /> {w.date}
+                  </Badge>
+                  <span className="font-medium text-sm">
+                    {w.name || w.date}
+                  </span>
                 </div>
-                {item.sets.map((s) => (
-                  <div key={s.set} className="text-sm">
-                    Set {s.set}:{" "}
-                    {toDisplayWeight(s.weight, unit)} {unit} × {s.reps}
-                  </div>
-                ))}
+                {/* Sets */}
+                <div className="flex flex-wrap gap-1 ml-4">
+                  {item.sets.map((s) => (
+                    <Badge key={s.set}>
+                      Set {s.set}:{" "}
+                      {toDisplayWeight(s.weight, unit)} {unit} × {s.reps}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             );
-          })
-        )}
+          })}
+        </div>
       </div>
     </div>
   );
