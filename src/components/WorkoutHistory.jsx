@@ -7,11 +7,13 @@ import NumberInputAutoClear from "./NumberInputAutoClear";
 import WeightRepInputs from "./WeightRepInputs";
 import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
 import { useConfirm } from "./ConfirmDialog";
+import ExerciseHistoryModal from "./ExerciseHistoryModal";
 
 /**
  * History component for editing existing workouts. Provides controls
  * to rename, reorder, remove exercises and log sets. Users can tap
- * an exercise name to view past performance across all workouts.
+ * an exercise name to view past performance across all workouts via
+ * the shared history modal.
  */
 export default function WorkoutHistory({
   workouts,
@@ -22,6 +24,7 @@ export default function WorkoutHistory({
 }) {
   const [expandedId, setExpandedId] = useState(null);
   const confirm = useConfirm();
+  const [historyExercise, setHistoryExercise] = useState(null);
 
   const updateWorkout = (id, patch) => {
     setWorkouts((prev) =>
@@ -57,9 +60,17 @@ export default function WorkoutHistory({
       : null;
     const newExercise = {
       exerciseName,
-      sets: [{ set: 1, weight: last?.weight || 0, reps: last?.reps || 0 }],
+      sets: [
+        {
+          set: 1,
+          weight: last?.weight || 0,
+          reps: last?.reps || 0,
+        },
+      ],
     };
-    updateWorkout(workout.id, { exercises: [...workout.exercises, newExercise] });
+    updateWorkout(workout.id, {
+      exercises: [...workout.exercises, newExercise],
+    });
   };
 
   const moveItem = (arr, from, to) => {
@@ -94,40 +105,15 @@ export default function WorkoutHistory({
     );
   };
 
-  /**
-   * Display past performance for a given exercise across all workouts.
-   * When an exercise name is tapped, gather previous set records and show
-   * them via the confirm dialog. If none are found, a default message appears.
-   *
-   * @param {string} exerciseName Exercise to display past workouts for.
-   */
-  const showExerciseHistory = (exerciseName) => {
-    const lines = [];
-    workouts.forEach((wk) => {
-      wk.exercises.forEach((ex) => {
-        if (ex.exerciseName === exerciseName) {
-          ex.sets.forEach((s) => {
-            lines.push(`${wk.date}: ${s.weight}×${s.reps}`);
-          });
-        }
-      });
-    });
-    confirm({
-      title: `Past workouts for ${exerciseName}`,
-      message:
-        lines.length > 0 ? lines.join("\n") : "No previous records",
-      confirmText: "Close",
-      tone: "default",
-    });
-  };
-
   return (
     <div className="mt-4 space-y-3">
       <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-600">
         History
       </h3>
       {workouts.length === 0 && (
-        <p className="text-sm text-neutral-500">No workouts logged yet.</p>
+        <p className="text-sm text-neutral-500">
+          No workouts logged yet.
+        </p>
       )}
       {workouts.map((w) => (
         <div key={w.id} className="rounded-2xl border">
@@ -177,7 +163,9 @@ export default function WorkoutHistory({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-neutral-600">Workout name</label>
+                  <label className="text-xs text-neutral-600">
+                    Workout name
+                  </label>
                   <Input
                     value={w.name}
                     onChange={(e) =>
@@ -211,7 +199,7 @@ export default function WorkoutHistory({
                       <div className="font-medium">
                         <span
                           className="cursor-pointer underline"
-                          onClick={() => showExerciseHistory(we.exerciseName)}
+                          onClick={() => setHistoryExercise(we.exerciseName)}
                         >
                           {we.exerciseName}
                         </span>
@@ -248,7 +236,10 @@ export default function WorkoutHistory({
                           variant="secondary"
                           onClick={() => {
                             const newName = (
-                              prompt("Rename exercise to:", we.exerciseName) || ""
+                              prompt(
+                                "Rename exercise to:",
+                                we.exerciseName
+                              ) || ""
                             ).trim();
                             if (!newName) return;
                             updateWorkout(w.id, {
@@ -358,18 +349,22 @@ export default function WorkoutHistory({
                               }).then((ok) => {
                                 if (!ok) return;
                                 updateWorkout(w.id, {
-                                  exercises: w.exercises.map((e2, i2) => {
-                                    if (i2 !== idx) return e2;
-                                    return {
-                                      ...e2,
-                                      sets: e2.sets
-                                        .filter((_, j) => j !== sidx)
-                                        .map((ss, j) => ({
-                                          ...ss,
-                                          set: j + 1,
-                                        })),
-                                    };
-                                  }),
+                                  exercises: w.exercises.map(
+                                    (e2, i2) => {
+                                      if (i2 !== idx) return e2;
+                                      return {
+                                        ...e2,
+                                        sets: e2.sets
+                                          .filter(
+                                            (_, j) => j !== sidx
+                                          )
+                                          .map((ss, j) => ({
+                                            ...ss,
+                                            set: j + 1,
+                                          })),
+                                      };
+                                    }
+                                  ),
                                 });
                               });
                             }}
@@ -413,6 +408,14 @@ export default function WorkoutHistory({
           )}
         </div>
       ))}
+
+      {/* Shared history modal */}
+      <ExerciseHistoryModal
+        exerciseName={historyExercise}
+        workouts={workouts}
+        unit={unit}
+        onClose={() => setHistoryExercise(null)}
+      />
     </div>
   );
 }
