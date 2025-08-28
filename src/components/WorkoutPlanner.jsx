@@ -7,13 +7,15 @@ import AddExerciseInput from "./AddExerciseInput";
 import WorkoutExerciseEditor from "./WorkoutExerciseEditor";
 import { todayStr, uuid } from "../lib/storage";
 import { useConfirm } from "./ConfirmDialog";
+import ExerciseHistoryModal from "./ExerciseHistoryModal";
 
 /**
- * Planner component for creating a new workout. Allows the user to specify
- * multiple dates, name the workout, add exercises and arrange them. The
+ * Planner component for creating a new workout.  Allows the user to specify
+ * multiple dates, name the workout, add exercises and arrange them.  The
  * reorder buttons are passed through to the editor so they appear within
  * the card header and the add‑set button is rendered at the bottom of
- * each exercise card.
+ * each exercise card.  A history modal can be invoked by tapping on an
+ * exercise name.
  */
 export default function WorkoutPlanner({
   exercises,
@@ -27,6 +29,7 @@ export default function WorkoutPlanner({
   const [name, setName] = useState("");
   const [items, setItems] = useState([]);
   const confirm = useConfirm();
+  const [historyExercise, setHistoryExercise] = useState(null);
 
   // Helper to move an element in an array
   const moveItem = (arr, from, to) => {
@@ -41,30 +44,6 @@ export default function WorkoutPlanner({
     setItems((prev) => moveItem(prev, idx, idx - 1));
   const moveItemDown = (idx) =>
     setItems((prev) => moveItem(prev, idx, idx + 1));
-
-  /**
-   * Show past records for the given exercise across all existing workouts.
-   * Uses the confirm dialog to display entries in the form "date: weight×reps".
-   */
-  const showExerciseHistory = (exerciseName) => {
-    const lines = [];
-    workouts.forEach((wk) => {
-      wk.exercises.forEach((ex) => {
-        if (ex.exerciseName === exerciseName) {
-          ex.sets.forEach((s) => {
-            lines.push(`${wk.date}: ${s.weight}×${s.reps}`);
-          });
-        }
-      });
-    });
-    confirm({
-      title: `Past workouts for ${exerciseName}`,
-      message:
-        lines.length > 0 ? lines.join("\n") : "No previous records",
-      confirmText: "Close",
-      tone: "default",
-    });
-  };
 
   const addDate = () =>
     setDates((prev) => [...prev, todayStr()]);
@@ -156,7 +135,9 @@ export default function WorkoutPlanner({
         <div className="grid gap-3">
           {/* Date inputs */}
           <div className="space-y-2">
-            <label className="text-xs text-neutral-600">Workout date(s)</label>
+            <label className="text-xs text-neutral-600">
+              Workout date(s)
+            </label>
             {dates.map((d, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <Input
@@ -189,7 +170,9 @@ export default function WorkoutPlanner({
 
           {/* Workout name */}
           <div className="space-y-1">
-            <label className="text-xs text-neutral-600">Workout name (optional)</label>
+            <label className="text-xs text-neutral-600">
+              Workout name (optional)
+            </label>
             <Input
               placeholder="If blank, uses date"
               value={name}
@@ -198,16 +181,23 @@ export default function WorkoutPlanner({
           </div>
 
           {/* Add exercise */}
-          <AddExerciseInput allExercises={exercises} onAdd={addExerciseByName} />
+          <AddExerciseInput
+            allExercises={exercises}
+            onAdd={addExerciseByName}
+          />
 
           {/* Exercises list */}
           <div className="space-y-2">
             {items.length === 0 && (
-              <p className="text-sm text-neutral-500">No exercises added yet.</p>
+              <p className="text-sm text-neutral-500">
+                No exercises added yet.
+              </p>
             )}
             {items.map((it, idx) => {
               const rec =
-                exercises.find((e) => e.name === it.exerciseName)?.recommendRep || "";
+                exercises.find(
+                  (e) => e.name === it.exerciseName
+                )?.recommendRep || "";
               return (
                 <WorkoutExerciseEditor
                   key={it.exerciseName}
@@ -217,20 +207,26 @@ export default function WorkoutPlanner({
                   onChange={(patch) =>
                     setItems((prev) =>
                       prev.map((x) =>
-                        x.exerciseName === it.exerciseName ? { ...x, ...patch } : x
+                        x.exerciseName === it.exerciseName
+                          ? { ...x, ...patch }
+                          : x
                       )
                     )
                   }
                   onRemove={() => {
                     confirm({
                       title: `Remove "${it.exerciseName}"?`,
-                      message: "This removes it from the current plan.",
+                      message:
+                        "This removes it from the current plan.",
                       confirmText: "Remove",
                       tone: "destructive",
                     }).then((ok) => {
                       if (ok)
                         setItems((prev) =>
-                          prev.filter((x) => x.exerciseName !== it.exerciseName)
+                          prev.filter(
+                            (x) =>
+                              x.exerciseName !== it.exerciseName
+                          )
                         );
                     });
                   }}
@@ -238,7 +234,9 @@ export default function WorkoutPlanner({
                   onMoveDown={() => moveItemDown(idx)}
                   canMoveUp={idx > 0}
                   canMoveDown={idx < items.length - 1}
-                  onShowHistory={(name) => showExerciseHistory(name)} // pass history handler
+                  onShowHistory={(name) =>
+                    setHistoryExercise(name)
+                  }
                 />
               );
             })}
@@ -266,6 +264,14 @@ export default function WorkoutPlanner({
           </div>
         </div>
       </CardContent>
+
+      {/* History modal reused across components */}
+      <ExerciseHistoryModal
+        exerciseName={historyExercise}
+        workouts={workouts}
+        unit={unit}
+        onClose={() => setHistoryExercise(null)}
+      />
     </Card>
   );
 }
