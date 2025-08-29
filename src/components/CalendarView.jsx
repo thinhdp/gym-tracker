@@ -11,7 +11,6 @@ import { useConfirm } from "./ConfirmDialog";
 import { useApp } from "../context/AppContext";
 
 export default function CalendarView() {
-  // Pull workouts, exercises and unit from the shared context instead of props.
   const {
     workouts,
     setWorkouts,
@@ -53,14 +52,12 @@ export default function CalendarView() {
     days.push(null);
   }
   for (let d = 1; d <= lastDay; d++) {
-    const dateStr = ymd(
-      new Date(year, month, d).toISOString()
-    );
+    // ymd expects: year (full year), month (0–based), day (1–31)
+    const dateStr = ymd(year, month, d);
     days.push(dateStr);
   }
 
-  const selectedWorkouts =
-    byDate[selected] || [];
+  const selectedWorkouts = byDate[selected] || [];
 
   const addWorkout = () => {
     const newWorkout = {
@@ -163,7 +160,9 @@ export default function CalendarView() {
               return (
                 <Button
                   key={idx}
-                  variant={isSelected ? "primary" : "ghost"}
+                  variant={
+                    isSelected ? "primary" : "ghost"
+                  }
                   disabled={!ds}
                   onClick={() => ds && setSelected(ds)}
                   className="h-10"
