@@ -8,6 +8,7 @@ import WeightRepInputs from "./WeightRepInputs";
 import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
 import { useConfirm } from "./ConfirmDialog";
 import ExerciseHistoryModal from "./ExerciseHistoryModal";
+import { createExerciseEntry } from "../lib/exerciseUtils";
 
 /**
  * History component for editing existing workouts. Provides controls
@@ -38,38 +39,12 @@ export default function WorkoutHistory({
     setWorkouts((prev) => prev.filter((w) => w.id !== id));
   };
 
+  // Use helper to create or fetch exercise and prefill sets
   const addExerciseToWorkout = (workout, exerciseName) => {
-    const exists = exercises.find(
-      (e) => e.name.toLowerCase() === exerciseName.toLowerCase()
-    );
-    if (!exists) {
-      const created = {
-        name: exerciseName,
-        recommendRep: "",
-        lastWorkout: null,
-        mainMuscle: "",
-        secondaryMuscles: "",
-        type: "",
-        equipment: "",
-        force: "",
-      };
-      setExercises((prev) => [...prev, created]);
-    }
-    const last = exists?.lastWorkout?.sets?.length
-      ? exists.lastWorkout.sets.at(-1)
-      : null;
-    const newExercise = {
-      exerciseName,
-      sets: [
-        {
-          set: 1,
-          weight: last?.weight || 0,
-          reps: last?.reps || 0,
-        },
-      ],
-    };
+    const entry = createExerciseEntry(exerciseName, exercises, setExercises);
+    if (!entry) return;
     updateWorkout(workout.id, {
-      exercises: [...workout.exercises, newExercise],
+      exercises: [...workout.exercises, entry],
     });
   };
 
@@ -126,10 +101,13 @@ export default function WorkoutHistory({
               <Button
                 variant="secondary"
                 onClick={() =>
-                  setExpandedId((prev) => (prev === w.id ? null : w.id))
+                  setExpandedId((prev) =>
+                    prev === w.id ? null : w.id
+                  )
                 }
               >
-                Details <ChevronDown open={expandedId === w.id} />
+                Details{" "}
+                <ChevronDown open={expandedId === w.id} />
               </Button>
               <Button
                 variant="ghost"
@@ -153,7 +131,9 @@ export default function WorkoutHistory({
             <div className="space-y-3 p-4 border-t">
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-xs text-neutral-600">Date</label>
+                  <label className="text-xs text-neutral-600">
+                    Date
+                  </label>
                   <Input
                     type="date"
                     value={w.date}
@@ -183,7 +163,9 @@ export default function WorkoutHistory({
                 </div>
                 <AddExerciseInput
                   allExercises={exercises}
-                  onAdd={(name) => addExerciseToWorkout(w, name)}
+                  onAdd={(name) =>
+                    addExerciseToWorkout(w, name)
+                  }
                 />
               </div>
 
@@ -200,7 +182,9 @@ export default function WorkoutHistory({
                         <span
                           className="cursor-pointer underline"
                           onClick={() =>
-                            setHistoryExercise(we.exerciseName)
+                            setHistoryExercise(
+                              we.exerciseName
+                            )
                           }
                         >
                           {we.exerciseName}
@@ -208,7 +192,8 @@ export default function WorkoutHistory({
                         {(() => {
                           const rec =
                             exercises.find(
-                              (e) => e.name === we.exerciseName
+                              (e) =>
+                                e.name === we.exerciseName
                             )?.recommendRep || "";
                           return rec ? (
                             <span className="ml-2 text-xs text-neutral-500">
@@ -221,7 +206,9 @@ export default function WorkoutHistory({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => moveExerciseUp(w.id, idx)}
+                          onClick={() =>
+                            moveExerciseUp(w.id, idx)
+                          }
                           disabled={idx === 0}
                         >
                           ▲
@@ -229,8 +216,12 @@ export default function WorkoutHistory({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => moveExerciseDown(w.id, idx)}
-                          disabled={idx === w.exercises.length - 1}
+                          onClick={() =>
+                            moveExerciseDown(w.id, idx)
+                          }
+                          disabled={
+                            idx === w.exercises.length - 1
+                          }
                         >
                           ▼
                         </Button>
@@ -245,13 +236,14 @@ export default function WorkoutHistory({
                             ).trim();
                             if (!newName) return;
                             updateWorkout(w.id, {
-                              exercises: w.exercises.map((e2, i2) =>
-                                i2 === idx
-                                  ? {
-                                      ...e2,
-                                      exerciseName: newName,
-                                    }
-                                  : e2
+                              exercises: w.exercises.map(
+                                (e2, i2) =>
+                                  i2 === idx
+                                    ? {
+                                        ...e2,
+                                        exerciseName: newName,
+                                      }
+                                    : e2
                               ),
                             });
                           }}
@@ -287,7 +279,9 @@ export default function WorkoutHistory({
                       <div className="flex items-center gap-3 px-3 py-1 text-xs text-neutral-500">
                         <span className="w-16" />
                         <div className="flex-1 grid grid-cols-2 gap-3">
-                          <div>Weight ({unit})</div>
+                          <div>
+                            Weight ({unit})
+                          </div>
                           <div>Reps</div>
                         </div>
                         <span className="w-10" />
@@ -304,7 +298,10 @@ export default function WorkoutHistory({
                             Set {sidx + 1}
                           </span>
                           <WeightRepInputs
-                            weight={toDisplayWeight(s.weight, unit)}
+                            weight={toDisplayWeight(
+                              s.weight,
+                              unit
+                            )}
                             reps={s.reps}
                             onWeightChange={(v) => {
                               updateWorkout(w.id, {
@@ -314,13 +311,15 @@ export default function WorkoutHistory({
                                     return {
                                       ...e2,
                                       sets: e2.sets.map((ss, j) => {
-                                        if (j !== sidx) return ss;
+                                        if (j !== sidx)
+                                          return ss;
                                         return {
                                           ...ss,
-                                          weight: fromDisplayWeight(
-                                            v,
-                                            unit
-                                          ),
+                                          weight:
+                                            fromDisplayWeight(
+                                              v,
+                                              unit
+                                            ),
                                         };
                                       }),
                                     };
@@ -336,7 +335,8 @@ export default function WorkoutHistory({
                                     return {
                                       ...e2,
                                       sets: e2.sets.map((ss, j) => {
-                                        if (j !== sidx) return ss;
+                                        if (j !== sidx)
+                                          return ss;
                                         return {
                                           ...ss,
                                           reps: v,
@@ -352,10 +352,14 @@ export default function WorkoutHistory({
                             variant="ghost"
                             disabled={we.sets.length <= 1}
                             onClick={() => {
-                              if (we.sets.length <= 1) return;
+                              if (
+                                we.sets.length <= 1
+                              )
+                                return;
                               confirm({
                                 title: "Delete this set?",
-                                message: "This can't be undone.",
+                                message:
+                                  "This can't be undone.",
                                 confirmText: "Delete",
                                 tone: "destructive",
                               }).then((ok) => {
@@ -363,17 +367,26 @@ export default function WorkoutHistory({
                                 updateWorkout(w.id, {
                                   exercises: w.exercises.map(
                                     (e2, i2) => {
-                                      if (i2 !== idx) return e2;
+                                      if (i2 !== idx)
+                                        return e2;
                                       return {
                                         ...e2,
                                         sets: e2.sets
                                           .filter(
-                                            (_, j) => j !== sidx
+                                            (_, j) =>
+                                              j !== sidx
                                           )
-                                          .map((ss, j) => ({
-                                            ...ss,
-                                            set: j + 1,
-                                          })),
+                                          .map(
+                                            (
+                                              ss,
+                                              j
+                                            ) => ({
+                                              ...ss,
+                                              set:
+                                                j +
+                                                1,
+                                            })
+                                          ),
                                       };
                                     }
                                   ),
@@ -392,20 +405,24 @@ export default function WorkoutHistory({
                           className="w-fit"
                           onClick={() =>
                             updateWorkout(w.id, {
-                              exercises: w.exercises.map((e2, i2) => {
-                                if (i2 !== idx) return e2;
-                                return {
-                                  ...e2,
-                                  sets: [
-                                    ...e2.sets,
-                                    {
-                                      set: e2.sets.length + 1,
-                                      weight: 0,
-                                      reps: 0,
-                                    },
-                                  ],
-                                };
-                              }),
+                              exercises: w.exercises.map(
+                                (e2, i2) => {
+                                  if (i2 !== idx)
+                                    return e2;
+                                  return {
+                                    ...e2,
+                                    sets: [
+                                      ...e2.sets,
+                                      {
+                                        set:
+                                          e2.sets.length + 1,
+                                        weight: 0,
+                                        reps: 0,
+                                      },
+                                    ],
+                                  };
+                                }
+                              ),
                             })
                           }
                         >
@@ -420,7 +437,6 @@ export default function WorkoutHistory({
           )}
         </div>
       ))}
-
       {/* Shared history modal */}
       <ExerciseHistoryModal
         exerciseName={historyExercise}
