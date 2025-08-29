@@ -8,14 +8,11 @@ import WorkoutExerciseEditor from "./WorkoutExerciseEditor";
 import { todayStr, uuid } from "../lib/storage";
 import { useConfirm } from "./ConfirmDialog";
 import ExerciseHistoryModal from "./ExerciseHistoryModal";
+import { createExerciseEntry } from "../lib/exerciseUtils";
 
 /**
  * Planner component for creating a new workout.  Allows the user to specify
- * multiple dates, name the workout, add exercises and arrange them.  The
- * reorder buttons are passed through to the editor so they appear within
- * the card header and the add‑set button is rendered at the bottom of
- * each exercise card.  A history modal can be invoked by tapping on an
- * exercise name.
+ * multiple dates, name the workout, add exercises and arrange them.
  */
 export default function WorkoutPlanner({
   exercises,
@@ -54,45 +51,16 @@ export default function WorkoutPlanner({
       prev.map((d, i) => (i === idx ? val : d))
     );
 
+  // Use helper to create or fetch exercise and prefill sets
   const addExerciseByName = (rawName) => {
-    const n = (rawName || "").trim();
-    if (!n) return;
-    const exists = exercises.find(
-      (e) => e.name.toLowerCase() === n.toLowerCase()
-    );
-    if (!exists) {
-      const created = {
-        name: n,
-        recommendRep: "",
-        lastWorkout: null,
-        mainMuscle: "",
-        secondaryMuscles: "",
-        type: "",
-        equipment: "",
-        force: "",
-      };
-      setExercises((prev) => [...prev, created]);
-    }
+    const entry = createExerciseEntry(rawName, exercises, setExercises);
+    if (!entry) return;
     if (
       !items.some(
-        (i) => i.exerciseName.toLowerCase() === n.toLowerCase()
+        (i) => i.exerciseName.toLowerCase() === entry.exerciseName.toLowerCase()
       )
     ) {
-      let initSets = [{ set: 1, weight: 0, reps: 0 }];
-      if (exists?.lastWorkout?.sets?.length) {
-        const last = exists.lastWorkout.sets.at(-1);
-        initSets = [
-          {
-            set: 1,
-            weight: last.weight || 0,
-            reps: last.reps || 0,
-          },
-        ];
-      }
-      setItems((prev) => [
-        ...prev,
-        { exerciseName: n, sets: initSets },
-      ]);
+      setItems((prev) => [...prev, entry]);
     }
   };
 
