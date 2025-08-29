@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./index.css";
 import seedExercises from "./data/exercises_seed.json";
-import { loadLS, saveLS, K_EX, K_WO } from "./lib/storage";
+import { loadLS, saveLS, K_EX, K_WO, K_UNIT, K_TAB } from "./lib/storage";
 import { Button } from "./components/ui/Button";
 import DataManagementMenu from "./components/DataManagementMenu";
 import WorkoutPlanner from "./components/WorkoutPlanner";
@@ -12,23 +12,27 @@ import Notepad from "./components/Notepad";
 import { ConfirmProvider } from "./components/ConfirmDialog";
 
 /**
- * Main application component. Handles top‑level state for exercises and
- * workouts, persists them to localStorage, and renders the various
- * feature tabs (planner, calendar, exercises, notepad). A data
- * management menu is provided in the header to consolidate export and
- * import controls.
+ * Main application component. Handles top‑level state for exercises and workouts,
+ * persists them to localStorage, and renders the various feature tabs.
  */
 export default function App() {
-  const [tab, setTab] = useState("workouts");
+  // Initialise tab and unit from localStorage (with sensible fallbacks)
+  const [tab, setTab] = useState(() => loadLS(K_TAB, "workouts"));
+  const [unit, setUnit] = useState(() => loadLS(K_UNIT, "kg"));
+
+  // Load exercises and workouts from localStorage
   const [exercises, setExercises] = useState(() =>
     loadLS(K_EX, seedExercises)
   );
   const [workouts, setWorkouts] = useState(() => loadLS(K_WO, []));
-  const [unit, setUnit] = useState("kg");
 
-  // Persist to localStorage when exercises/workouts change
+  // Persist exercises and workouts when they change
   useEffect(() => saveLS(K_EX, exercises), [exercises]);
   useEffect(() => saveLS(K_WO, workouts), [workouts]);
+
+  // Persist tab and unit preferences
+  useEffect(() => saveLS(K_TAB, tab), [tab]);
+  useEffect(() => saveLS(K_UNIT, unit), [unit]);
 
   // Derive lastWorkout info for exercises whenever workouts update
   useEffect(() => {
@@ -63,16 +67,6 @@ export default function App() {
     <ConfirmProvider>
       <div className="max-w-3xl mx-auto p-4 space-y-4">
         {/* Header */}
-        {/*
-         * Header layout: always place the app name and action buttons
-         * (Data management and unit toggle) on the same row. Previously
-         * this layout stacked on small screens (flex-col) and switched
-         * to a row only on medium screens (sm:flex-row). To ensure the
-         * app name, data menu and unit toggle are always aligned on a
-         * single row regardless of viewport width, we remove the
-         * flex-col behavior and use a simple flex row with space
-         * between.
-         */}
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-2xl font-bold">Gym&nbsp;Tracker</h1>
           <div className="flex items-center gap-4">
@@ -92,6 +86,7 @@ export default function App() {
             </Button>
           </div>
         </div>
+
         {/* Tab navigation */}
         <div className="flex gap-2 border-b pb-2">
           <Button
@@ -119,6 +114,7 @@ export default function App() {
             Notepad
           </Button>
         </div>
+
         {/* Main content */}
         {tab === "workouts" && (
           <>
@@ -156,6 +152,7 @@ export default function App() {
           />
         )}
         {tab === "notepad" && <Notepad />}
+
         {/* Footer */}
         <p className="text-center text-xs text-neutral-500">
           Data stored in your browser
