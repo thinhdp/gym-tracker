@@ -1,5 +1,7 @@
 export const K_EX = "mgym.exercises.v1";
 export const K_WO = "mgym.workouts.v1";
+export const K_UNIT = "mgym.unit";
+export const K_TAB = "mgym.tab";
 export const todayStr = () => new Date().toISOString().slice(0, 10);
 export const fmtDate = (d) => d;
 
