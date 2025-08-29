@@ -157,24 +157,23 @@ export default function CalendarView() {
             {days.map((ds, idx) => {
               const isSelected = ds === selected;
               const count = ds ? (byDate[ds]?.length || 0) : 0;
-              return (
-                <Button
-                  key={idx}
-                  variant={
-                    isSelected ? "primary" : "ghost"
-                  }
-                  disabled={!ds}
-                  onClick={() => ds && setSelected(ds)}
-                  className="h-10"
-                >
-                  {ds ? Number(ds.slice(-2)) : ""}
-                  {count > 0 && (
-                    <span className="block text-xs text-neutral-500">
-                      {count} workout{count > 1 ? "s" : ""}
-                    </span>
-                  )}
-                </Button>
-              );
+               return (
+                 <Button
+                   key={idx}
+                   variant={
+                     isSelected ? "primary" : "ghost"
+                   }
+                   disabled={!ds}
+                   onClick={() => ds && setSelected(ds)}
+                 >
+                   {ds ? Number(ds.slice(-2)) : ""}
+                   {count > 0 && (
+                     <span className="ml-1 text-xs text-neutral-500">
+                       {count} workout{count > 1 ? "s" : ""}
+                     </span>
+                   )}
+                 </Button>
+               );
             })}
           </div>
         </CardContent>
