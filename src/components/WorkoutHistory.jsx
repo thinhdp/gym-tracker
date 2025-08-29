@@ -9,20 +9,20 @@ import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
 import { useConfirm } from "./ConfirmDialog";
 import ExerciseHistoryModal from "./ExerciseHistoryModal";
 import { createExerciseEntry } from "../lib/exerciseUtils";
+import { useApp } from "../context/AppContext";
 
 /**
- * History component for editing existing workouts. Provides controls
- * to rename, reorder, remove exercises and log sets. Users can tap
- * an exercise name to view past performance across all workouts via
- * the shared history modal.
+ * History component for editing existing workouts.  Uses AppContext to
+ * access workouts, exercises and unit; no props required.
  */
-export default function WorkoutHistory({
-  workouts,
-  setWorkouts,
-  exercises,
-  setExercises,
-  unit,
-}) {
+export default function WorkoutHistory() {
+  const {
+    workouts,
+    setWorkouts,
+    exercises,
+    setExercises,
+    unit,
+  } = useApp();
   const [expandedId, setExpandedId] = useState(null);
   const confirm = useConfirm();
   const [historyExercise, setHistoryExercise] = useState(null);
