@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import "./index.css";
-import seedExercises from "./data/exercises_seed.json";
-import { loadLS, saveLS, K_EX, K_WO, K_UNIT, K_TAB } from "./lib/storage";
+import { AppProvider, useApp } from "./context/AppContext";
 import { Button } from "./components/ui/Button";
 import DataManagementMenu from "./components/DataManagementMenu";
 import WorkoutPlanner from "./components/WorkoutPlanner";
@@ -12,56 +11,20 @@ import Notepad from "./components/Notepad";
 import { ConfirmProvider } from "./components/ConfirmDialog";
 
 /**
- * Main application component. Handles top‑level state for exercises and workouts,
- * persists them to localStorage, and renders the various feature tabs.
+ * Internal component that consumes AppContext and renders the app UI.
+ * This separates context consumption from the outer provider.
  */
-export default function App() {
-  // Initialise tab and unit from localStorage (with sensible fallbacks)
-  const [tab, setTab] = useState(() => loadLS(K_TAB, "workouts"));
-  const [unit, setUnit] = useState(() => loadLS(K_UNIT, "kg"));
-
-  // Load exercises and workouts from localStorage
-  const [exercises, setExercises] = useState(() =>
-    loadLS(K_EX, seedExercises)
-  );
-  const [workouts, setWorkouts] = useState(() => loadLS(K_WO, []));
-
-  // Persist exercises and workouts when they change
-  useEffect(() => saveLS(K_EX, exercises), [exercises]);
-  useEffect(() => saveLS(K_WO, workouts), [workouts]);
-
-  // Persist tab and unit preferences
-  useEffect(() => saveLS(K_TAB, tab), [tab]);
-  useEffect(() => saveLS(K_UNIT, unit), [unit]);
-
-  // Derive lastWorkout info for exercises whenever workouts update
-  useEffect(() => {
-    const latestByName = {};
-    for (const w of workouts) {
-      for (const ex of w.exercises || []) {
-        if (
-          !latestByName[ex.exerciseName] ||
-          latestByName[ex.exerciseName].date < w.date
-        ) {
-          latestByName[ex.exerciseName] = {
-            date: w.date,
-            sets: ex.sets,
-          };
-        }
-      }
-    }
-    setExercises((prev) =>
-      prev.map((e) => ({
-        ...e,
-        lastWorkout: latestByName[e.name]
-          ? {
-              date: latestByName[e.name].date,
-              sets: latestByName[e.name].sets,
-            }
-          : null,
-      }))
-    );
-  }, [workouts, setExercises]);
+function AppContent() {
+  const {
+    tab,
+    setTab,
+    unit,
+    setUnit,
+    exercises,
+    setExercises,
+    workouts,
+    setWorkouts,
+  } = useApp();
 
   return (
     <ConfirmProvider>
@@ -118,20 +81,8 @@ export default function App() {
         {/* Main content */}
         {tab === "workouts" && (
           <>
-            <WorkoutPlanner
-              exercises={exercises}
-              setExercises={setExercises}
-              workouts={workouts}
-              setWorkouts={setWorkouts}
-              unit={unit}
-            />
-            <WorkoutHistory
-              workouts={workouts}
-              setWorkouts={setWorkouts}
-              exercises={exercises}
-              setExercises={setExercises}
-              unit={unit}
-            />
+            <WorkoutPlanner />
+            <WorkoutHistory />
           </>
         )}
         {tab === "calendar" && (
@@ -159,5 +110,17 @@ export default function App() {
         </p>
       </div>
     </ConfirmProvider>
+  );
+}
+
+/**
+ * Top‑level component wraps the application in AppProvider
+ * so all children can access the shared state.
+ */
+export default function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }
