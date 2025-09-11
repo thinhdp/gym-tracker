@@ -9,6 +9,7 @@ import ExerciseManager from "./components/ExerciseManager";
 import CalendarView from "./components/CalendarView";
 import Notepad from "./components/Notepad";
 import { ConfirmProvider } from "./components/ConfirmDialog";
+import DashboardSummary from "./components/DashboardSummary";
 
 /**
  * Internal component that consumes AppContext and renders the app UI.
@@ -41,41 +42,47 @@ function AppContent() {
             />
             <Button
               variant="secondary"
-              onClick={() =>
-                setUnit((u) => (u === "kg" ? "lb" : "kg"))
-              }
+              onClick={() => setUnit((u) => (u === "kg" ? "lb" : "kg"))}
             >
               Unit: {unit.toUpperCase()}
             </Button>
           </div>
         </div>
 
-        {/* Tab navigation */}
-        <div className="flex gap-2 border-b pb-2">
-          <Button
-            variant={tab === "workouts" ? "primary" : "ghost"}
-            onClick={() => setTab("workouts")}
-          >
-            Workouts
-          </Button>
-          <Button
-            variant={tab === "calendar" ? "primary" : "ghost"}
-            onClick={() => setTab("calendar")}
-          >
-            Calendar
-          </Button>
-          <Button
-            variant={tab === "exercises" ? "primary" : "ghost"}
-            onClick={() => setTab("exercises")}
-          >
-            Exercises
-          </Button>
-          <Button
-            variant={tab === "notepad" ? "primary" : "ghost"}
-            onClick={() => setTab("notepad")}
-          >
-            Notepad
-          </Button>
+        {/* Tab navigation (scrollable) */}
+        <div className="overflow-x-auto whitespace-nowrap border-b pb-2">
+          <div className="inline-flex gap-2">
+            <Button
+              variant={tab === "workouts" ? "primary" : "ghost"}
+              onClick={() => setTab("workouts")}
+            >
+              Workouts
+            </Button>
+            <Button
+              variant={tab === "calendar" ? "primary" : "ghost"}
+              onClick={() => setTab("calendar")}
+            >
+              Calendar
+            </Button>
+            <Button
+              variant={tab === "exercises" ? "primary" : "ghost"}
+              onClick={() => setTab("exercises")}
+            >
+              Exercises
+            </Button>
+            <Button
+              variant={tab === "notepad" ? "primary" : "ghost"}
+              onClick={() => setTab("notepad")}
+            >
+              Notepad
+            </Button>
+            <Button
+              variant={tab === "summary" ? "primary" : "ghost"}
+              onClick={() => setTab("summary")}
+            >
+              Summary
+            </Button>
+          </div>
         </div>
 
         {/* Main content */}
@@ -85,6 +92,7 @@ function AppContent() {
             <WorkoutHistory />
           </>
         )}
+
         {tab === "calendar" && (
           <CalendarView
             workouts={workouts}
@@ -94,6 +102,7 @@ function AppContent() {
             unit={unit}
           />
         )}
+
         {tab === "exercises" && (
           <ExerciseManager
             exercises={exercises}
@@ -102,7 +111,10 @@ function AppContent() {
             unit={unit}
           />
         )}
+
         {tab === "notepad" && <Notepad />}
+
+        {tab === "summary" && <DashboardSummary />}
 
         {/* Footer */}
         <p className="text-center text-xs text-neutral-500">
@@ -114,7 +126,7 @@ function AppContent() {
 }
 
 /**
- * Top‑level component wraps the application in AppProvider
+ * Top-level component wraps the application in AppProvider
  * so all children can access the shared state.
  */
 export default function App() {
