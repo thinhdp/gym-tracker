@@ -151,7 +151,7 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
     }
   }
 
-  // PRs (still based on max WEIGHT vs history)
+  // PRs (based on max WEIGHT vs history before the period)
   const bestBefore = new Map(); // name -> max weight before period.from
   for (const w of workouts) {
     const d = toDate(w.date);
@@ -163,7 +163,7 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
         if (wt > maxSet) maxSet = wt;
       }
       const prev = bestBefore.get(ex.exerciseName) || 0;
-      if (maxSet > prev) bestBefore.set(exerciseName, maxSet);
+      if (maxSet > prev) bestBefore.set(ex.exerciseName, maxSet);
     }
   }
   const bestInWindow = new Map();
@@ -223,8 +223,8 @@ function averageWeightInRange(weightLogs, from, to) {
 }
 
 /** ========== Small UI Helpers ========== **/
-// Added `decimals` so weight deltas can be rounded to 1 decimal.
-// Also made delta a block on small screens so it can wrap under the value if needed.
+// Rounds to the specified decimals (used for weight delta at 1dp).
+// Also makes delta wrap to next line on narrow cards (block on small screens).
 function Delta({ curr, prev, decimals = 0 }) {
   if (prev == null || curr == null) {
     return <span className="text-xs text-neutral-500 ml-1 block sm:inline">—</span>;
@@ -254,7 +254,7 @@ function GroupedRepsBar({ current, previous }) {
     return <div className="text-sm text-neutral-500">No reps logged this period.</div>;
   }
 
-  // SORT BY MUSCLE NAME (A→Z), per request
+  // Sort by muscle name A→Z (requested)
   muscles.sort((a, b) => a.localeCompare(b));
 
   const max = Math.max(
@@ -424,7 +424,7 @@ function PeriodCard({
             />
           </div>
 
-          {/* KPIs (weight delta can wrap onto a new line if needed) */}
+          {/* KPIs (wrap when tight; weight delta rounded to 1dp) */}
           <div className="grid grid-cols-4 gap-2">
             <div className="rounded-lg border p-2">
               <div className="text-xs text-neutral-500">Workouts</div>
@@ -453,7 +453,6 @@ function PeriodCard({
                 <div className="text-xs text-neutral-500">Avg Weight (This Week)</div>
                 <div className="text-lg font-semibold tabular-nums flex flex-wrap items-baseline gap-x-1">
                   {weekWeightAvg ?? "—"}
-                  {/* Round to 1 decimal for delta; allow wrap */}
                   <Delta curr={weekWeightAvg} prev={prevWeekWeightAvg} decimals={1} />
                 </div>
               </div>
