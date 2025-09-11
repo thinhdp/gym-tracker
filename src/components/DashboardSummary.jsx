@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { Button } from "./ui/Button";
 
-/** Utils **/
+/** ========== Date/Period Utils ========== **/
 function toDate(d) {
   if (!d) return null;
   if (typeof d === "number") return new Date(d);
@@ -28,7 +28,6 @@ function endOfWeekSunday(date) {
 function weekKey(date) {
   const s = startOfWeekMonday(date);
   const year = s.getFullYear();
-  // ISO-like week calc aligned with Monday
   const jan4 = new Date(year, 0, 4);
   const jan4Start = startOfWeekMonday(jan4);
   const diffDays = Math.floor((s - jan4Start) / (1000 * 60 * 60 * 24));
@@ -77,22 +76,30 @@ function prevMonthKeyFrom(periodFrom) {
   return monthKey(d);
 }
 
-function inRange(date, from, to) {
-  const t = date.getTime();
-  return t >= from.getTime() && t <= to.getTime();
+/** ========== Storage Helpers ========== **/
+function getLs(key, fallback = null) {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? fallback : JSON.parse(v);
+  } catch {
+    return fallback;
+  }
+}
+function setLs(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
 }
 
-// ==== CHANGED: "volume" now means REPS ONLY ====
+/** ========== Volume/PR Metrics (Reps-only) ========== **/
 function setReps(set) {
   const r = Number(set?.reps ?? 0);
   return Number.isFinite(r) ? r : 0;
 }
-
 function resolveMainMuscle(exerciseName, exercisesDb) {
   const ex = exercisesDb.find((e) => e.name === exerciseName);
   return ex?.mainMuscle?.trim() || "Unknown";
 }
-
 function buildWeeks(workouts) {
   const buckets = new Map();
   for (const w of workouts) {
@@ -124,7 +131,6 @@ function buildMonths(workouts) {
   return [...buckets.values()].sort((a, b) => b.from - a.from);
 }
 
-/** Compute metrics for a period using REPS-ONLY */
 function computePeriodMetrics(period, workouts, exercisesDb) {
   const { from } = period;
 
@@ -145,8 +151,8 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
     }
   }
 
-  // PRs still based on max WEIGHT (requirement didn’t change PR definition)
-  const bestBefore = new Map(); // name -> max weight before "from"
+  // PRs (still based on max WEIGHT vs history)
+  const bestBefore = new Map(); // name -> max weight before period.from
   for (const w of workouts) {
     const d = toDate(w.date);
     if (!d || d >= from) continue;
@@ -160,8 +166,7 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
       if (maxSet > prev) bestBefore.set(ex.exerciseName, maxSet);
     }
   }
-
-  const bestInWindow = new Map(); // name -> { best, date }
+  const bestInWindow = new Map();
   for (const w of period.items) {
     const d = toDate(w.date);
     for (const ex of w.exercises || []) {
@@ -176,7 +181,6 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
       }
     }
   }
-
   const prs = [];
   for (const [name, { best, date }] of bestInWindow.entries()) {
     const oldBest = bestBefore.get(name) || 0;
@@ -193,24 +197,34 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
   };
 }
 
-/** Local storage helpers */
-function getLs(key, fallback = null) {
-  try {
-    const v = localStorage.getItem(key);
-    return v === null ? fallback : JSON.parse(v);
-  } catch {
-    return fallback;
-  }
+/** ========== Weight Logs & Weekly Average (for KPI) ========== **/
+function getWeightLogs() {
+  const obj = getLs("weightLogs", {});
+  return obj && typeof obj === "object" ? obj : {};
 }
-function setLs(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
+function ymd(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+function averageWeightInRange(weightLogs, from, to) {
+  const vals = [];
+  const cur = new Date(from);
+  while (cur <= to) {
+    const key = ymd(cur);
+    const v = weightLogs[key];
+    if (typeof v === "number" && isFinite(v)) vals.push(v);
+    cur.setDate(cur.getDate() + 1);
+  }
+  if (!vals.length) return null;
+  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+  return Math.round(avg * 10) / 10;
 }
 
-/** Delta badge for KPI vs last period */
+/** ========== Small UI Helpers ========== **/
 function Delta({ curr, prev }) {
-  if (prev === null || prev === undefined) {
+  if (prev === null || prev === undefined || curr === null || curr === undefined) {
     return <span className="text-xs text-neutral-500 ml-1">—</span>;
   }
   const diff = curr - prev;
@@ -220,16 +234,14 @@ function Delta({ curr, prev }) {
   return <span className={`text-xs ml-1 ${color}`}>{sign}{diff}</span>;
 }
 
-/** Grouped bar chart: current vs last week/month (REPS) */
+/** Grouped bar chart: Now vs Last (REPS) */
 function GroupedRepsBar({ current, previous }) {
   const muscles = Array.from(
     new Set([...(current ? Object.keys(current) : []), ...(previous ? Object.keys(previous) : [])])
   );
-
   if (!muscles.length) {
     return <div className="text-sm text-neutral-500">No reps logged this period.</div>;
   }
-
   const max = Math.max(
     1,
     ...muscles.map((m) => Math.max(current?.[m] || 0, previous?.[m] || 0))
@@ -246,21 +258,18 @@ function GroupedRepsBar({ current, previous }) {
           const pw = Math.round((p / max) * 100);
           return (
             <div key={muscle} className="w-full">
-              <div className="flex items-center justify-between text-xs mb-1">
+              <div className="flex items center justify-between text-xs mb-1">
                 <span className="font-medium">{muscle}</span>
                 <span className="tabular-nums">
                   {p ? `LW ${p} · ` : ""}Now {c}
                 </span>
               </div>
-              {/* Track */}
               <div className="h-4 bg-neutral-200 rounded relative overflow-hidden">
-                {/* Previous period bar (back layer) */}
                 <div
                   className="absolute left-0 top-0 bottom-0 bg-neutral-400"
                   style={{ width: `${pw}%` }}
                   title={`Last: ${p}`}
                 />
-                {/* Current period bar (front layer) */}
                 <div
                   className="absolute left-0 top-0 bottom-0 bg-blue-600 mix-blend-multiply"
                   style={{ width: `${cw}%` }}
@@ -298,29 +307,23 @@ function WeeklyNotes({ periodKey }) {
     setSaved(draft || "");
     setEditing(false);
   };
-
   const onCancel = () => {
     setDraft(saved || "");
     setEditing(false);
   };
-
   const onAi = () => {
     alert("AI summary coming soon: will compare this week against last week.");
   };
 
-  // Auto-resize textarea
   useEffect(() => {
     const ta = document.getElementById(`weekly-note-ta-${periodKey}`);
     if (!ta) return;
-    const resize = () => {
-      ta.style.height = "auto";
-      ta.style.height = ta.scrollHeight + "px";
-    };
-    resize();
+    ta.style.height = "auto";
+    ta.style.height = ta.scrollHeight + "px";
   }, [draft, periodKey]);
 
   return (
-    <div className="mt-4 border-t pt-3">
+    <div className="mt-4 border-top pt-3">
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-semibold">This Week’s Notes</h4>
         <div className="flex gap-2">
@@ -362,11 +365,13 @@ function WeeklyNotes({ periodKey }) {
   );
 }
 
-/** Card */
+/** ========== Card ========== **/
 function PeriodCard({
   period,
   metrics,
-  prevMetrics, // may be null if not found
+  prevMetrics,
+  weekWeightAvg,       // NEW
+  prevWeekWeightAvg,   // NEW
   defaultOpen = true,
   isWeek = false,
 }) {
@@ -397,7 +402,7 @@ function PeriodCard({
 
       {open && (
         <div className="p-3 space-y-4">
-          {/* CHART — grouped bars: Now vs Last */}
+          {/* Chart: reps Now vs Last */}
           <div>
             <div className="mb-2 text-sm font-medium">Reps by Muscle (Now vs Last)</div>
             <GroupedRepsBar
@@ -406,8 +411,8 @@ function PeriodCard({
             />
           </div>
 
-          {/* KPIs with vs Last */}
-          <div className="grid grid-cols-3 gap-2">
+          {/* KPIs (now with Avg Weight) */}
+          <div className="grid grid-cols-4 gap-2">
             <div className="rounded-lg border p-2">
               <div className="text-xs text-neutral-500">Workouts</div>
               <div className="text-lg font-semibold">
@@ -429,6 +434,21 @@ function PeriodCard({
                 <Delta curr={metrics.prs.length} prev={prevMetrics?.prs?.length} />
               </div>
             </div>
+            {/* NEW: Avg Weight This Week vs Last Week (weekly cards only) */}
+            {isWeek ? (
+              <div className="rounded-lg border p-2">
+                <div className="text-xs text-neutral-500">Avg Weight (This Week)</div>
+                <div className="text-lg font-semibold tabular-nums">
+                  {weekWeightAvg ?? "—"}
+                  <Delta curr={weekWeightAvg} prev={prevWeekWeightAvg} />
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-lg border p-2 opacity-50">
+                <div className="text-xs text-neutral-400">Avg Weight</div>
+                <div className="text-lg font-semibold text-neutral-400">—</div>
+              </div>
+            )}
           </div>
 
           {/* PR list */}
@@ -450,7 +470,7 @@ function PeriodCard({
             <div className="text-sm text-neutral-500">No new PRs this period.</div>
           )}
 
-          {/* Weekly notes only for weekly cards */}
+          {/* Weekly notes */}
           {isWeek && <WeeklyNotes periodKey={period.key} />}
         </div>
       )}
@@ -458,7 +478,7 @@ function PeriodCard({
   );
 }
 
-/** Page */
+/** ========== Page ========== **/
 export default function DashboardSummary() {
   const { workouts, exercises } = useApp();
   const [mode, setMode] = useState("week"); // "week" | "month"
@@ -478,7 +498,13 @@ export default function DashboardSummary() {
     return m;
   }, [months]);
 
-  // Compute metrics for all periods
+  // Weight logs (for weekly avg weight KPI)
+  const weightLogs = useMemo(() => getLs("weightLogs", {}), []);
+
+  const averageWeightInRangeMemo = (from, to) =>
+    averageWeightInRange(weightLogs, from, to);
+
+  // Compute metrics for all periods (plus weekly avg weights)
   const weekData = useMemo(() => {
     return weeks.map((w) => {
       const metrics = computePeriodMetrics(w, workouts || [], exercises || []);
@@ -487,9 +513,15 @@ export default function DashboardSummary() {
       const prevMetrics = prevPeriod
         ? computePeriodMetrics(prevPeriod, workouts || [], exercises || [])
         : null;
-      return { period: w, metrics, prevMetrics };
+
+      const weekWeightAvg = averageWeightInRangeMemo(w.from, w.to);
+      const prevWeekWeightAvg = prevPeriod
+        ? averageWeightInRangeMemo(prevPeriod.from, prevPeriod.to)
+        : null;
+
+      return { period: w, metrics, prevMetrics, weekWeightAvg, prevWeekWeightAvg };
     });
-  }, [weeks, workouts, exercises, weekMap]);
+  }, [weeks, workouts, exercises, weekMap, weightLogs]);
 
   const monthData = useMemo(() => {
     return months.map((m) => {
@@ -499,6 +531,7 @@ export default function DashboardSummary() {
       const prevMetrics = prevPeriod
         ? computePeriodMetrics(prevPeriod, workouts || [], exercises || [])
         : null;
+
       return { period: m, metrics, prevMetrics };
     });
   }, [months, workouts, exercises, monthMap]);
@@ -521,15 +554,17 @@ export default function DashboardSummary() {
         </Button>
       </div>
 
-      {/* Cards (newest first) */}
+      {/* Cards */}
       {mode === "week" ? (
         weekData.length ? (
-          weekData.map(({ period, metrics, prevMetrics }) => (
+          weekData.map(({ period, metrics, prevMetrics, weekWeightAvg, prevWeekWeightAvg }) => (
             <PeriodCard
               key={period.key}
               period={period}
               metrics={metrics}
               prevMetrics={prevMetrics}
+              weekWeightAvg={weekWeightAvg}
+              prevWeekWeightAvg={prevWeekWeightAvg}
               defaultOpen={true}
               isWeek={true}
             />
