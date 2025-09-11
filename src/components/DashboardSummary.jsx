@@ -163,7 +163,7 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
         if (wt > maxSet) maxSet = wt;
       }
       const prev = bestBefore.get(ex.exerciseName) || 0;
-      if (maxSet > prev) bestBefore.set(ex.exerciseName, maxSet);
+      if (maxSet > prev) bestBefore.set(exerciseName, maxSet);
     }
   }
   const bestInWindow = new Map();
@@ -223,15 +223,25 @@ function averageWeightInRange(weightLogs, from, to) {
 }
 
 /** ========== Small UI Helpers ========== **/
-function Delta({ curr, prev }) {
-  if (prev === null || prev === undefined || curr === null || curr === undefined) {
-    return <span className="text-xs text-neutral-500 ml-1">—</span>;
+// Added `decimals` so weight deltas can be rounded to 1 decimal.
+// Also made delta a block on small screens so it can wrap under the value if needed.
+function Delta({ curr, prev, decimals = 0 }) {
+  if (prev == null || curr == null) {
+    return <span className="text-xs text-neutral-500 ml-1 block sm:inline">—</span>;
   }
-  const diff = curr - prev;
-  if (diff === 0) return <span className="text-xs text-neutral-500 ml-1">±0</span>;
+  const factor = Math.pow(10, decimals);
+  const diffRaw = curr - prev;
+  const diff = Math.round(diffRaw * factor) / factor;
+  if (diff === 0) {
+    return <span className="text-xs text-neutral-500 ml-1 block sm:inline">±0</span>;
+  }
   const sign = diff > 0 ? "+" : "";
   const color = diff > 0 ? "text-green-600" : "text-red-600";
-  return <span className={`text-xs ml-1 ${color}`}>{sign}{diff}</span>;
+  return (
+    <span className={`text-xs ml-1 ${color} block sm:inline`}>
+      {sign}{diff}
+    </span>
+  );
 }
 
 /** Grouped bar chart: Now vs Last (REPS) */
@@ -239,9 +249,14 @@ function GroupedRepsBar({ current, previous }) {
   const muscles = Array.from(
     new Set([...(current ? Object.keys(current) : []), ...(previous ? Object.keys(previous) : [])])
   );
+
   if (!muscles.length) {
     return <div className="text-sm text-neutral-500">No reps logged this period.</div>;
   }
+
+  // SORT BY MUSCLE NAME (A→Z), per request
+  muscles.sort((a, b) => a.localeCompare(b));
+
   const max = Math.max(
     1,
     ...muscles.map((m) => Math.max(current?.[m] || 0, previous?.[m] || 0))
@@ -249,36 +264,34 @@ function GroupedRepsBar({ current, previous }) {
 
   return (
     <div className="space-y-3">
-      {muscles
-        .sort((a, b) => (current?.[b] || 0) - (current?.[a] || 0))
-        .map((muscle) => {
-          const c = current?.[muscle] || 0;
-          const p = previous?.[muscle] || 0;
-          const cw = Math.round((c / max) * 100);
-          const pw = Math.round((p / max) * 100);
-          return (
-            <div key={muscle} className="w-full">
-              <div className="flex items center justify-between text-xs mb-1">
-                <span className="font-medium">{muscle}</span>
-                <span className="tabular-nums">
-                  {p ? `LW ${p} · ` : ""}Now {c}
-                </span>
-              </div>
-              <div className="h-4 bg-neutral-200 rounded relative overflow-hidden">
-                <div
-                  className="absolute left-0 top-0 bottom-0 bg-neutral-400"
-                  style={{ width: `${pw}%` }}
-                  title={`Last: ${p}`}
-                />
-                <div
-                  className="absolute left-0 top-0 bottom-0 bg-blue-600 mix-blend-multiply"
-                  style={{ width: `${cw}%` }}
-                  title={`Current: ${c}`}
-                />
-              </div>
+      {muscles.map((muscle) => {
+        const c = current?.[muscle] || 0;
+        const p = previous?.[muscle] || 0;
+        const cw = Math.round((c / max) * 100);
+        const pw = Math.round((p / max) * 100);
+        return (
+          <div key={muscle} className="w-full">
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="font-medium">{muscle}</span>
+              <span className="tabular-nums">
+                {p ? `LW ${p} · ` : ""}Now {c}
+              </span>
             </div>
-          );
-        })}
+            <div className="h-4 bg-neutral-200 rounded relative overflow-hidden">
+              <div
+                className="absolute left-0 top-0 bottom-0 bg-neutral-400"
+                style={{ width: `${pw}%` }}
+                title={`Last: ${p}`}
+              />
+              <div
+                className="absolute left-0 top-0 bottom-0 bg-blue-600 mix-blend-multiply"
+                style={{ width: `${cw}%` }}
+                title={`Current: ${c}`}
+              />
+            </div>
+          </div>
+        );
+      })}
       <div className="flex items-center gap-4 text-xs text-neutral-600">
         <div className="flex items-center gap-1">
           <span className="inline-block h-2 w-3 bg-blue-600" /> Now
@@ -323,7 +336,7 @@ function WeeklyNotes({ periodKey }) {
   }, [draft, periodKey]);
 
   return (
-    <div className="mt-4 border-top pt-3">
+    <div className="mt-4 border-t pt-3">
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-semibold">This Week’s Notes</h4>
         <div className="flex gap-2">
@@ -411,25 +424,25 @@ function PeriodCard({
             />
           </div>
 
-          {/* KPIs (now with Avg Weight) */}
+          {/* KPIs (weight delta can wrap onto a new line if needed) */}
           <div className="grid grid-cols-4 gap-2">
             <div className="rounded-lg border p-2">
               <div className="text-xs text-neutral-500">Workouts</div>
-              <div className="text-lg font-semibold">
+              <div className="text-lg font-semibold flex flex-wrap items-baseline gap-x-1">
                 {metrics.frequency}
                 <Delta curr={metrics.frequency} prev={prevMetrics?.frequency} />
               </div>
             </div>
             <div className="rounded-lg border p-2">
               <div className="text-xs text-neutral-500">Total Reps</div>
-              <div className="text-lg font-semibold tabular-nums">
+              <div className="text-lg font-semibold tabular-nums flex flex-wrap items-baseline gap-x-1">
                 {metrics.totalReps}
                 <Delta curr={metrics.totalReps} prev={prevMetrics?.totalReps} />
               </div>
             </div>
             <div className="rounded-lg border p-2">
               <div className="text-xs text-neutral-500">New PRs</div>
-              <div className="text-lg font-semibold">
+              <div className="text-lg font-semibold flex flex-wrap items-baseline gap-x-1">
                 {metrics.prs.length}
                 <Delta curr={metrics.prs.length} prev={prevMetrics?.prs?.length} />
               </div>
@@ -438,9 +451,10 @@ function PeriodCard({
             {isWeek ? (
               <div className="rounded-lg border p-2">
                 <div className="text-xs text-neutral-500">Avg Weight (This Week)</div>
-                <div className="text-lg font-semibold tabular-nums">
+                <div className="text-lg font-semibold tabular-nums flex flex-wrap items-baseline gap-x-1">
                   {weekWeightAvg ?? "—"}
-                  <Delta curr={weekWeightAvg} prev={prevWeekWeightAvg} />
+                  {/* Round to 1 decimal for delta; allow wrap */}
+                  <Delta curr={weekWeightAvg} prev={prevWeekWeightAvg} decimals={1} />
                 </div>
               </div>
             ) : (
