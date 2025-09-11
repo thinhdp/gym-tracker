@@ -10,6 +10,7 @@ import CalendarView from "./components/CalendarView";
 import Notepad from "./components/Notepad";
 import { ConfirmProvider } from "./components/ConfirmDialog";
 import DashboardSummary from "./components/DashboardSummary";
+import WeightTracker from "./components/WeightTracker";
 
 /**
  * Internal component that consumes AppContext and renders the app UI.
@@ -82,6 +83,12 @@ function AppContent() {
             >
               Summary
             </Button>
+            <Button
+              variant={tab === "weight" ? "primary" : "ghost"}
+              onClick={() => setTab("weight")}
+            >
+              Weight
+            </Button>
           </div>
         </div>
 
@@ -115,6 +122,8 @@ function AppContent() {
         {tab === "notepad" && <Notepad />}
 
         {tab === "summary" && <DashboardSummary />}
+
+        {tab === "weight" && <WeightTracker />}
 
         {/* Footer */}
         <p className="text-center text-xs text-neutral-500">
