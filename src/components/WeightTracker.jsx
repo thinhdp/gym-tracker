@@ -84,8 +84,8 @@ function computeWeeklyAvgAndDelta(weightLogs, refDate) {
   return { curr, prev, delta };
 }
 
-/** SVG Line chart (simple) */
-function LineChart({ points, height = 120, padding = 8 }) {
+/** SVG Line chart with points + labels */
+function LineChart({ points, height = 160, padding = 24 }) {
   if (!points || points.length < 2) {
     return <div className="text-sm text-neutral-500">Not enough data to plot.</div>;
   }
@@ -95,25 +95,43 @@ function LineChart({ points, height = 120, padding = 8 }) {
   const maxX = Math.max(...xs);
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
-  const width = 600; // fixed for simplicity
+  const width = 640;
+
   const scaleX = (x) =>
     padding + ((x - minX) / (maxX - minX || 1)) * (width - padding * 2);
   const scaleY = (y) =>
     height - padding - ((y - minY) / (maxY - minY || 1)) * (height - padding * 2);
 
-  const d = points
-    .map((p, i) => `${i ? "L" : "M"} ${scaleX(p.x)} ${scaleY(p.y)}`)
-    .join(" ");
+  const linePoints = points.map((p) => `${scaleX(p.x)},${scaleY(p.y)}`).join(" ");
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="w-full">
+      {/* line */}
       <polyline
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        points={points.map((p) => `${scaleX(p.x)},${scaleY(p.y)}`).join(" ")}
+        points={linePoints}
       />
-      <path d={d} stroke="currentColor" strokeWidth="2" fill="none" />
+      {/* point markers + labels */}
+      {points.map((p, i) => {
+        const cx = scaleX(p.x);
+        const cy = scaleY(p.y);
+        return (
+          <g key={i}>
+            <circle cx={cx} cy={cy} r="3" fill="currentColor" />
+            <text
+              x={cx}
+              y={cy - 8}
+              fontSize="10"
+              textAnchor="middle"
+              fill="currentColor"
+            >
+              {p.label}: {p.y}
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }
@@ -148,7 +166,7 @@ export default function WeightTracker() {
   const todayYmd = ymd(new Date());
 
   // Weekly stats for current week (based on "today")
-  const { curr: weekAvg, prev: weekPrev, delta: weekDelta } = useMemo(
+  const { curr: weekAvg, delta: weekDelta } = useMemo(
     () => computeWeeklyAvgAndDelta(logs, new Date()),
     [logs]
   );
@@ -164,7 +182,9 @@ export default function WeightTracker() {
       .filter((k) => typeof logs[k] === "number" && isFinite(logs[k]))
       .map((k) => {
         const d = new Date(k + "T00:00:00");
-        return { x: (d - base) / 86400000, y: logs[k] };
+        const label =
+          `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        return { x: (d - base) / 86400000, y: logs[k], label };
       });
   }, [logs]);
 
@@ -183,8 +203,8 @@ export default function WeightTracker() {
     }
     const sorted = [...byWeek.entries()]
       .map(([k, arr]) => {
-        const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
-        return { k, d: new Date(k + "T00:00:00"), avg: Math.round(avg * 10) / 10 };
+        const avg = Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10;
+        return { k, d: new Date(k + "T00:00:00"), avg };
       })
       .sort((a, b) => a.d - b.d);
 
@@ -192,6 +212,7 @@ export default function WeightTracker() {
     return sorted.map((row) => ({
       x: (row.d - base) / 86400000,
       y: row.avg,
+      label: `${String(row.d.getMonth() + 1).padStart(2, "0")}-${String(row.d.getDate()).padStart(2, "0")}`,
     }));
   }, [logs]);
 
@@ -290,9 +311,10 @@ export default function WeightTracker() {
                 </div>
               ) : val != null ? (
                 <div className="h-full flex items-center justify-center">
-                  <div className="text-sm font-semibold">
+                  {/* Smaller weight text so it doesn't cover the date */}
+                  <div className="text-[10px] md:text-xs font-semibold">
                     {val}
-                    <span className="text-[10px] text-neutral-500"> {unit}</span>
+                    <span className="text-[9px] text-neutral-500"> {unit}</span>
                   </div>
                 </div>
               ) : null}
@@ -326,7 +348,7 @@ export default function WeightTracker() {
         </div>
       </div>
 
-      {/* Trend graph */}
+      {/* Trend graph with markers + labels (day/value) */}
       <div className="space-y-2">
         <div className="flex gap-2">
           <Button
@@ -335,7 +357,7 @@ export default function WeightTracker() {
           >
             Daily
           </Button>
-        <Button
+          <Button
             variant={mode === "weekly" ? "primary" : "secondary"}
             onClick={() => setMode("weekly")}
           >
