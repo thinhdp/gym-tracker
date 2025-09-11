@@ -2,24 +2,18 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { Button } from "./ui/Button";
 
-/**
- * Utility: parse an app date (string or number) into a JS Date in local time.
- */
+/** Utils **/
 function toDate(d) {
   if (!d) return null;
   if (typeof d === "number") return new Date(d);
-  // ISO or yyyy-mm-dd — rely on Date parsing
   return new Date(d);
 }
 
-/**
- * Start of week (Monday 00:00) in local time, and week key YYYY-WW.
- * We’ll align to Monday–Sunday for Singapore as requested.
- */
+// Week helpers (Mon–Sun, local time)
 function startOfWeekMonday(date) {
   const d = new Date(date);
-  const day = d.getDay(); // 0=Sun,1=Mon,...6=Sat
-  const diffToMon = (day + 6) % 7; // Mon->0, Tue->1, ..., Sun->6
+  const day = d.getDay();
+  const diffToMon = (day + 6) % 7;
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() - diffToMon);
   return d;
@@ -34,7 +28,7 @@ function endOfWeekSunday(date) {
 function weekKey(date) {
   const s = startOfWeekMonday(date);
   const year = s.getFullYear();
-  // compute week number (Mon-based)
+  // ISO-like week calc aligned with Monday
   const jan4 = new Date(year, 0, 4);
   const jan4Start = startOfWeekMonday(jan4);
   const diffDays = Math.floor((s - jan4Start) / (1000 * 60 * 60 * 24));
@@ -50,10 +44,13 @@ function weekLabel(date) {
     ).padStart(2, "0")}`;
   return `${fmt(s)} to ${fmt(e)}`;
 }
+function prevWeekKeyFrom(periodFrom) {
+  const d = new Date(periodFrom);
+  d.setDate(d.getDate() - 7);
+  return weekKey(d);
+}
 
-/**
- * Month helpers
- */
+// Month helpers
 function startOfMonth(date) {
   const d = new Date(date);
   d.setDate(1);
@@ -74,38 +71,30 @@ function monthLabel(date) {
   const d = startOfMonth(date);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
+function prevMonthKeyFrom(periodFrom) {
+  const d = new Date(periodFrom);
+  d.setMonth(d.getMonth() - 1);
+  return monthKey(d);
+}
 
-/**
- * Check date falls within [from, to].
- */
 function inRange(date, from, to) {
   const t = date.getTime();
   return t >= from.getTime() && t <= to.getTime();
 }
 
-/**
- * Compute simple volume = weight * reps for a set (assumes consistent unit).
- */
-function setVolume(set) {
-  const w = Number(set?.weight ?? 0);
+// ==== CHANGED: "volume" now means REPS ONLY ====
+function setReps(set) {
   const r = Number(set?.reps ?? 0);
-  if (Number.isNaN(w) || Number.isNaN(r)) return 0;
-  return w * r;
+  return Number.isFinite(r) ? r : 0;
 }
 
-/**
- * Resolve main muscle for an exercise by name from the exercises DB if missing on log.
- */
 function resolveMainMuscle(exerciseName, exercisesDb) {
   const ex = exercisesDb.find((e) => e.name === exerciseName);
   return ex?.mainMuscle?.trim() || "Unknown";
 }
 
-/**
- * Build periods (weeks or months) from workouts (sorted newest first).
- */
 function buildWeeks(workouts) {
-  const buckets = new Map(); // key -> { from, to, items: [] }
+  const buckets = new Map();
   for (const w of workouts) {
     const d = toDate(w.date);
     if (!d) continue;
@@ -117,7 +106,6 @@ function buildWeeks(workouts) {
     }
     buckets.get(key).items.push(w);
   }
-  // sort newest first (by from)
   return [...buckets.values()].sort((a, b) => b.from - a.from);
 }
 function buildMonths(workouts) {
@@ -136,58 +124,51 @@ function buildMonths(workouts) {
   return [...buckets.values()].sort((a, b) => b.from - a.from);
 }
 
-/**
- * Compute metrics for a period:
- * - frequency (# of workouts)
- * - total volume
- * - volumeByMuscle (main muscle only)
- * - PRs (new best working-set weight beating historical-best before this window)
- */
+/** Compute metrics for a period using REPS-ONLY */
 function computePeriodMetrics(period, workouts, exercisesDb) {
-  const { from, to } = period;
+  const { from } = period;
 
   // Frequency
-  const freq = period.items.length;
+  const frequency = period.items.length;
 
-  // Total volume + volume by muscle
-  const byMuscle = {};
-  let total = 0;
+  // Total reps + reps by muscle
+  const repsByMuscle = {};
+  let totalReps = 0;
   for (const w of period.items) {
     for (const ex of w.exercises || []) {
       const main = resolveMainMuscle(ex.exerciseName, exercisesDb);
       for (const s of ex.sets || []) {
-        const v = setVolume(s);
-        total += v;
-        byMuscle[main] = (byMuscle[main] || 0) + v;
+        const reps = setReps(s);
+        totalReps += reps;
+        repsByMuscle[main] = (repsByMuscle[main] || 0) + reps;
       }
     }
   }
 
-  // PRs
-  // 1) build best-before map for each exercise
+  // PRs still based on max WEIGHT (requirement didn’t change PR definition)
   const bestBefore = new Map(); // name -> max weight before "from"
   for (const w of workouts) {
     const d = toDate(w.date);
-    if (!d || !d.getTime || d >= from) continue; // strictly before
+    if (!d || d >= from) continue;
     for (const ex of w.exercises || []) {
       let maxSet = 0;
       for (const s of ex.sets || []) {
-        if (Number(s.weight) > maxSet) maxSet = Number(s.weight);
+        const wt = Number(s.weight || 0);
+        if (wt > maxSet) maxSet = wt;
       }
       const prev = bestBefore.get(ex.exerciseName) || 0;
       if (maxSet > prev) bestBefore.set(ex.exerciseName, maxSet);
     }
   }
 
-  // 2) best-in-window + compare
-  const prs = [];
   const bestInWindow = new Map(); // name -> { best, date }
   for (const w of period.items) {
     const d = toDate(w.date);
     for (const ex of w.exercises || []) {
       let maxSet = 0;
       for (const s of ex.sets || []) {
-        if (Number(s.weight) > maxSet) maxSet = Number(s.weight);
+        const wt = Number(s.weight || 0);
+        if (wt > maxSet) maxSet = wt;
       }
       const prev = bestInWindow.get(ex.exerciseName);
       if (!prev || maxSet > prev.best) {
@@ -195,29 +176,24 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
       }
     }
   }
+
+  const prs = [];
   for (const [name, { best, date }] of bestInWindow.entries()) {
     const oldBest = bestBefore.get(name) || 0;
     if (best > oldBest) {
-      prs.push({
-        exercise: name,
-        newBest: best,
-        prevBest: oldBest,
-        date,
-      });
+      prs.push({ exercise: name, newBest: best, prevBest: oldBest, date });
     }
   }
 
   return {
-    frequency: freq,
-    totalVolume: total,
-    volumeByMuscle: byMuscle,
+    frequency,
+    totalReps,
+    repsByMuscle,
     prs: prs.sort((a, b) => b.newBest - a.newBest),
   };
 }
 
-/**
- * Local storage helpers for collapsible state and weekly notes.
- */
+/** Local storage helpers */
 function getLs(key, fallback = null) {
   try {
     const v = localStorage.getItem(key);
@@ -232,48 +208,81 @@ function setLs(key, value) {
   } catch {}
 }
 
-/**
- * Small, dependency-free bar chart for volume-by-muscle.
- */
-function VolumeByMuscleBar({ data }) {
-  const entries = Object.entries(data || {});
-  if (!entries.length) {
-    return (
-      <div className="text-sm text-neutral-500">No volume this period.</div>
-    );
+/** Delta badge for KPI vs last period */
+function Delta({ curr, prev }) {
+  if (prev === null || prev === undefined) {
+    return <span className="text-xs text-neutral-500 ml-1">—</span>;
+  }
+  const diff = curr - prev;
+  if (diff === 0) return <span className="text-xs text-neutral-500 ml-1">±0</span>;
+  const sign = diff > 0 ? "+" : "";
+  const color = diff > 0 ? "text-green-600" : "text-red-600";
+  return <span className={`text-xs ml-1 ${color}`}>{sign}{diff}</span>;
+}
+
+/** Grouped bar chart: current vs last week/month (REPS) */
+function GroupedRepsBar({ current, previous }) {
+  const muscles = Array.from(
+    new Set([...(current ? Object.keys(current) : []), ...(previous ? Object.keys(previous) : [])])
+  );
+
+  if (!muscles.length) {
+    return <div className="text-sm text-neutral-500">No reps logged this period.</div>;
   }
 
-  const max = Math.max(...entries.map(([, v]) => v)) || 1;
+  const max = Math.max(
+    1,
+    ...muscles.map((m) => Math.max(current?.[m] || 0, previous?.[m] || 0))
+  );
+
   return (
-    <div className="space-y-2">
-      {entries
-        .sort((a, b) => b[1] - a[1])
-        .map(([muscle, val]) => {
-          const pct = Math.round((val / max) * 100);
+    <div className="space-y-3">
+      {muscles
+        .sort((a, b) => (current?.[b] || 0) - (current?.[a] || 0))
+        .map((muscle) => {
+          const c = current?.[muscle] || 0;
+          const p = previous?.[muscle] || 0;
+          const cw = Math.round((c / max) * 100);
+          const pw = Math.round((p / max) * 100);
           return (
             <div key={muscle} className="w-full">
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className="font-medium">{muscle}</span>
-                <span className="tabular-nums">{val}</span>
+                <span className="tabular-nums">
+                  {p ? `LW ${p} · ` : ""}Now {c}
+                </span>
               </div>
-              <div className="h-2 bg-neutral-200 rounded">
+              {/* Track */}
+              <div className="h-4 bg-neutral-200 rounded relative overflow-hidden">
+                {/* Previous period bar (back layer) */}
                 <div
-                  className="h-2 rounded bg-blue-600"
-                  style={{ width: `${pct}%` }}
-                  title={`${muscle}: ${val}`}
+                  className="absolute left-0 top-0 bottom-0 bg-neutral-400"
+                  style={{ width: `${pw}%` }}
+                  title={`Last: ${p}`}
+                />
+                {/* Current period bar (front layer) */}
+                <div
+                  className="absolute left-0 top-0 bottom-0 bg-blue-600 mix-blend-multiply"
+                  style={{ width: `${cw}%` }}
+                  title={`Current: ${c}`}
                 />
               </div>
             </div>
           );
         })}
+      <div className="flex items-center gap-4 text-xs text-neutral-600">
+        <div className="flex items-center gap-1">
+          <span className="inline-block h-2 w-3 bg-blue-600" /> Now
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="inline-block h-2 w-3 bg-neutral-400" /> Last
+        </div>
+      </div>
     </div>
   );
 }
 
-/**
- * Weekly notes block with Edit / AI (stub) actions.
- * Persisted to localStorage per week key: weekly-note:<YYYY-WW>
- */
+/** Weekly notes with Edit / AI (stub) */
 function WeeklyNotes({ periodKey }) {
   const storageKey = `weekly-note:${periodKey}`;
   const [saved, setSaved] = useState(() => getLs(storageKey, ""));
@@ -296,12 +305,10 @@ function WeeklyNotes({ periodKey }) {
   };
 
   const onAi = () => {
-    // Placeholder for future AI: compare current week to previous week
-    // For now, just a non-blocking hint.
-    alert("AI summary coming soon: will compare this week vs last week.");
+    alert("AI summary coming soon: will compare this week against last week.");
   };
 
-  // Auto-resize helper
+  // Auto-resize textarea
   useEffect(() => {
     const ta = document.getElementById(`weekly-note-ta-${periodKey}`);
     if (!ta) return;
@@ -355,11 +362,14 @@ function WeeklyNotes({ periodKey }) {
   );
 }
 
-/**
- * A collapsible card for a week or month.
- * For week: includes WeeklyNotes.
- */
-function PeriodCard({ period, metrics, defaultOpen = true, isWeek = false }) {
+/** Card */
+function PeriodCard({
+  period,
+  metrics,
+  prevMetrics, // may be null if not found
+  defaultOpen = true,
+  isWeek = false,
+}) {
   const [open, setOpen] = useState(() => {
     const k = `summary-open:${period.key}`;
     const v = getLs(k, null);
@@ -373,7 +383,7 @@ function PeriodCard({ period, metrics, defaultOpen = true, isWeek = false }) {
 
   return (
     <div className="rounded-xl border border-neutral-200 bg-white shadow-sm mb-3 overflow-hidden">
-      {/* Card header */}
+      {/* Header */}
       <button
         type="button"
         className="w-full text-left px-3 py-2 bg-neutral-50 flex items-center justify-between"
@@ -387,31 +397,41 @@ function PeriodCard({ period, metrics, defaultOpen = true, isWeek = false }) {
 
       {open && (
         <div className="p-3 space-y-4">
-          {/* Volume chart always at TOP */}
+          {/* CHART — grouped bars: Now vs Last */}
           <div>
-            <div className="mb-2 text-sm font-medium">Volume by Muscle</div>
-            <VolumeByMuscleBar data={metrics.volumeByMuscle} />
+            <div className="mb-2 text-sm font-medium">Reps by Muscle (Now vs Last)</div>
+            <GroupedRepsBar
+              current={metrics.repsByMuscle}
+              previous={prevMetrics?.repsByMuscle || null}
+            />
           </div>
 
-          {/* KPI row */}
+          {/* KPIs with vs Last */}
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-lg border p-2">
               <div className="text-xs text-neutral-500">Workouts</div>
-              <div className="text-lg font-semibold">{metrics.frequency}</div>
+              <div className="text-lg font-semibold">
+                {metrics.frequency}
+                <Delta curr={metrics.frequency} prev={prevMetrics?.frequency} />
+              </div>
             </div>
             <div className="rounded-lg border p-2">
-              <div className="text-xs text-neutral-500">Total Volume</div>
+              <div className="text-xs text-neutral-500">Total Reps</div>
               <div className="text-lg font-semibold tabular-nums">
-                {metrics.totalVolume}
+                {metrics.totalReps}
+                <Delta curr={metrics.totalReps} prev={prevMetrics?.totalReps} />
               </div>
             </div>
             <div className="rounded-lg border p-2">
               <div className="text-xs text-neutral-500">New PRs</div>
-              <div className="text-lg font-semibold">{metrics.prs.length}</div>
+              <div className="text-lg font-semibold">
+                {metrics.prs.length}
+                <Delta curr={metrics.prs.length} prev={prevMetrics?.prs?.length} />
+              </div>
             </div>
           </div>
 
-          {/* PR list (if any) */}
+          {/* PR list */}
           {metrics.prs.length > 0 ? (
             <div className="space-y-1">
               <div className="text-sm font-medium">New PRs this period</div>
@@ -438,6 +458,7 @@ function PeriodCard({ period, metrics, defaultOpen = true, isWeek = false }) {
   );
 }
 
+/** Page */
 export default function DashboardSummary() {
   const { workouts, exercises } = useApp();
   const [mode, setMode] = useState("week"); // "week" | "month"
@@ -445,23 +466,42 @@ export default function DashboardSummary() {
   const weeks = useMemo(() => buildWeeks(workouts || []), [workouts]);
   const months = useMemo(() => buildMonths(workouts || []), [workouts]);
 
-  // Pre-compute metrics
-  const weekMetrics = useMemo(
-    () =>
-      weeks.map((w) => ({
-        period: w,
-        metrics: computePeriodMetrics(w, workouts || [], exercises || []),
-      })),
-    [weeks, workouts, exercises]
-  );
-  const monthMetrics = useMemo(
-    () =>
-      months.map((m) => ({
-        period: m,
-        metrics: computePeriodMetrics(m, workouts || [], exercises || []),
-      })),
-    [months, workouts, exercises]
-  );
+  // Maps for previous period lookup
+  const weekMap = useMemo(() => {
+    const m = new Map();
+    for (const w of weeks) m.set(w.key, w);
+    return m;
+  }, [weeks]);
+  const monthMap = useMemo(() => {
+    const m = new Map();
+    for (const mm of months) m.set(mm.key, mm);
+    return m;
+  }, [months]);
+
+  // Compute metrics for all periods
+  const weekData = useMemo(() => {
+    return weeks.map((w) => {
+      const metrics = computePeriodMetrics(w, workouts || [], exercises || []);
+      const prevKey = prevWeekKeyFrom(w.from);
+      const prevPeriod = weekMap.get(prevKey) || null;
+      const prevMetrics = prevPeriod
+        ? computePeriodMetrics(prevPeriod, workouts || [], exercises || [])
+        : null;
+      return { period: w, metrics, prevMetrics };
+    });
+  }, [weeks, workouts, exercises, weekMap]);
+
+  const monthData = useMemo(() => {
+    return months.map((m) => {
+      const metrics = computePeriodMetrics(m, workouts || [], exercises || []);
+      const prevKey = prevMonthKeyFrom(m.from);
+      const prevPeriod = monthMap.get(prevKey) || null;
+      const prevMetrics = prevPeriod
+        ? computePeriodMetrics(prevPeriod, workouts || [], exercises || [])
+        : null;
+      return { period: m, metrics, prevMetrics };
+    });
+  }, [months, workouts, exercises, monthMap]);
 
   return (
     <div className="space-y-3">
@@ -481,14 +521,15 @@ export default function DashboardSummary() {
         </Button>
       </div>
 
-      {/* Cards list (newest first) */}
+      {/* Cards (newest first) */}
       {mode === "week" ? (
-        weekMetrics.length ? (
-          weekMetrics.map(({ period, metrics }) => (
+        weekData.length ? (
+          weekData.map(({ period, metrics, prevMetrics }) => (
             <PeriodCard
               key={period.key}
               period={period}
               metrics={metrics}
+              prevMetrics={prevMetrics}
               defaultOpen={true}
               isWeek={true}
             />
@@ -496,12 +537,13 @@ export default function DashboardSummary() {
         ) : (
           <div className="text-sm text-neutral-500">No weekly data yet.</div>
         )
-      ) : monthMetrics.length ? (
-        monthMetrics.map(({ period, metrics }) => (
+      ) : monthData.length ? (
+        monthData.map(({ period, metrics, prevMetrics }) => (
           <PeriodCard
             key={period.key}
             period={period}
             metrics={metrics}
+            prevMetrics={prevMetrics}
             defaultOpen={true}
             isWeek={false}
           />
@@ -512,4 +554,3 @@ export default function DashboardSummary() {
     </div>
   );
 }
-DashboardSummary.jsx
