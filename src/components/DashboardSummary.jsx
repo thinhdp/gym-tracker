@@ -137,15 +137,17 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
   // Frequency
   const frequency = period.items.length;
 
-  // Total reps + reps by muscle
+  // Total reps + total sets + reps by muscle
   const repsByMuscle = {};
   let totalReps = 0;
+  let totalSets = 0;
   for (const w of period.items) {
     for (const ex of w.exercises || []) {
       const main = resolveMainMuscle(ex.exerciseName, exercisesDb);
       for (const s of ex.sets || []) {
         const reps = setReps(s);
         totalReps += reps;
+        totalSets += 1; // count each set
         repsByMuscle[main] = (repsByMuscle[main] || 0) + reps;
       }
     }
@@ -192,6 +194,7 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
   return {
     frequency,
     totalReps,
+    totalSets,
     repsByMuscle,
     prs: prs.sort((a, b) => b.newBest - a.newBest),
   };
@@ -227,19 +230,26 @@ function averageWeightInRange(weightLogs, from, to) {
 // Also makes delta wrap to next line on narrow cards (block on small screens).
 function Delta({ curr, prev, decimals = 0 }) {
   if (prev == null || curr == null) {
-    return <span className="text-xs text-neutral-500 ml-1 block sm:inline">—</span>;
+    return (
+      <span className="text-xs text-neutral-500 ml-1 block sm:inline">—</span>
+    );
   }
   const factor = Math.pow(10, decimals);
   const diffRaw = curr - prev;
   const diff = Math.round(diffRaw * factor) / factor;
   if (diff === 0) {
-    return <span className="text-xs text-neutral-500 ml-1 block sm:inline">±0</span>;
+    return (
+      <span className="text-xs text-neutral-500 ml-1 block sm:inline">
+        ±0
+      </span>
+    );
   }
   const sign = diff > 0 ? "+" : "";
   const color = diff > 0 ? "text-green-600" : "text-red-600";
   return (
     <span className={`text-xs ml-1 ${color} block sm:inline`}>
-      {sign}{diff}
+      {sign}
+      {diff}
     </span>
   );
 }
@@ -247,11 +257,16 @@ function Delta({ curr, prev, decimals = 0 }) {
 /** Grouped bar chart: Now vs Last (REPS) */
 function GroupedRepsBar({ current, previous }) {
   const muscles = Array.from(
-    new Set([...(current ? Object.keys(current) : []), ...(previous ? Object.keys(previous) : [])])
+    new Set([
+      ...(current ? Object.keys(current) : []),
+      ...(previous ? Object.keys(previous) : []),
+    ])
   );
 
   if (!muscles.length) {
-    return <div className="text-sm text-neutral-500">No reps logged this period.</div>;
+    return (
+      <div className="text-sm text-neutral-500">No reps logged this period.</div>
+    );
   }
 
   // Sort by muscle name A→Z (requested)
@@ -274,7 +289,8 @@ function GroupedRepsBar({ current, previous }) {
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="font-medium">{muscle}</span>
               <span className="tabular-nums">
-                {p ? `LW ${p} · ` : ""}Now {c}
+                {p ? `LW ${p} · ` : ""}
+                Now {c}
               </span>
             </div>
             <div className="h-4 bg-neutral-200 rounded relative overflow-hidden">
@@ -295,6 +311,66 @@ function GroupedRepsBar({ current, previous }) {
       <div className="flex items-center gap-4 text-xs text-neutral-600">
         <div className="flex items-center gap-1">
           <span className="inline-block h-2 w-3 bg-blue-600" /> Now
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="inline-block h-2 w-3 bg-neutral-400" /> Last
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Summary bar chart: compare total reps & total sets (Now vs Last) */
+function SummaryBar({ current, previous }) {
+  // Build an object with values for current/previous
+  const data = {
+    totalReps: {
+      current: current?.totalReps || 0,
+      previous: previous?.totalReps || 0,
+    },
+    totalSets: {
+      current: current?.totalSets || 0,
+      previous: previous?.totalSets || 0,
+    },
+  };
+  const max = Math.max(
+    1,
+    ...Object.values(data).flatMap((v) => [v.current, v.previous])
+  );
+  return (
+    <div className="space-y-3">
+      {Object.keys(data).map((key) => {
+        const { current: c, previous: p } = data[key];
+        const cw = Math.round((c / max) * 100);
+        const pw = Math.round((p / max) * 100);
+        const label = key === "totalReps" ? "Total Reps" : "Total Sets";
+        return (
+          <div key={key} className="w-full">
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="font-medium">{label}</span>
+              <span className="tabular-nums">
+                {p ? `LW ${p} · ` : ""}
+                Now {c}
+              </span>
+            </div>
+            <div className="h-4 bg-neutral-200 rounded relative overflow-hidden">
+              <div
+                className="absolute left-0 top-0 bottom-0 bg-neutral-400"
+                style={{ width: `${pw}%` }}
+                title={`Last: ${p}`}
+              />
+              <div
+                className="absolute left-0 top-0 bottom-0 bg-green-500 mix-blend-multiply"
+                style={{ width: `${cw}%` }}
+                title={`Current: ${c}`}
+              />
+            </div>
+          </div>
+        );
+      })}
+      <div className="flex items-center gap-4 text-xs text-neutral-600">
+        <div className="flex items-center gap-1">
+          <span className="inline-block h-2 w-3 bg-green-500" /> Now
         </div>
         <div className="flex items-center gap-1">
           <span className="inline-block h-2 w-3 bg-neutral-400" /> Last
@@ -383,8 +459,8 @@ function PeriodCard({
   period,
   metrics,
   prevMetrics,
-  weekWeightAvg,       // NEW
-  prevWeekWeightAvg,   // NEW
+  weekWeightAvg, // NEW
+  prevWeekWeightAvg, // NEW
   defaultOpen = true,
   isWeek = false,
 }) {
@@ -417,15 +493,28 @@ function PeriodCard({
         <div className="p-3 space-y-4">
           {/* Chart: reps Now vs Last */}
           <div>
-            <div className="mb-2 text-sm font-medium">Reps by Muscle (Now vs Last)</div>
+            <div className="mb-2 text-sm font-medium">Reps by Muscle (Now vs Last)</div>
             <GroupedRepsBar
               current={metrics.repsByMuscle}
               previous={prevMetrics?.repsByMuscle || null}
             />
           </div>
 
+          {/* Summary chart: total reps & sets Now vs Last */}
+          <div>
+            <div className="mb-2 text-sm font-medium">Total Reps &amp; Sets (Now vs Last)</div>
+            <SummaryBar
+              current={{ totalReps: metrics.totalReps, totalSets: metrics.totalSets }}
+              previous={
+                prevMetrics
+                  ? { totalReps: prevMetrics.totalReps, totalSets: prevMetrics.totalSets }
+                  : null
+              }
+            />
+          </div>
+
           {/* KPIs (wrap when tight; weight delta rounded to 1dp) */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-2">
             <div className="rounded-lg border p-2">
               <div className="text-xs text-neutral-500">Workouts</div>
               <div className="text-lg font-semibold flex flex-wrap items-baseline gap-x-1">
@@ -434,14 +523,21 @@ function PeriodCard({
               </div>
             </div>
             <div className="rounded-lg border p-2">
-              <div className="text-xs text-neutral-500">Total Reps</div>
+              <div className="text-xs text-neutral-500">Total Reps</div>
               <div className="text-lg font-semibold tabular-nums flex flex-wrap items-baseline gap-x-1">
                 {metrics.totalReps}
                 <Delta curr={metrics.totalReps} prev={prevMetrics?.totalReps} />
               </div>
             </div>
             <div className="rounded-lg border p-2">
-              <div className="text-xs text-neutral-500">New PRs</div>
+              <div className="text-xs text-neutral-500">Total Sets</div>
+              <div className="text-lg font-semibold tabular-nums flex flex-wrap items-baseline gap-x-1">
+                {metrics.totalSets}
+                <Delta curr={metrics.totalSets} prev={prevMetrics?.totalSets} />
+              </div>
+            </div>
+            <div className="rounded-lg border p-2">
+              <div className="text-xs text-neutral-500">New PRs</div>
               <div className="text-lg font-semibold flex flex-wrap items-baseline gap-x-1">
                 {metrics.prs.length}
                 <Delta curr={metrics.prs.length} prev={prevMetrics?.prs?.length} />
@@ -450,7 +546,7 @@ function PeriodCard({
             {/* NEW: Avg Weight This Week vs Last Week (weekly cards only) */}
             {isWeek ? (
               <div className="rounded-lg border p-2">
-                <div className="text-xs text-neutral-500">Avg Weight (This Week)</div>
+                <div className="text-xs text-neutral-500">Avg Weight (This Week)</div>
                 <div className="text-lg font-semibold tabular-nums flex flex-wrap items-baseline gap-x-1">
                   {weekWeightAvg ?? "—"}
                   <Delta curr={weekWeightAvg} prev={prevWeekWeightAvg} decimals={1} />
@@ -458,7 +554,7 @@ function PeriodCard({
               </div>
             ) : (
               <div className="rounded-lg border p-2 opacity-50">
-                <div className="text-xs text-neutral-400">Avg Weight</div>
+                <div className="text-xs text-neutral-400">Avg Weight</div>
                 <div className="text-lg font-semibold text-neutral-400">—</div>
               </div>
             )}
@@ -570,18 +666,20 @@ export default function DashboardSummary() {
       {/* Cards */}
       {mode === "week" ? (
         weekData.length ? (
-          weekData.map(({ period, metrics, prevMetrics, weekWeightAvg, prevWeekWeightAvg }) => (
-            <PeriodCard
-              key={period.key}
-              period={period}
-              metrics={metrics}
-              prevMetrics={prevMetrics}
-              weekWeightAvg={weekWeightAvg}
-              prevWeekWeightAvg={prevWeekWeightAvg}
-              defaultOpen={true}
-              isWeek={true}
-            />
-          ))
+          weekData.map(
+            ({ period, metrics, prevMetrics, weekWeightAvg, prevWeekWeightAvg }) => (
+              <PeriodCard
+                key={period.key}
+                period={period}
+                metrics={metrics}
+                prevMetrics={prevMetrics}
+                weekWeightAvg={weekWeightAvg}
+                prevWeekWeightAvg={prevWeekWeightAvg}
+                defaultOpen={true}
+                isWeek={true}
+              />
+            )
+          )
         ) : (
           <div className="text-sm text-neutral-500">No weekly data yet.</div>
         )
