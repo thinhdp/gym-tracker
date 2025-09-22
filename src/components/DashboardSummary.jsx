@@ -292,32 +292,11 @@ function GroupedMuscleBar({ current, previous }) {
 
         return (
           <div key={muscle} className="space-y-2">
-            {/* Reps row */}
+            <div className="text-xs font-medium mb-1">{muscle}</div>
+            {/* Sets row (Now vs Last) */}
             <div className="w-full">
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-medium">{muscle} – Reps</span>
-                <span className="tabular-nums">
-                  {pReps ? `LW ${pReps} · ` : ""}
-                  Now {cReps}
-                </span>
-              </div>
-              <div className="h-4 bg-neutral-200 rounded relative overflow-hidden">
-                <div
-                  className="absolute left-0 top-0 bottom-0 bg-neutral-400"
-                  style={{ width: `${pRepsW}%` }}
-                  title={`Last reps: ${pReps}`}
-                />
-                <div
-                  className="absolute left-0 top-0 bottom-0 bg-blue-600 mix-blend-multiply"
-                  style={{ width: `${cRepsW}%` }}
-                  title={`Current reps: ${cReps}`}
-                />
-              </div>
-            </div>
-            {/* Sets row */}
-            <div className="w-full">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-medium pl-2">Sets</span>
+                <span className="pl-2">Sets</span>
                 <span className="tabular-nums">
                   {pSets ? `LW ${pSets} · ` : ""}
                   Now {cSets}
@@ -336,16 +315,38 @@ function GroupedMuscleBar({ current, previous }) {
                 />
               </div>
             </div>
+            {/* Reps row (Now vs Last) */}
+            <div className="w-full">
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="pl-2">Reps</span>
+                <span className="tabular-nums">
+                  {pReps ? `LW ${pReps} · ` : ""}
+                  Now {cReps}
+                </span>
+              </div>
+              <div className="h-4 bg-neutral-200 rounded relative overflow-hidden">
+                <div
+                  className="absolute left-0 top-0 bottom-0 bg-neutral-400"
+                  style={{ width: `${pRepsW}%` }}
+                  title={`Last reps: ${pReps}`}
+                />
+                <div
+                  className="absolute left-0 top-0 bottom-0 bg-blue-600 mix-blend-multiply"
+                  style={{ width: `${cRepsW}%` }}
+                  title={`Current reps: ${cReps}`}
+                />
+              </div>
+            </div>
           </div>
         );
       })}
       {/* Legend */}
       <div className="flex items-center gap-4 text-xs text-neutral-600">
         <div className="flex items-center gap-1">
-          <span className="inline-block h-2 w-3 bg-blue-600" /> Reps Now
+          <span className="inline-block h-2 w-3 bg-green-500" /> Sets Now
         </div>
         <div className="flex items-center gap-1">
-          <span className="inline-block h-2 w-3 bg-green-500" /> Sets Now
+          <span className="inline-block h-2 w-3 bg-blue-600" /> Reps Now
         </div>
         <div className="flex items-center gap-1">
           <span className="inline-block h-2 w-3 bg-neutral-400" /> Last
