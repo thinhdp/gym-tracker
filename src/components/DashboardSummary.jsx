@@ -91,7 +91,7 @@ function setLs(key, value) {
   } catch {}
 }
 
-/** ========== Volume/PR Metrics (Reps-only) ========== **/
+/** ========== Volume/PR Metrics (Reps and Sets) ========== **/
 function setReps(set) {
   const r = Number(set?.reps ?? 0);
   return Number.isFinite(r) ? r : 0;
@@ -137,8 +137,9 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
   // Frequency
   const frequency = period.items.length;
 
-  // Total reps + total sets + reps by muscle
+  // Totals and per-muscle metrics
   const repsByMuscle = {};
+  const setsByMuscle = {};
   let totalReps = 0;
   let totalSets = 0;
   for (const w of period.items) {
@@ -149,11 +150,12 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
         totalReps += reps;
         totalSets += 1; // count each set
         repsByMuscle[main] = (repsByMuscle[main] || 0) + reps;
+        setsByMuscle[main] = (setsByMuscle[main] || 0) + 1;
       }
     }
   }
 
-  // PRs (based on max WEIGHT vs history before the period)
+  // PRs (based on max weight vs history before the period)
   const bestBefore = new Map(); // name -> max weight before period.from
   for (const w of workouts) {
     const d = toDate(w.date);
@@ -196,6 +198,7 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
     totalReps,
     totalSets,
     repsByMuscle,
+    setsByMuscle,
     prs: prs.sort((a, b) => b.newBest - a.newBest),
   };
 }
@@ -254,123 +257,95 @@ function Delta({ curr, prev, decimals = 0 }) {
   );
 }
 
-/** Grouped bar chart: Now vs Last (REPS) */
-function GroupedRepsBar({ current, previous }) {
-  const muscles = Array.from(
-    new Set([
-      ...(current ? Object.keys(current) : []),
-      ...(previous ? Object.keys(previous) : []),
-    ])
-  );
+/** Grouped bar chart: Now vs Last (reps & sets per muscle) */
+function GroupedMuscleBar({ current, previous }) {
+  // Collect all muscles that appear in either reps or sets
+  const muscles = new Set([
+    ...Object.keys(current?.reps || {}),
+    ...Object.keys(current?.sets || {}),
+    ...(previous?.reps ? Object.keys(previous.reps) : []),
+    ...(previous?.sets ? Object.keys(previous.sets) : []),
+  ]);
 
-  if (!muscles.length) {
+  if (!muscles.size) {
     return (
-      <div className="text-sm text-neutral-500">No reps logged this period.</div>
+      <div className="text-sm text-neutral-500">No data logged this period.</div>
     );
   }
 
-  // Sort by muscle name A→Z (requested)
-  muscles.sort((a, b) => a.localeCompare(b));
-
-  const max = Math.max(
-    1,
-    ...muscles.map((m) => Math.max(current?.[m] || 0, previous?.[m] || 0))
-  );
-
   return (
     <div className="space-y-3">
-      {muscles.map((muscle) => {
-        const c = current?.[muscle] || 0;
-        const p = previous?.[muscle] || 0;
-        const cw = Math.round((c / max) * 100);
-        const pw = Math.round((p / max) * 100);
+      {Array.from(muscles).sort((a, b) => a.localeCompare(b)).map((muscle) => {
+        // Reps
+        const cReps = current?.reps?.[muscle] || 0;
+        const pReps = previous?.reps?.[muscle] || 0;
+        const maxReps = Math.max(1, cReps, pReps);
+        const cRepsW = Math.round((cReps / maxReps) * 100);
+        const pRepsW = Math.round((pReps / maxReps) * 100);
+
+        // Sets
+        const cSets = current?.sets?.[muscle] || 0;
+        const pSets = previous?.sets?.[muscle] || 0;
+        const maxSets = Math.max(1, cSets, pSets);
+        const cSetsW = Math.round((cSets / maxSets) * 100);
+        const pSetsW = Math.round((pSets / maxSets) * 100);
+
         return (
-          <div key={muscle} className="w-full">
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="font-medium">{muscle}</span>
-              <span className="tabular-nums">
-                {p ? `LW ${p} · ` : ""}
-                Now {c}
-              </span>
+          <div key={muscle} className="space-y-2">
+            {/* Reps row */}
+            <div className="w-full">
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="font-medium">{muscle} – Reps</span>
+                <span className="tabular-nums">
+                  {pReps ? `LW ${pReps} · ` : ""}
+                  Now {cReps}
+                </span>
+              </div>
+              <div className="h-4 bg-neutral-200 rounded relative overflow-hidden">
+                <div
+                  className="absolute left-0 top-0 bottom-0 bg-neutral-400"
+                  style={{ width: `${pRepsW}%` }}
+                  title={`Last reps: ${pReps}`}
+                />
+                <div
+                  className="absolute left-0 top-0 bottom-0 bg-blue-600 mix-blend-multiply"
+                  style={{ width: `${cRepsW}%` }}
+                  title={`Current reps: ${cReps}`}
+                />
+              </div>
             </div>
-            <div className="h-4 bg-neutral-200 rounded relative overflow-hidden">
-              <div
-                className="absolute left-0 top-0 bottom-0 bg-neutral-400"
-                style={{ width: `${pw}%` }}
-                title={`Last: ${p}`}
-              />
-              <div
-                className="absolute left-0 top-0 bottom-0 bg-blue-600 mix-blend-multiply"
-                style={{ width: `${cw}%` }}
-                title={`Current: ${c}`}
-              />
+            {/* Sets row */}
+            <div className="w-full">
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="font-medium pl-2">Sets</span>
+                <span className="tabular-nums">
+                  {pSets ? `LW ${pSets} · ` : ""}
+                  Now {cSets}
+                </span>
+              </div>
+              <div className="h-4 bg-neutral-200 rounded relative overflow-hidden">
+                <div
+                  className="absolute left-0 top-0 bottom-0 bg-neutral-400"
+                  style={{ width: `${pSetsW}%` }}
+                  title={`Last sets: ${pSets}`}
+                />
+                <div
+                  className="absolute left-0 top-0 bottom-0 bg-green-500 mix-blend-multiply"
+                  style={{ width: `${cSetsW}%` }}
+                  title={`Current sets: ${cSets}`}
+                />
+              </div>
             </div>
           </div>
         );
       })}
+      {/* Legend */}
       <div className="flex items-center gap-4 text-xs text-neutral-600">
         <div className="flex items-center gap-1">
-          <span className="inline-block h-2 w-3 bg-blue-600" /> Now
+          <span className="inline-block h-2 w-3 bg-blue-600" /> Reps Now
         </div>
         <div className="flex items-center gap-1">
-          <span className="inline-block h-2 w-3 bg-neutral-400" /> Last
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Summary bar chart: compare total reps & total sets (Now vs Last) */
-function SummaryBar({ current, previous }) {
-  // Build an object with values for current/previous
-  const data = {
-    totalReps: {
-      current: current?.totalReps || 0,
-      previous: previous?.totalReps || 0,
-    },
-    totalSets: {
-      current: current?.totalSets || 0,
-      previous: previous?.totalSets || 0,
-    },
-  };
-  const max = Math.max(
-    1,
-    ...Object.values(data).flatMap((v) => [v.current, v.previous])
-  );
-  return (
-    <div className="space-y-3">
-      {Object.keys(data).map((key) => {
-        const { current: c, previous: p } = data[key];
-        const cw = Math.round((c / max) * 100);
-        const pw = Math.round((p / max) * 100);
-        const label = key === "totalReps" ? "Total Reps" : "Total Sets";
-        return (
-          <div key={key} className="w-full">
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="font-medium">{label}</span>
-              <span className="tabular-nums">
-                {p ? `LW ${p} · ` : ""}
-                Now {c}
-              </span>
-            </div>
-            <div className="h-4 bg-neutral-200 rounded relative overflow-hidden">
-              <div
-                className="absolute left-0 top-0 bottom-0 bg-neutral-400"
-                style={{ width: `${pw}%` }}
-                title={`Last: ${p}`}
-              />
-              <div
-                className="absolute left-0 top-0 bottom-0 bg-green-500 mix-blend-multiply"
-                style={{ width: `${cw}%` }}
-                title={`Current: ${c}`}
-              />
-            </div>
-          </div>
-        );
-      })}
-      <div className="flex items-center gap-4 text-xs text-neutral-600">
-        <div className="flex items-center gap-1">
-          <span className="inline-block h-2 w-3 bg-green-500" /> Now
+          <span className="inline-block h-2 w-3 bg-green-500" /> Sets Now
         </div>
         <div className="flex items-center gap-1">
           <span className="inline-block h-2 w-3 bg-neutral-400" /> Last
@@ -491,23 +466,14 @@ function PeriodCard({
 
       {open && (
         <div className="p-3 space-y-4">
-          {/* Chart: reps Now vs Last */}
+          {/* Chart: reps & sets by muscle Now vs Last */}
           <div>
-            <div className="mb-2 text-sm font-medium">Reps by Muscle (Now vs Last)</div>
-            <GroupedRepsBar
-              current={metrics.repsByMuscle}
-              previous={prevMetrics?.repsByMuscle || null}
-            />
-          </div>
-
-          {/* Summary chart: total reps & sets Now vs Last */}
-          <div>
-            <div className="mb-2 text-sm font-medium">Total Reps &amp; Sets (Now vs Last)</div>
-            <SummaryBar
-              current={{ totalReps: metrics.totalReps, totalSets: metrics.totalSets }}
+            <div className="mb-2 text-sm font-medium">Reps &amp; Sets by Muscle (Now vs Last)</div>
+            <GroupedMuscleBar
+              current={{ reps: metrics.repsByMuscle, sets: metrics.setsByMuscle }}
               previous={
                 prevMetrics
-                  ? { totalReps: prevMetrics.totalReps, totalSets: prevMetrics.totalSets }
+                  ? { reps: prevMetrics.repsByMuscle, sets: prevMetrics.setsByMuscle }
                   : null
               }
             />
