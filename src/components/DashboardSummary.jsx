@@ -188,18 +188,19 @@ function computePeriodMetrics(period, workouts, exercisesDb) {
   const prs = [];
   for (const [name, { best, date }] of bestInWindow.entries()) {
     const oldBest = bestBefore.get(name) || 0;
-    if (best > oldBest) {
+    // Only count as PR if previous best was greater than 0
+    if (best > oldBest && oldBest > 0) {
       prs.push({ exercise: name, newBest: best, prevBest: oldBest, date });
     }
   }
 
   return {
-    frequency,
-    totalReps,
-    totalSets,
-    repsByMuscle,
-    setsByMuscle,
-    prs: prs.sort((a, b) => b.newBest - a.newBest),
+  frequency,
+  totalReps,
+  totalSets,
+  repsByMuscle,
+  setsByMuscle,
+  prs: prs.sort((a, b) => b.newBest - a.newBest),
   };
 }
 
