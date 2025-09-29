@@ -156,12 +156,6 @@ export default function WorkoutPlanner({ onCreated }) {
             />
           </div>
 
-          {/* Add exercise */}
-          <AddExerciseInput
-            allExercises={exercises}
-            onAdd={addExerciseByName}
-          />
-
           {/* Exercises list */}
           <div className="space-y-2">
             {items.length === 0 && (
@@ -217,6 +211,12 @@ export default function WorkoutPlanner({ onCreated }) {
               );
             })}
           </div>
+
+          {/* Add exercise input moved below the list */}
+          <AddExerciseInput
+            allExercises={exercises}
+            onAdd={addExerciseByName}
+          />
 
           {/* Action buttons */}
           <div className="flex justify-end gap-2">
