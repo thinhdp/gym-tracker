@@ -104,26 +104,25 @@ export default function WeightChart({ logs, view = 'daily' }) {
     }
     return entries.map((date) => ({ date, weight: rawLogs[date] }));
   }, [rawLogs, view]);
-  // Determine page size: 12 weeks or 14 days
+  // Determine page size: 12 weeks or 14 days. This defines the width of the
+  // visible window (number of slots displayed at once).
   const PAGE_SIZE = view === 'weekly' ? 12 : 14;
-  // Slice the most recent PAGE_SIZE entries
-  const displayed = useMemo(() => {
-    if (!weightData.length) return [];
-    return weightData.slice(Math.max(0, weightData.length - PAGE_SIZE));
-  }, [weightData, PAGE_SIZE]);
-  // Convert entries to points with sequential x values
+  // Convert all entries to points with sequential x values. We assign each
+  // record a zero-based index so that the x-axis spacing is uniform.
   const points = useMemo(() => {
-    return displayed.map((row, idx) => {
-      // Label shows month-day for both daily and weekly view
-      const label = row.date.slice(5);
+    return weightData.map((row, idx) => {
+      const label = row.date.slice(5); // show MM-DD portion
       return { x: idx, y: row.weight, label };
     });
-  }, [displayed]);
-  // Chart width: ensure room for PAGE_SIZE slots
-  const chartWidth = Math.max(points.length, PAGE_SIZE) * 60;
+  }, [weightData]);
+  // Full chart width based on the total number of points
+  const chartWidth = points.length * 60;
+  // Visible window width: fixed number of slots (PAGE_SIZE)
+  const visibleWidth = PAGE_SIZE * 60;
   return (
     <div>
-      <div style={{ overflowX: 'auto' }}>
+      {/* Wrapper with fixed width so only PAGE_SIZE points are visible at once */}
+      <div style={{ overflowX: 'auto', width: `${visibleWidth}px` }}>
         <div style={{ width: `${chartWidth}px` }}>
           <SimpleLineChart points={points} width={chartWidth} />
         </div>
