@@ -176,9 +176,10 @@ export default function WeightTracker() {
       });
   }, [logs]);
 
-  // We no longer compute weeklyPoints for the chart here. The WeightChart
-  // component handles aggregation for monthly view internally. weeklyPoints
-  // is retained only if you need it elsewhere (e.g. for alternate visualizations).
+  // We no longer compute aggregated points for the chart here. The WeightChart
+  // component handles aggregation for weekly view internally. If you need
+  // weeklyPoints elsewhere (e.g. for alternate visualizations), you can
+  // compute them similarly to the original implementation.
 
   const onCellClick = (date) => {
     const key = ymd(date);
