@@ -331,9 +331,11 @@ export default function WeightTracker() {
         {/*
           Use the WeightChart component to render the line chart. It
           automatically aggregates data based on the view (daily or
-          weekly) and renders a horizontally scrollable graph showing
-          only two weeks or twelve weeks at a time. Passing the logs
-          ensures it uses the same data that WeightTracker manages.
+          weekly) and renders a horizontally scrollable graph. The
+          window displays at most 14 days or 12 weeks at once, but
+          you can scroll left/right to view the rest of your weight
+          history. Passing the logs ensures it uses the same data
+          that WeightTracker manages.
         */}
         <div className="rounded-lg border p-3 overflow-x-auto">
           <WeightChart view={mode} logs={logs} />
