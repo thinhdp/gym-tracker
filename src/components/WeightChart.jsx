@@ -1,33 +1,77 @@
 import React, { useMemo } from 'react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
 import { loadLS } from '../lib/storage';
 
 /**
- * Scrollable line chart for displaying body‑weight logs. The chart
- * renders a maximum of two weeks (14 days) at a time in daily mode
- * or twelve weeks in weekly mode. The most recent data points are
- * shown, and the container scrolls horizontally when there are
- * fewer data points than the page size. There are no explicit
- * navigation buttons; users can simply swipe or scroll sideways.
+ * A simple SVG line chart component. Accepts an array of points
+ * with x/y coordinates and draws a polyline with markers and labels.
+ * The width of the chart is configurable to support horizontal scrolling.
+ */
+function SimpleLineChart({ points, height = 160, width, padding = 24 }) {
+  if (!points || points.length < 2) {
+    return <div className="text-sm text-neutral-500">Not enough data to plot.</div>;
+  }
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const scaleX = (x) =>
+    padding + ((x - minX) / (maxX - minX || 1)) * (width - padding * 2);
+  const scaleY = (y) =>
+    height -
+    padding -
+    ((y - minY) / (maxY - minY || 1)) * (height - padding * 2);
+  const linePoints = points
+    .map((p) => `${scaleX(p.x)},${scaleY(p.y)}`)
+    .join(' ');
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      className="w-full"
+    >
+      {/* line */}
+      <polyline fill="none" stroke="currentColor" strokeWidth="2" points={linePoints} />
+      {/* point markers + labels */}
+      {points.map((p, i) => {
+        const cx = scaleX(p.x);
+        const cy = scaleY(p.y);
+        return (
+          <g key={i}>
+            <circle cx={cx} cy={cy} r="3" fill="currentColor" />
+            <text
+              x={cx}
+              y={cy - 8}
+              fontSize="10"
+              textAnchor="middle"
+              fill="currentColor"
+            >
+              {p.label}: {p.y}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/**
+ * Scrollable line chart for displaying body‑weight logs. This component
+ * renders a maximum of two weeks (14 days) at a time in daily mode or
+ * twelve weeks in weekly mode. The most recent entries are shown,
+ * and the chart scrolls horizontally when there are more slots than
+ * displayed data. No external charting library is required.
  *
  * Props:
- *   logs (optional) – a plain object mapping ISO date strings to
- *   numeric weights. If omitted, data is loaded from localStorage.
+ *   logs (optional) – an object mapping ISO date strings to weights.
  *   view – "daily" or "weekly" to determine aggregation.
  */
 export default function WeightChart({ logs, view = 'daily' }) {
   // Read weight logs from props or localStorage
   const rawLogs = logs || loadLS('weightLogs', {});
-
-  // Helper to compute Monday as the start of week
+  // Helper to compute the start of the week (Monday)
   const startOfWeekMonday = (date) => {
     const d = new Date(date);
     const day = d.getDay();
@@ -36,17 +80,15 @@ export default function WeightChart({ logs, view = 'daily' }) {
     d.setDate(d.getDate() - diffToMon);
     return d;
   };
-
-  // Normalize the weight data based on view
+  // Normalize data according to view
   const weightData = useMemo(() => {
     const entries = Object.keys(rawLogs).sort();
     if (view === 'weekly') {
-      // Group entries by the start of their week and average
       const byWeek = {};
       entries.forEach((date) => {
         const d = new Date(date + 'T00:00:00');
         const weekStart = startOfWeekMonday(d);
-        const wkKey = weekStart.toISOString().slice(0, 10); // YYYY-MM-DD
+        const wkKey = weekStart.toISOString().slice(0, 10);
         if (!byWeek[wkKey]) byWeek[wkKey] = [];
         byWeek[wkKey].push(rawLogs[date]);
       });
@@ -60,44 +102,30 @@ export default function WeightChart({ logs, view = 'daily' }) {
           return { date: wk, weight: parseFloat(avg.toFixed(2)) };
         });
     }
-    // Daily view: just map to date/weight pairs
     return entries.map((date) => ({ date, weight: rawLogs[date] }));
   }, [rawLogs, view]);
-
-  // Determine page size based on view: two weeks for daily, 12 weeks for weekly
+  // Determine page size: 12 weeks or 14 days
   const PAGE_SIZE = view === 'weekly' ? 12 : 14;
-
   // Slice the most recent PAGE_SIZE entries
-  const displayedData = useMemo(() => {
+  const displayed = useMemo(() => {
     if (!weightData.length) return [];
     return weightData.slice(Math.max(0, weightData.length - PAGE_SIZE));
   }, [weightData, PAGE_SIZE]);
-
-  // Calculate container width; ensure it’s wide enough to show PAGE_SIZE slots
-  const containerWidth = `${Math.max(displayedData.length, PAGE_SIZE) * 60}px`;
-
+  // Convert entries to points with sequential x values
+  const points = useMemo(() => {
+    return displayed.map((row, idx) => {
+      // Label shows month-day for both daily and weekly view
+      const label = row.date.slice(5);
+      return { x: idx, y: row.weight, label };
+    });
+  }, [displayed]);
+  // Chart width: ensure room for PAGE_SIZE slots
+  const chartWidth = Math.max(points.length, PAGE_SIZE) * 60;
   return (
     <div>
-      {/* Scrollable chart wrapper: sets the width based on the number of entries */}
       <div style={{ overflowX: 'auto' }}>
-        <div style={{ width: containerWidth, height: '260px' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={displayedData}
-              margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} domain={['dataMin', 'dataMax']} />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="weight"
-                stroke="#3b82f6"
-                dot
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <div style={{ width: `${chartWidth}px` }}>
+          <SimpleLineChart points={points} width={chartWidth} />
         </div>
       </div>
     </div>
