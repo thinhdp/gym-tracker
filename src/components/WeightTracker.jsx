@@ -1,6 +1,11 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Button } from "./ui/Button";
 import { useApp } from "../context/AppContext";
+// Import the new scrollable weight chart component. This component handles
+// rendering both daily and monthly weight data in a horizontally scrollable
+// graph. It reads from the provided logs or falls back to localStorage
+// internally if no logs are supplied.
+import WeightChart from "./WeightChart";
 
 /** Storage helpers */
 function getLs(key, fallback = {}) {
@@ -97,22 +102,15 @@ function LineChart({ points, height = 160, padding = 24 }) {
   const maxY = Math.max(...ys);
   const width = 640;
 
-  const scaleX = (x) =>
-    padding + ((x - minX) / (maxX - minX || 1)) * (width - padding * 2);
-  const scaleY = (y) =>
-    height - padding - ((y - minY) / (maxY - minY || 1)) * (height - padding * 2);
+  const scaleX = (x) => padding + ((x - minX) / (maxX - minX || 1)) * (width - padding * 2);
+  const scaleY = (y) => height - padding - ((y - minY) / (maxY - minY || 1)) * (height - padding * 2);
 
   const linePoints = points.map((p) => `${scaleX(p.x)},${scaleY(p.y)}`).join(" ");
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="w-full">
       {/* line */}
-      <polyline
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        points={linePoints}
-      />
+      <polyline fill="none" stroke="currentColor" strokeWidth="2" points={linePoints} />
       {/* point markers + labels */}
       {points.map((p, i) => {
         const cx = scaleX(p.x);
@@ -120,13 +118,7 @@ function LineChart({ points, height = 160, padding = 24 }) {
         return (
           <g key={i}>
             <circle cx={cx} cy={cy} r="3" fill="currentColor" />
-            <text
-              x={cx}
-              y={cy - 8}
-              fontSize="10"
-              textAnchor="middle"
-              fill="currentColor"
-            >
+            <text x={cx} y={cy - 8} fontSize="10" textAnchor="middle" fill="currentColor">
               {p.label}: {p.y}
             </text>
           </g>
@@ -166,10 +158,7 @@ export default function WeightTracker() {
   const todayYmd = ymd(new Date());
 
   // Weekly stats for current week (based on "today")
-  const { curr: weekAvg, delta: weekDelta } = useMemo(
-    () => computeWeeklyAvgAndDelta(logs, new Date()),
-    [logs]
-  );
+  const { curr: weekAvg, delta: weekDelta } = useMemo(() => computeWeeklyAvgAndDelta(logs, new Date()), [logs]);
 
   // Graph data toggle: "daily" | "weekly"
   const [mode, setMode] = useState("daily");
@@ -182,39 +171,14 @@ export default function WeightTracker() {
       .filter((k) => typeof logs[k] === "number" && isFinite(logs[k]))
       .map((k) => {
         const d = new Date(k + "T00:00:00");
-        const label =
-          `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const label = `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         return { x: (d - base) / 86400000, y: logs[k], label };
       });
   }, [logs]);
 
-  const weeklyPoints = useMemo(() => {
-    // build weekly averages over all logged dates
-    const keys = Object.keys(logs).sort();
-    if (!keys.length) return [];
-    const byWeek = new Map();
-    for (const k of keys) {
-      const d = new Date(k + "T00:00:00");
-      const wkStart = startOfWeekMonday(d);
-      const wkKey = ymd(wkStart);
-      const arr = byWeek.get(wkKey) || [];
-      arr.push(logs[k]);
-      byWeek.set(wkKey, arr);
-    }
-    const sorted = [...byWeek.entries()]
-      .map(([k, arr]) => {
-        const avg = Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10;
-        return { k, d: new Date(k + "T00:00:00"), avg };
-      })
-      .sort((a, b) => a.d - b.d);
-
-    const base = sorted[0].d;
-    return sorted.map((row) => ({
-      x: (row.d - base) / 86400000,
-      y: row.avg,
-      label: `${String(row.d.getMonth() + 1).padStart(2, "0")}-${String(row.d.getDate()).padStart(2, "0")}`,
-    }));
-  }, [logs]);
+  // We no longer compute weeklyPoints for the chart here. The WeightChart
+  // component handles aggregation for monthly view internally. weeklyPoints
+  // is retained only if you need it elsewhere (e.g. for alternate visualizations).
 
   const onCellClick = (date) => {
     const key = ymd(date);
@@ -292,7 +256,6 @@ export default function WeightTracker() {
               <div className="absolute top-1 left-1 text-[10px] text-neutral-500">
                 {d.getDate()}
               </div>
-
               {editingKey === key ? (
                 <div className="absolute inset-0 flex items-center justify-center p-2">
                   <input
@@ -364,12 +327,15 @@ export default function WeightTracker() {
             Weekly
           </Button>
         </div>
-        <div className="rounded-lg border p-3">
-          {mode === "daily" ? (
-            <LineChart points={dailyPoints} />
-          ) : (
-            <LineChart points={weeklyPoints} />
-          )}
+        {/*
+          Use the WeightChart component to render the line chart. It
+          automatically aggregates data based on the view (daily or
+          weekly) and renders a horizontally scrollable graph showing
+          only two weeks or twelve weeks at a time. Passing the logs
+          ensures it uses the same data that WeightTracker manages.
+        */}
+        <div className="rounded-lg border p-3 overflow-x-auto">
+          <WeightChart view={mode} logs={logs} />
         </div>
       </div>
     </div>
