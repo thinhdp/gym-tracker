@@ -72,6 +72,12 @@ function AppContent() {
               Exercises
             </Button>
             <Button
+              variant={tab === "weight" ? "primary" : "ghost"}
+              onClick={() => setTab("weight")}
+            >
+              Weight
+            </Button>
+            <Button
               variant={tab === "notepad" ? "primary" : "ghost"}
               onClick={() => setTab("notepad")}
             >
@@ -82,12 +88,6 @@ function AppContent() {
               onClick={() => setTab("summary")}
             >
               Summary
-            </Button>
-            <Button
-              variant={tab === "weight" ? "primary" : "ghost"}
-              onClick={() => setTab("weight")}
-            >
-              Weight
             </Button>
           </div>
         </div>
