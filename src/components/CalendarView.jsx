@@ -14,7 +14,9 @@ export default function CalendarView({ workouts, setWorkouts, exercises, setExer
   const [selected, setSelected] = useState(() => new Date().toISOString().slice(0, 10));
   const confirm = useConfirm();
   const year = viewDate.getFullYear(); const month = viewDate.getMonth();
-  const first = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 0).getDate(); const startWeekday = first.getDay();
+  const first = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 0).getDate(); 
+  // Shift getDay() so Monday=0 and Sunday=6
+  const startWeekday = (first.getDay() + 6) % 7;
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
   const byDate = useMemo(() => {
@@ -46,7 +48,7 @@ export default function CalendarView({ workouts, setWorkouts, exercises, setExer
           <Button variant="secondary" onClick={nextMonth}>Next ›</Button>
         </div>
         <div className="grid grid-cols-7 text-xs text-neutral-600 mb-1">
-          {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => <div key={d} className="py-1 text-center">{d}</div>)}
+          {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => <div key={d} className="py-1 text-center">{d}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-1">
           {days.map((ds, idx) => {
