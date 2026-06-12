@@ -14,20 +14,15 @@ import {
   prevMonthKeyFrom,
 } from "../lib/dateUtils";
 import { loadLS } from "../lib/storage";
+import { ymdFromDate } from "../lib/date";
 import PeriodCard from "./PeriodCard";
 
 // Helper for averaging weight logs (y-m-d keys).
-function ymd(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
 function averageWeightInRange(weightLogs, from, to) {
   const vals = [];
   const cur = new Date(from);
   while (cur <= to) {
-    const key = ymd(cur);
+    const key = ymdFromDate(cur);
     const v = weightLogs[key];
     if (typeof v === "number" && isFinite(v)) vals.push(v);
     cur.setDate(cur.getDate() + 1);

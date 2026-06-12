@@ -6,17 +6,10 @@ import { useApp } from "../context/AppContext";
 import { buildWeeks } from "../lib/metrics";
 import { prevWeekKeyFrom } from "../lib/dateUtils";
 import { Button } from "./ui/Button";
+import { ymdFromDate } from "../lib/date";
 
 // Storage key for the notepad contents
 const K_NOTE = "mgym.note.v1";
-
-// Helper to format a Date as YYYY-MM-DD
-function formatYmd(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 // Extract weight logs within a date range (inclusive)
 function sliceWeightLogs(weightLogs, from, to) {
@@ -27,7 +20,7 @@ function sliceWeightLogs(weightLogs, from, to) {
   start.setHours(0, 0, 0, 0);
   end.setHours(23, 59, 59, 999);
   while (start <= end) {
-    const key = formatYmd(start);
+    const key = ymdFromDate(start);
     if (Object.prototype.hasOwnProperty.call(weightLogs, key)) {
       result[key] = weightLogs[key];
     }
@@ -100,16 +93,16 @@ export default function WeeklyNotes({ periodKey }) {
       const exportData = {
         currentWeek: {
           weekKey: current.key,
-          from: formatYmd(current.from),
-          to: formatYmd(current.to),
+          from: ymdFromDate(current.from),
+          to: ymdFromDate(current.to),
           weightLogs: thisWeekWeights,
           workouts: current.items,
         },
         previousWeek: previous
           ? {
               weekKey: previous.key,
-              from: formatYmd(previous.from),
-              to: formatYmd(previous.to),
+              from: ymdFromDate(previous.from),
+              to: ymdFromDate(previous.to),
               weightLogs: lastWeekWeights,
               workouts: previous.items,
             }

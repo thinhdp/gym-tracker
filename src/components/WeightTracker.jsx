@@ -6,57 +6,15 @@ import { useApp } from "../context/AppContext";
 // graph. It reads from the provided logs or falls back to localStorage
 // internally if no logs are supplied.
 import WeightChart from "./WeightChart";
+import { loadLS, saveLS } from "../lib/storage";
+import { ymdFromDate } from "../lib/date";
+import {
+  startOfMonth,
+  endOfMonth,
+  startOfWeekMonday,
+  endOfWeekSunday,
+} from "../lib/dateUtils";
 
-/** Storage helpers */
-function getLs(key, fallback = {}) {
-  try {
-    const v = localStorage.getItem(key);
-    return v === null ? fallback : JSON.parse(v);
-  } catch {
-    return fallback;
-  }
-}
-function setLs(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
-}
-
-function ymd(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-/** Calendar helpers (Mon–Sun) */
-function startOfMonth(date) {
-  const d = new Date(date);
-  d.setDate(1);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-function endOfMonth(date) {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + 1, 0);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
-function startOfWeekMonday(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diffToMon = (day + 6) % 7;
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - diffToMon);
-  return d;
-}
-function endOfWeekSunday(date) {
-  const start = startOfWeekMonday(date);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-  return end;
-}
 function weekRangeOf(date) {
   const from = startOfWeekMonday(date);
   const to = endOfWeekSunday(date);
@@ -68,7 +26,7 @@ function averageWeightInRange(weightLogs, from, to) {
   const vals = [];
   const cur = new Date(from);
   while (cur <= to) {
-    const key = ymd(cur);
+    const key = ymdFromDate(cur);
     const v = weightLogs[key];
     if (typeof v === "number" && isFinite(v)) vals.push(v);
     cur.setDate(cur.getDate() + 1);
@@ -95,11 +53,10 @@ export default function WeightTracker() {
   const [editingKey, setEditingKey] = useState(null); // YYYY-MM-DD being edited
   const [draft, setDraft] = useState("");
 
-  const weightLogs = useMemo(() => getLs("weightLogs", {}), []);
-  const [logs, setLogs] = useState(weightLogs);
+  const [logs, setLogs] = useState(() => loadLS("weightLogs", {}));
 
   useEffect(() => {
-    setLs("weightLogs", logs);
+    saveLS("weightLogs", logs);
   }, [logs]);
 
   const days = useMemo(() => {
@@ -116,7 +73,7 @@ export default function WeightTracker() {
     return arr;
   }, [monthCursor]);
 
-  const todayYmd = ymd(new Date());
+  const todayYmd = ymdFromDate(new Date());
 
   // Weekly stats for current week (based on "today")
   const { curr: weekAvg, delta: weekDelta } = useMemo(() => computeWeeklyAvgAndDelta(logs, new Date()), [logs]);
@@ -125,7 +82,7 @@ export default function WeightTracker() {
   const [mode, setMode] = useState("daily");
 
   const onCellClick = (date) => {
-    const key = ymd(date);
+    const key = ymdFromDate(date);
     setEditingKey(key);
     setDraft(logs[key] != null ? String(logs[key]) : "");
   };
@@ -182,7 +139,7 @@ export default function WeightTracker() {
           </div>
         ))}
         {days.map((d) => {
-          const key = ymd(d);
+          const key = ymdFromDate(d);
           const inMonth = d.getMonth() === monthCursor.getMonth();
           const isToday = key === todayYmd;
           const val = logs[key];

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { loadLS } from '../lib/storage';
+import { startOfWeekMonday } from '../lib/dateUtils';
 
 /**
  * A simple SVG line chart component. Accepts an array of points
@@ -71,15 +72,6 @@ function SimpleLineChart({ points, height = 160, width, padding = 24 }) {
 export default function WeightChart({ logs, view = 'daily' }) {
   // Read weight logs from props or localStorage
   const rawLogs = logs || loadLS('weightLogs', {});
-  // Helper to compute the start of the week (Monday)
-  const startOfWeekMonday = (date) => {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diffToMon = (day + 6) % 7;
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() - diffToMon);
-    return d;
-  };
   // Normalize data according to view
   const weightData = useMemo(() => {
     const entries = Object.keys(rawLogs).sort();
