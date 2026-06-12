@@ -9,6 +9,39 @@
  *
  * Returns an object with `exerciseName` and `sets`, or null if the name is blank.
  */
+/**
+ * Collect distinct values of each exercise metadata field for use as
+ * combo-input suggestions. Secondary muscles are split on commas.
+ * Returns { mainOptions, secondaryOptions, typeOptions, equipmentOptions, forceOptions }.
+ */
+export function extractExerciseOptions(exercises) {
+  const mm = new Set(),
+    sm = new Set(),
+    t = new Set(),
+    eq = new Set(),
+    f = new Set();
+  for (const e of exercises) {
+    if (e.mainMuscle) mm.add(String(e.mainMuscle).trim());
+    if (e.secondaryMuscles)
+      String(e.secondaryMuscles)
+        .split(",")
+        .forEach((s) => {
+          const v = s.trim();
+          if (v) sm.add(v);
+        });
+    if (e.type) t.add(String(e.type).trim());
+    if (e.equipment) eq.add(String(e.equipment).trim());
+    if (e.force) f.add(String(e.force).trim());
+  }
+  return {
+    mainOptions: [...mm],
+    secondaryOptions: [...sm],
+    typeOptions: [...t],
+    equipmentOptions: [...eq],
+    forceOptions: [...f],
+  };
+}
+
 /** All workouts that contain the named exercise. */
 export function workoutsWithExercise(workouts, exerciseName) {
   return (workouts || []).filter((w) =>
