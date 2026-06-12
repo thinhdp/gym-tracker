@@ -31,8 +31,10 @@ state (and is itself persisted).
 | **PostCSS**              | 8.4                      | CSS pipeline Tailwind plugs into. Config in `postcss.config.js`.                                                            |
 | **autoprefixer**         | 10.4                     | PostCSS plugin adding vendor prefixes at build time.                                                                        |
 
-There is **no TypeScript, router, data-fetching library, or test framework**.
-Charts (weight trend, muscle bars) are hand-rolled SVG — no charting dependency.
+There is **no TypeScript, router, or data-fetching library**. Charts (weight
+trend, muscle bars) are hand-rolled SVG — no charting dependency. Tests use
+**Vitest + React Testing Library** (see [docs/TESTING.md](docs/TESTING.md));
+ESLint + Prettier enforce style.
 
 ## Directory structure
 
@@ -318,7 +320,11 @@ index.html → src/main.jsx → src/App.jsx (+ context/components/lib)
                                   globs) → autoprefixer → bundled CSS
 ```
 
-No lint or test step is configured. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Quality tooling: **ESLint** (flat config in `eslint.config.js`) + **Prettier**
+for style, **Vitest + React Testing Library** for tests (config in the `test`
+block of `vite.config.js`, setup in `src/test/setup.js`). A husky **pre-push
+hook** runs `npm run check` (lint + format check + tests + build). See
+[docs/TESTING.md](docs/TESTING.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## OPEN QUESTIONS / known cleanup candidates
 
