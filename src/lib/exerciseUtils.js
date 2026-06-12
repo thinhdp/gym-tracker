@@ -45,7 +45,7 @@ export function extractExerciseOptions(exercises) {
 /** All workouts that contain the named exercise. */
 export function workoutsWithExercise(workouts, exerciseName) {
   return (workouts || []).filter((w) =>
-    (w.exercises || []).some((e) => e.exerciseName === exerciseName)
+    (w.exercises || []).some((e) => e.exerciseName === exerciseName),
   );
 }
 
@@ -55,7 +55,7 @@ export function createExerciseEntry(rawName, exercises, setExercises) {
 
   // Find existing exercise (case‑insensitive)
   const existing = exercises.find(
-    (e) => e.name.toLowerCase() === name.toLowerCase()
+    (e) => e.name.toLowerCase() === name.toLowerCase(),
   );
 
   // If it doesn't exist, create a new one with empty fields

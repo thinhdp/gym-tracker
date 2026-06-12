@@ -113,8 +113,8 @@ export default function WorkoutHistoryItem({
                     </span>
                     {(() => {
                       const rec =
-                        exercises.find((e) => e.name === we.exerciseName)?.recommendRep ||
-                        "";
+                        exercises.find((e) => e.name === we.exerciseName)
+                          ?.recommendRep || "";
                       return rec ? (
                         <span className="ml-2 text-xs text-neutral-500">
                           ({rec})
@@ -148,7 +148,7 @@ export default function WorkoutHistoryItem({
                         if (!newName) return;
                         updateWorkout(w.id, {
                           exercises: w.exercises.map((e2, i2) =>
-                            i2 === idx ? { ...e2, exerciseName: newName } : e2
+                            i2 === idx ? { ...e2, exerciseName: newName } : e2,
                           ),
                         });
                       }}
@@ -167,7 +167,9 @@ export default function WorkoutHistoryItem({
                         }).then((ok) => {
                           if (ok) {
                             updateWorkout(w.id, {
-                              exercises: w.exercises.filter((_, i2) => i2 !== idx),
+                              exercises: w.exercises.filter(
+                                (_, i2) => i2 !== idx,
+                              ),
                             });
                           }
                         });

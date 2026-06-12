@@ -1,18 +1,6 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-} from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import seedExercises from "../data/exercises_seed.json";
-import {
-  loadLS,
-  saveLS,
-  K_EX,
-  K_WO,
-  K_UNIT,
-  K_TAB,
-} from "../lib/storage";
+import { loadLS, saveLS, K_EX, K_WO, K_UNIT, K_TAB } from "../lib/storage";
 
 /**
  * AppContext stores the top‑level app state: current tab,
@@ -26,9 +14,7 @@ export function AppProvider({ children }) {
   // Load initial values from localStorage (with sensible defaults)
   const [tab, setTab] = useState(() => loadLS(K_TAB, "workouts"));
   const [unit, setUnit] = useState(() => loadLS(K_UNIT, "kg"));
-  const [exercises, setExercises] = useState(() =>
-    loadLS(K_EX, seedExercises)
-  );
+  const [exercises, setExercises] = useState(() => loadLS(K_EX, seedExercises));
   const [workouts, setWorkouts] = useState(() => loadLS(K_WO, []));
 
   // Persist tab and unit when they change
@@ -55,6 +41,9 @@ export function AppProvider({ children }) {
         }
       }
     }
+    // Derived-state sync by design (see ARCHITECTURE.md): lastWorkout lives on
+    // each exercise and must be recomputed from workouts after they change.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setExercises((prev) =>
       prev.map((e) => ({
         ...e,
@@ -64,7 +53,7 @@ export function AppProvider({ children }) {
               sets: latestByName[e.name].sets,
             }
           : null,
-      }))
+      })),
     );
   }, [workouts, setExercises]);
 

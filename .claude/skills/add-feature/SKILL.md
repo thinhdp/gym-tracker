@@ -1,14 +1,15 @@
 ---
 name: add-feature
-description: Scaffold a new feature, component, or tab in the gym-tracker React app following its established conventions (AppContext/useApp, ui/ primitives, loadLS/saveLS persistence, useConfirm, kg-storage unit boundary). Use whenever adding a new component, view, tab, or UI feature to this repo so the code matches existing patterns instead of inventing new ones.
+description: Scaffold a new feature, component, or tab in the gym-tracker React app following its established conventions (AppContext/useApp, ui/ primitives, loadLS/saveLS persistence, useConfirm, kg-storage unit boundary), and write Vitest/RTL tests for the new code. Use whenever adding a new component, view, tab, or UI feature to this repo so the code matches existing patterns instead of inventing new ones.
 ---
 
 # Add a feature to Gym Tracker
 
-Gym Tracker is a client-only React 18 + Vite + Tailwind SPA with no router, no
-TypeScript, and no test framework. All state lives in `localStorage` via a thin
-`loadLS`/`saveLS` layer. When adding a feature, **match the existing patterns** —
-do not introduce new libraries, CSS files, or state mechanisms.
+Gym Tracker is a client-only React 18 + Vite + Tailwind SPA with no router and
+no TypeScript. All state lives in `localStorage` via a thin `loadLS`/`saveLS`
+layer. Tests are Vitest + React Testing Library. When adding a feature,
+**match the existing patterns** — do not introduce new libraries, CSS files,
+or state mechanisms — and **ship tests with the feature**.
 
 Follow this checklist in order.
 
@@ -19,6 +20,7 @@ Before writing code, skim:
 - [ARCHITECTURE.md](../../../ARCHITECTURE.md) — state model, persistence, component hierarchy, data flow.
 - [docs/DATA-MODEL.md](../../../docs/DATA-MODEL.md) — exact localStorage keys and object shapes.
 - [CONTRIBUTING.md](../../../CONTRIBUTING.md) — conventions and the manual test checklist.
+- [docs/TESTING.md](../../../docs/TESTING.md) — test conventions, RTL patterns, what needs coverage.
 
 ## 2. Component conventions
 
@@ -41,7 +43,16 @@ or read `localStorage` directly:
 
 ```jsx
 import { useApp } from "../context/AppContext";
-const { exercises, setExercises, workouts, setWorkouts, unit, setUnit, tab, setTab } = useApp();
+const {
+  exercises,
+  setExercises,
+  workouts,
+  setWorkouts,
+  unit,
+  setUnit,
+  tab,
+  setTab,
+} = useApp();
 ```
 
 All existing views follow this pattern — `AppContent` passes no data props.
@@ -59,8 +70,8 @@ from `src/lib/storage.js` under a clearly-named `mgym.*` key. **Never call
 import { loadLS, saveLS } from "../lib/storage";
 const K_NOTE = "mgym.note.v1";
 
-const [content, setContent] = useState(() => loadLS(K_NOTE, ""));   // lazy read
-useEffect(() => saveLS(K_NOTE, content), [content]);                 // reactive write
+const [content, setContent] = useState(() => loadLS(K_NOTE, "")); // lazy read
+useEffect(() => saveLS(K_NOTE, content), [content]); // reactive write
 ```
 
 Existing self-owned keys for reference: `mgym.note.v1` (Notepad), `weightLogs`
@@ -110,20 +121,41 @@ To add one, edit `src/App.jsx` (`AppContent`) in two places:
    ```
 2. **Render branch** (alongside the other `tab === "..."` blocks) — add:
    ```jsx
-   {tab === "goals" && <GoalsView />}
+   {
+     tab === "goals" && <GoalsView />;
+   }
    ```
 
 Import the new component at the top of `App.jsx`. Prefer having the new
 component read `useApp()` directly rather than passing props from `AppContent`.
 
-## 9. Verify
+## 9. Write tests
 
-There is no automated test suite. Run the app and check manually:
+Tests ship with the feature — follow the conventions in
+[docs/TESTING.md](../../../docs/TESTING.md):
 
-```bash
-npm run dev      # Vite dev server, http://localhost:5173
-```
+- Every new `src/lib` helper gets a co-located `*.test.js` (happy path, empty
+  or null inputs, the boundary the function exists to handle).
+- Components with logic (state transitions, unit conversion, confirm flows,
+  persistence) get a co-located `*.test.jsx` using React Testing Library —
+  query by role/text, use `user-event`, wrap in `ConfirmProvider` /
+  `AppProvider` as needed.
+- Pure presentational Tailwind wrappers don't need tests.
 
-- The feature works, and its data **persists across a page reload**.
-- Toggle kg/lb and confirm stored set weights are unchanged (display only).
-- See the manual checklist in [CONTRIBUTING.md](../../../CONTRIBUTING.md#testing).
+## 10. Verify
+
+1. The full quality gate must pass (it also runs on pre-push):
+
+   ```bash
+   npm run check    # lint + format check + tests + build
+   ```
+
+2. Then check the feature manually in the running app:
+
+   ```bash
+   npm run dev      # Vite dev server, http://localhost:5173
+   ```
+
+   - The feature works, and its data **persists across a page reload**.
+   - Toggle kg/lb and confirm stored set weights are unchanged (display only).
+   - See the manual checklist in [CONTRIBUTING.md](../../../CONTRIBUTING.md#testing).

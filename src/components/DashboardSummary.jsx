@@ -1,18 +1,11 @@
 // src/components/DashboardSummary.jsx
 // Main summary page that assembles period data and renders PeriodCards.
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useApp } from "../context/AppContext";
 import { Button } from "./ui/Button";
-import {
-  buildWeeks,
-  buildMonths,
-  computePeriodMetrics,
-} from "../lib/metrics";
-import {
-  prevWeekKeyFrom,
-  prevMonthKeyFrom,
-} from "../lib/dateUtils";
+import { buildWeeks, buildMonths, computePeriodMetrics } from "../lib/metrics";
+import { prevWeekKeyFrom, prevMonthKeyFrom } from "../lib/dateUtils";
 import { loadLS, K_WEIGHT_LOGS } from "../lib/storage";
 import { averageWeightInRange } from "../lib/weightUtils";
 import PeriodCard from "./PeriodCard";
@@ -39,8 +32,10 @@ export default function DashboardSummary() {
   // Weight logs for weekly average weight KPI
   const weightLogs = useMemo(() => loadLS(K_WEIGHT_LOGS, {}), []);
 
-  const averageWeightInRangeMemo = (from, to) =>
-    averageWeightInRange(weightLogs, from, to);
+  const averageWeightInRangeMemo = useCallback(
+    (from, to) => averageWeightInRange(weightLogs, from, to),
+    [weightLogs],
+  );
 
   // Build weekly data array
   const weekData = useMemo(() => {
@@ -57,9 +52,15 @@ export default function DashboardSummary() {
         ? averageWeightInRangeMemo(prevPeriod.from, prevPeriod.to)
         : null;
 
-      return { period: w, metrics, prevMetrics, weekWeightAvg, prevWeekWeightAvg };
+      return {
+        period: w,
+        metrics,
+        prevMetrics,
+        weekWeightAvg,
+        prevWeekWeightAvg,
+      };
     });
-  }, [weeks, workouts, exercises, weekMap, weightLogs]);
+  }, [weeks, workouts, exercises, weekMap, averageWeightInRangeMemo]);
 
   // Build monthly data array
   const monthData = useMemo(() => {
@@ -95,7 +96,13 @@ export default function DashboardSummary() {
       {mode === "week" ? (
         weekData.length ? (
           weekData.map(
-            ({ period, metrics, prevMetrics, weekWeightAvg, prevWeekWeightAvg }) => (
+            ({
+              period,
+              metrics,
+              prevMetrics,
+              weekWeightAvg,
+              prevWeekWeightAvg,
+            }) => (
               <PeriodCard
                 key={period.key}
                 period={period}
@@ -106,7 +113,7 @@ export default function DashboardSummary() {
                 defaultOpen={true}
                 isWeek={true}
               />
-            )
+            ),
           )
         ) : (
           <div className="text-sm text-neutral-500">No weekly data yet.</div>

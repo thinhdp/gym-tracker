@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
-import { loadLS, K_WEIGHT_LOGS } from '../lib/storage';
-import { startOfWeekMonday } from '../lib/dateUtils';
+import React, { useMemo } from "react";
+import { loadLS, K_WEIGHT_LOGS } from "../lib/storage";
+import { startOfWeekMonday } from "../lib/dateUtils";
 
 /**
  * A simple SVG line chart component. Accepts an array of points
@@ -9,7 +9,9 @@ import { startOfWeekMonday } from '../lib/dateUtils';
  */
 function SimpleLineChart({ points, height = 160, width, padding = 24 }) {
   if (!points || points.length < 2) {
-    return <div className="text-sm text-neutral-500">Not enough data to plot.</div>;
+    return (
+      <div className="text-sm text-neutral-500">Not enough data to plot.</div>
+    );
   }
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);
@@ -25,7 +27,7 @@ function SimpleLineChart({ points, height = 160, width, padding = 24 }) {
     ((y - minY) / (maxY - minY || 1)) * (height - padding * 2);
   const linePoints = points
     .map((p) => `${scaleX(p.x)},${scaleY(p.y)}`)
-    .join(' ');
+    .join(" ");
   return (
     <svg
       width={width}
@@ -34,7 +36,12 @@ function SimpleLineChart({ points, height = 160, width, padding = 24 }) {
       className="w-full"
     >
       {/* line */}
-      <polyline fill="none" stroke="currentColor" strokeWidth="2" points={linePoints} />
+      <polyline
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        points={linePoints}
+      />
       {/* point markers + labels */}
       {points.map((p, i) => {
         const cx = scaleX(p.x);
@@ -69,16 +76,16 @@ function SimpleLineChart({ points, height = 160, width, padding = 24 }) {
  *   logs (optional) – an object mapping ISO date strings to weights.
  *   view – "daily" or "weekly" to determine aggregation.
  */
-export default function WeightChart({ logs, view = 'daily' }) {
+export default function WeightChart({ logs, view = "daily" }) {
   // Read weight logs from props or localStorage
   const rawLogs = logs || loadLS(K_WEIGHT_LOGS, {});
   // Normalize data according to view
   const weightData = useMemo(() => {
     const entries = Object.keys(rawLogs).sort();
-    if (view === 'weekly') {
+    if (view === "weekly") {
       const byWeek = {};
       entries.forEach((date) => {
-        const d = new Date(date + 'T00:00:00');
+        const d = new Date(date + "T00:00:00");
         const weekStart = startOfWeekMonday(d);
         const wkKey = weekStart.toISOString().slice(0, 10);
         if (!byWeek[wkKey]) byWeek[wkKey] = [];
@@ -89,8 +96,7 @@ export default function WeightChart({ logs, view = 'daily' }) {
         .map((wk) => {
           const weights = byWeek[wk];
           const avg =
-            weights.reduce((sum, w) => sum + w, 0) /
-            (weights.length || 1);
+            weights.reduce((sum, w) => sum + w, 0) / (weights.length || 1);
           return { date: wk, weight: parseFloat(avg.toFixed(2)) };
         });
     }
@@ -98,7 +104,7 @@ export default function WeightChart({ logs, view = 'daily' }) {
   }, [rawLogs, view]);
   // Determine page size: 12 weeks or 14 days. This defines the width of the
   // visible window (number of slots displayed at once).
-  const PAGE_SIZE = view === 'weekly' ? 12 : 14;
+  const PAGE_SIZE = view === "weekly" ? 12 : 14;
   // Convert all entries to points with sequential x values. We assign each
   // record a zero-based index so that the x-axis spacing is uniform.
   const points = useMemo(() => {
@@ -114,7 +120,7 @@ export default function WeightChart({ logs, view = 'daily' }) {
   return (
     <div>
       {/* Wrapper with fixed width so only PAGE_SIZE points are visible at once */}
-      <div style={{ overflowX: 'auto', width: `${visibleWidth}px` }}>
+      <div style={{ overflowX: "auto", width: `${visibleWidth}px` }}>
         <div style={{ width: `${chartWidth}px` }}>
           <SimpleLineChart points={points} width={chartWidth} />
         </div>

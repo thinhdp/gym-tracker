@@ -11,13 +11,7 @@ import { moveItem } from "../lib/arrayUtils";
  * Rendering of each workout card lives in WorkoutHistoryItem.
  */
 export default function WorkoutHistory() {
-  const {
-    workouts,
-    setWorkouts,
-    exercises,
-    setExercises,
-    unit,
-  } = useApp();
+  const { workouts, setWorkouts, exercises, setExercises, unit } = useApp();
   const [expandedId, setExpandedId] = useState(null);
   const [historyExercise, setHistoryExercise] = useState(null);
 
@@ -26,7 +20,7 @@ export default function WorkoutHistory() {
     setWorkouts((prev) =>
       prev
         .map((w) => (w.id === id ? { ...w, ...patch } : w))
-        .sort((a, b) => (a.date < b.date ? 1 : -1))
+        .sort((a, b) => (a.date < b.date ? 1 : -1)),
     );
   };
 
@@ -50,9 +44,9 @@ export default function WorkoutHistory() {
         .map((w) =>
           w.id === workoutId
             ? { ...w, exercises: moveItem(w.exercises, idx, idx + delta) }
-            : w
+            : w,
         )
-        .sort((a, b) => (a.date < b.date ? 1 : -1))
+        .sort((a, b) => (a.date < b.date ? 1 : -1)),
     );
   };
 

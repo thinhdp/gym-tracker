@@ -14,9 +14,7 @@ export default function Delta({ curr, prev, decimals = 0 }) {
   const diff = Math.round(diffRaw * factor) / factor;
   if (diff === 0) {
     return (
-      <span className="text-xs text-neutral-500 ml-1 block sm:inline">
-        ±0
-      </span>
+      <span className="text-xs text-neutral-500 ml-1 block sm:inline">±0</span>
     );
   }
   const sign = diff > 0 ? "+" : "";

@@ -21,18 +21,20 @@ state (and is itself persisted).
 
 ## Tech stack and the role of each tool
 
-| Tool | Version (`package.json`) | Role |
-|------|--------------------------|------|
-| **React** | 18.2 | UI library. Function components + hooks only; state shared via Context. |
-| **react-dom** | 18.2 | Mounts the React tree into `#root` via `createRoot` (`src/main.jsx`). |
-| **Vite** | 5.4 | Dev server (HMR) and production bundler. Config in `vite.config.js`. |
-| **@vitejs/plugin-react** | 4.3 | JSX transform + Fast Refresh for Vite. |
-| **Tailwind CSS** | 3.4 | Utility-first styling. All styling is inline `className` utilities; no component CSS files. Config in `tailwind.config.js`. |
-| **PostCSS** | 8.4 | CSS pipeline Tailwind plugs into. Config in `postcss.config.js`. |
-| **autoprefixer** | 10.4 | PostCSS plugin adding vendor prefixes at build time. |
+| Tool                     | Version (`package.json`) | Role                                                                                                                        |
+| ------------------------ | ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| **React**                | 18.2                     | UI library. Function components + hooks only; state shared via Context.                                                     |
+| **react-dom**            | 18.2                     | Mounts the React tree into `#root` via `createRoot` (`src/main.jsx`).                                                       |
+| **Vite**                 | 5.4                      | Dev server (HMR) and production bundler. Config in `vite.config.js`.                                                        |
+| **@vitejs/plugin-react** | 4.3                      | JSX transform + Fast Refresh for Vite.                                                                                      |
+| **Tailwind CSS**         | 3.4                      | Utility-first styling. All styling is inline `className` utilities; no component CSS files. Config in `tailwind.config.js`. |
+| **PostCSS**              | 8.4                      | CSS pipeline Tailwind plugs into. Config in `postcss.config.js`.                                                            |
+| **autoprefixer**         | 10.4                     | PostCSS plugin adding vendor prefixes at build time.                                                                        |
 
-There is **no TypeScript, router, data-fetching library, or test framework**.
-Charts (weight trend, muscle bars) are hand-rolled SVG — no charting dependency.
+There is **no TypeScript, router, or data-fetching library**. Charts (weight
+trend, muscle bars) are hand-rolled SVG — no charting dependency. Tests use
+**Vitest + React Testing Library** (see [docs/TESTING.md](docs/TESTING.md));
+ESLint + Prettier enforce style.
 
 ## Directory structure
 
@@ -143,12 +145,12 @@ props.
 
 ### State owned by `AppProvider`
 
-| State | Initial value | Purpose | Persisted to |
-|-------|---------------|---------|--------------|
-| `tab` | `loadLS(K_TAB, "workouts")` | Active tab | `mgym.tab` |
-| `unit` | `loadLS(K_UNIT, "kg")` | Display unit (`"kg"` \| `"lb"`) | `mgym.unit` |
-| `exercises` | `loadLS(K_EX, seedExercises)` | Exercise database | `mgym.exercises.v1` |
-| `workouts` | `loadLS(K_WO, [])` | All logged/planned workouts | `mgym.workouts.v1` |
+| State       | Initial value                 | Purpose                         | Persisted to        |
+| ----------- | ----------------------------- | ------------------------------- | ------------------- |
+| `tab`       | `loadLS(K_TAB, "workouts")`   | Active tab                      | `mgym.tab`          |
+| `unit`      | `loadLS(K_UNIT, "kg")`        | Display unit (`"kg"` \| `"lb"`) | `mgym.unit`         |
+| `exercises` | `loadLS(K_EX, seedExercises)` | Exercise database               | `mgym.exercises.v1` |
+| `workouts`  | `loadLS(K_WO, [])`            | All logged/planned workouts     | `mgym.workouts.v1`  |
 
 All four are persisted by `useEffect`s in `AppProvider` that run whenever the
 value changes. (Unlike the earlier version of the app, **`unit` and `tab` are now
@@ -217,7 +219,7 @@ inventory is documented in
 
 `DataManagementMenu` + `src/lib/backup.js` move data in and out as JSON.
 
-**Export** gathers *everything* — not just exercises/workouts — into one payload:
+**Export** gathers _everything_ — not just exercises/workouts — into one payload:
 
 ```json
 {
@@ -236,10 +238,10 @@ Downloaded as `gym-tracker-backup-<YYYY-MM-DD>.json`.
 **Import** parses the file, runs exercises/workouts through `normalizeData()`
 (coerces/validates, drops invalid rows), then applies them in one of two modes:
 
-| Mode | Exercises | Workouts |
-|------|-----------|----------|
-| **merge** | `mergeExercises`: key by lowercased name; new names added, existing rows only get blank fields filled (never overwritten). | `mergeWorkouts`: key by `id`; new ids appended; an incoming workout whose id already exists is kept but re-assigned a fresh `uuid()`. Re-sorted newest-first. |
-| **replace** | Overwrites the whole exercises array. | Overwrites the whole workouts array. |
+| Mode        | Exercises                                                                                                                  | Workouts                                                                                                                                                      |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **merge**   | `mergeExercises`: key by lowercased name; new names added, existing rows only get blank fields filled (never overwritten). | `mergeWorkouts`: key by `id`; new ids appended; an incoming workout whose id already exists is kept but re-assigned a fresh `uuid()`. Re-sorted newest-first. |
+| **replace** | Overwrites the whole exercises array.                                                                                      | Overwrites the whole workouts array.                                                                                                                          |
 
 The extra fields (`unit`, `tab`, `note`, `weightLogs`, `weeklyNotes`) are
 restored directly to their localStorage keys **without** going through
@@ -305,10 +307,10 @@ So lb is purely presentational for workout sets, and `unit` is now persisted to
 
 ## Build & dev pipeline
 
-| Command | What it does |
-|---------|--------------|
-| `npm run dev` | Vite dev server with hot-module reload. |
-| `npm run build` | Optimized production build into `dist/`. |
+| Command           | What it does                              |
+| ----------------- | ----------------------------------------- |
+| `npm run dev`     | Vite dev server with hot-module reload.   |
+| `npm run build`   | Optimized production build into `dist/`.  |
 | `npm run preview` | Serve the built `dist/` on **port 8080**. |
 
 ```
@@ -318,7 +320,11 @@ index.html → src/main.jsx → src/App.jsx (+ context/components/lib)
                                   globs) → autoprefixer → bundled CSS
 ```
 
-No lint or test step is configured. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Quality tooling: **ESLint** (flat config in `eslint.config.js`) + **Prettier**
+for style, **Vitest + React Testing Library** for tests (config in the `test`
+block of `vite.config.js`, setup in `src/test/setup.js`). A husky **pre-push
+hook** runs `npm run check` (lint + format check + tests + build). See
+[docs/TESTING.md](docs/TESTING.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## OPEN QUESTIONS / known cleanup candidates
 

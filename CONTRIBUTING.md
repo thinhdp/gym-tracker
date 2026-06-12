@@ -20,29 +20,38 @@ If you prefer not to use a terminal, VS Code can run everything:
 
 1. Open the project folder in **VS Code**.
 2. Open the **npm Scripts** view in the Explorer sidebar (enable it via
-   *Settings → "npm: Enable Script Explorer"* if it isn't visible).
+   _Settings → "npm: Enable Script Explorer"_ if it isn't visible).
 3. The `package.json` scripts (`dev`, `build`, `preview`) appear as clickable
    ▶ entries — run them with a click; no commands to type.
 4. Run **install** first (click `package.json` in the Scripts panel, or use an
-   npm extension's *"npm install"*), then **dev**.
+   npm extension's _"npm install"_), then **dev**.
 5. Click the `http://localhost:5173` link Vite prints to open the app.
 
 ### Using a terminal
 
 ```bash
-npm install      # one-time: install dependencies
+npm install      # one-time: install dependencies (also activates git hooks)
 npm run dev      # dev server with hot reload
 npm run build    # production build into dist/
 npm run preview  # serve the built app on port 8080
-```
 
-There is no separate lint or test command (see [Testing](#testing)).
+npm run test         # run the Vitest suite once
+npm run test:watch   # tests in watch mode
+npm run lint         # ESLint
+npm run format       # Prettier (write)
+npm run check        # full quality gate: lint + format check + tests + build
+```
 
 ## Code style and conventions
 
 Match the patterns the existing code follows.
 
 - **Language:** plain JavaScript + JSX (`.jsx`). No TypeScript.
+- **Formatting and linting:** Prettier (default settings) and ESLint are
+  enforced by `npm run check` and the pre-push hook. Run `npm run format`
+  before committing; fix lint findings rather than disabling rules (targeted
+  `eslint-disable-next-line` with a comment is acceptable for intentional
+  patterns).
 - **Components:** function components with hooks only. Default-export the main
   component of a file; named-export shared primitives (`Button`, `Input`, …).
 - **Styling:** Tailwind utility classes inline in `className`. No per-component
@@ -60,6 +69,7 @@ Match the patterns the existing code follows.
   ```
 
   All views follow this pattern; `AppContent` passes no data props.
+
 - **Persistence:** never call `localStorage` directly for the core data; use
   `loadLS` / `saveLS` from `src/lib/storage.js` and keep key constants there.
   Self-contained features that own their own slice (notes, weight logs, summary
@@ -129,8 +139,25 @@ remembered default — note that `tab` is already persisted to `mgym.tab` via
 
 ## Testing
 
-There is currently **no automated test suite** and no test framework configured.
-Verify changes manually in the browser via `npm run dev`:
+The repo has an automated suite — **Vitest** unit tests for `src/lib/` and
+**React Testing Library** tests for key components. See
+[docs/TESTING.md](docs/TESTING.md) for how to run and write tests, conventions,
+and what needs coverage.
+
+```bash
+npm run test     # run the suite once
+npm run check    # the full pre-push quality gate
+```
+
+**Quality gate:** a husky **pre-push hook** runs `npm run check`
+(lint + format check + tests + build) and blocks the push if anything fails.
+Hooks are activated automatically by `npm install`. New `src/lib` helpers
+require a co-located `*.test.js`; components with logic require an RTL test.
+
+### Manual smoke test
+
+Automated tests don't cover visual layout or mobile behavior. After UI changes,
+also verify manually in the browser via `npm run dev`:
 
 - Create, edit, reorder, and delete workouts; confirm they persist across a
   reload.
@@ -138,5 +165,3 @@ Verify changes manually in the browser via `npm run dev`:
 - Log a few bodyweights on the Weight tab and check the weekly average / trend.
 - Open the Summary tab and confirm weekly/monthly metrics and PRs look right.
 - Export a backup, then Import it in both **merge** and **replace** modes.
-
-If you add tests, wire a `test` script into `package.json` and note it here.

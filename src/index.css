@@ -3,9 +3,27 @@
 @tailwind utilities;
 
 @layer base {
-  html, body, #root { height: 100%; }
-  body { @apply bg-neutral-50 text-neutral-900 antialiased; }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-neutral-50 text-neutral-900 antialiased;
+  }
 }
-@layer utilities { .elevate { @apply shadow-sm; } }
-@layer base { :is(button, input, textarea):focus { @apply outline-none ring-2 ring-neutral-300; } }
-@media (max-width: 480px) { .max-w-md { max-width: 100%; } }
+@layer utilities {
+  .elevate {
+    @apply shadow-sm;
+  }
+}
+@layer base {
+  :is(button, input, textarea):focus {
+    @apply outline-none ring-2 ring-neutral-300;
+  }
+}
+@media (max-width: 480px) {
+  .max-w-md {
+    max-width: 100%;
+  }
+}

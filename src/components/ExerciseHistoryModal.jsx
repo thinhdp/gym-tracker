@@ -51,14 +51,11 @@ export default function ExerciseHistoryModal({
           )}
           {filtered.map((w) => {
             const item = (w.exercises || []).find(
-              (e) => e.exerciseName === exerciseName
+              (e) => e.exerciseName === exerciseName,
             );
             if (!item) return null;
             return (
-              <div
-                key={w.id}
-                className="border rounded-lg p-3 space-y-1"
-              >
+              <div key={w.id} className="border rounded-lg p-3 space-y-1">
                 {/* Date and workout name */}
                 <div className="flex items-center gap-2">
                   <Badge>
@@ -72,8 +69,8 @@ export default function ExerciseHistoryModal({
                 <div className="flex flex-wrap gap-1 ml-4">
                   {item.sets.map((s) => (
                     <Badge key={s.set}>
-                      Set {s.set}:{" "}
-                      {toDisplayWeight(s.weight, unit)} {unit} × {s.reps}
+                      Set {s.set}: {toDisplayWeight(s.weight, unit)} {unit} ×{" "}
+                      {s.reps}
                     </Badge>
                   ))}
                 </div>
