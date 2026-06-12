@@ -89,45 +89,6 @@ function computeWeeklyAvgAndDelta(weightLogs, refDate) {
   return { curr, prev, delta };
 }
 
-/** SVG Line chart with points + labels */
-function LineChart({ points, height = 160, padding = 24 }) {
-  if (!points || points.length < 2) {
-    return <div className="text-sm text-neutral-500">Not enough data to plot.</div>;
-  }
-  const xs = points.map((p) => p.x);
-  const ys = points.map((p) => p.y);
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const width = 640;
-
-  const scaleX = (x) => padding + ((x - minX) / (maxX - minX || 1)) * (width - padding * 2);
-  const scaleY = (y) => height - padding - ((y - minY) / (maxY - minY || 1)) * (height - padding * 2);
-
-  const linePoints = points.map((p) => `${scaleX(p.x)},${scaleY(p.y)}`).join(" ");
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full">
-      {/* line */}
-      <polyline fill="none" stroke="currentColor" strokeWidth="2" points={linePoints} />
-      {/* point markers + labels */}
-      {points.map((p, i) => {
-        const cx = scaleX(p.x);
-        const cy = scaleY(p.y);
-        return (
-          <g key={i}>
-            <circle cx={cx} cy={cy} r="3" fill="currentColor" />
-            <text x={cx} y={cy - 8} fontSize="10" textAnchor="middle" fill="currentColor">
-              {p.label}: {p.y}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
 export default function WeightTracker() {
   const { unit } = useApp();
   const [monthCursor, setMonthCursor] = useState(startOfMonth(new Date()));
@@ -162,24 +123,6 @@ export default function WeightTracker() {
 
   // Graph data toggle: "daily" | "weekly"
   const [mode, setMode] = useState("daily");
-
-  const dailyPoints = useMemo(() => {
-    const allKeys = Object.keys(logs).sort();
-    if (!allKeys.length) return [];
-    const base = new Date(allKeys[0] + "T00:00:00");
-    return allKeys
-      .filter((k) => typeof logs[k] === "number" && isFinite(logs[k]))
-      .map((k) => {
-        const d = new Date(k + "T00:00:00");
-        const label = `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-        return { x: (d - base) / 86400000, y: logs[k], label };
-      });
-  }, [logs]);
-
-  // We no longer compute aggregated points for the chart here. The WeightChart
-  // component handles aggregation for weekly view internally. If you need
-  // weeklyPoints elsewhere (e.g. for alternate visualizations), you can
-  // compute them similarly to the original implementation.
 
   const onCellClick = (date) => {
     const key = ymd(date);

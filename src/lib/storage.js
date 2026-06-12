@@ -15,9 +15,6 @@ export const K_TAB = "mgym.tab";
 /** Today's date as a `YYYY-MM-DD` string (UTC-sliced). */
 export const todayStr = () => new Date().toISOString().slice(0, 10);
 
-/** Identity formatter for dates (dates are already stored as `YYYY-MM-DD`). */
-export const fmtDate = (d) => d;
-
 /**
  * Generate a unique identifier.
  * Uses the Web Crypto API's randomUUID if available for better uniqueness,
