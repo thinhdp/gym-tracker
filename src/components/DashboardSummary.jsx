@@ -13,24 +13,9 @@ import {
   prevWeekKeyFrom,
   prevMonthKeyFrom,
 } from "../lib/dateUtils";
-import { loadLS } from "../lib/storage";
-import { ymdFromDate } from "../lib/date";
+import { loadLS, K_WEIGHT_LOGS } from "../lib/storage";
+import { averageWeightInRange } from "../lib/weightUtils";
 import PeriodCard from "./PeriodCard";
-
-// Helper for averaging weight logs (y-m-d keys).
-function averageWeightInRange(weightLogs, from, to) {
-  const vals = [];
-  const cur = new Date(from);
-  while (cur <= to) {
-    const key = ymdFromDate(cur);
-    const v = weightLogs[key];
-    if (typeof v === "number" && isFinite(v)) vals.push(v);
-    cur.setDate(cur.getDate() + 1);
-  }
-  if (!vals.length) return null;
-  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-  return Math.round(avg * 10) / 10;
-}
 
 export default function DashboardSummary() {
   const { workouts, exercises } = useApp();
@@ -52,7 +37,7 @@ export default function DashboardSummary() {
   }, [months]);
 
   // Weight logs for weekly average weight KPI
-  const weightLogs = useMemo(() => loadLS("weightLogs", {}), []);
+  const weightLogs = useMemo(() => loadLS(K_WEIGHT_LOGS, {}), []);
 
   const averageWeightInRangeMemo = (from, to) =>
     averageWeightInRange(weightLogs, from, to);

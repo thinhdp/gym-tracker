@@ -6,7 +6,7 @@ import { useApp } from "../context/AppContext";
 // graph. It reads from the provided logs or falls back to localStorage
 // internally if no logs are supplied.
 import WeightChart from "./WeightChart";
-import { loadLS, saveLS } from "../lib/storage";
+import { loadLS, saveLS, K_WEIGHT_LOGS } from "../lib/storage";
 import { ymdFromDate } from "../lib/date";
 import {
   startOfMonth,
@@ -14,6 +14,7 @@ import {
   startOfWeekMonday,
   endOfWeekSunday,
 } from "../lib/dateUtils";
+import { averageWeightInRange } from "../lib/weightUtils";
 
 function weekRangeOf(date) {
   const from = startOfWeekMonday(date);
@@ -22,20 +23,6 @@ function weekRangeOf(date) {
 }
 
 /** Weekly stats */
-function averageWeightInRange(weightLogs, from, to) {
-  const vals = [];
-  const cur = new Date(from);
-  while (cur <= to) {
-    const key = ymdFromDate(cur);
-    const v = weightLogs[key];
-    if (typeof v === "number" && isFinite(v)) vals.push(v);
-    cur.setDate(cur.getDate() + 1);
-  }
-  if (!vals.length) return null;
-  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-  return Math.round(avg * 10) / 10;
-}
-
 function computeWeeklyAvgAndDelta(weightLogs, refDate) {
   const { from: thisFrom, to: thisTo } = weekRangeOf(refDate);
   const lastWeekRef = new Date(thisFrom);
@@ -53,10 +40,10 @@ export default function WeightTracker() {
   const [editingKey, setEditingKey] = useState(null); // YYYY-MM-DD being edited
   const [draft, setDraft] = useState("");
 
-  const [logs, setLogs] = useState(() => loadLS("weightLogs", {}));
+  const [logs, setLogs] = useState(() => loadLS(K_WEIGHT_LOGS, {}));
 
   useEffect(() => {
-    saveLS("weightLogs", logs);
+    saveLS(K_WEIGHT_LOGS, logs);
   }, [logs]);
 
   const days = useMemo(() => {

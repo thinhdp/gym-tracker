@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { loadLS } from '../lib/storage';
+import { loadLS, K_WEIGHT_LOGS } from '../lib/storage';
 import { startOfWeekMonday } from '../lib/dateUtils';
 
 /**
@@ -71,7 +71,7 @@ function SimpleLineChart({ points, height = 160, width, padding = 24 }) {
  */
 export default function WeightChart({ logs, view = 'daily' }) {
   // Read weight logs from props or localStorage
-  const rawLogs = logs || loadLS('weightLogs', {});
+  const rawLogs = logs || loadLS(K_WEIGHT_LOGS, {});
   // Normalize data according to view
   const weightData = useMemo(() => {
     const entries = Object.keys(rawLogs).sort();

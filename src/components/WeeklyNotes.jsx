@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 // We no longer import the Textarea component from the UI library. A native
 // <textarea> is used instead so that we can directly control its height.
-import { loadLS, saveLS } from "../lib/storage";
+import { loadLS, saveLS, K_WEIGHT_LOGS } from "../lib/storage";
 import { useApp } from "../context/AppContext";
 import { buildWeeks } from "../lib/metrics";
 import { prevWeekKeyFrom } from "../lib/dateUtils";
@@ -79,7 +79,7 @@ export default function WeeklyNotes({ periodKey }) {
       const prevKey = prevWeekKeyFrom(current.from);
       const previous = weeks.find((w) => w.key === prevKey) || null;
       // Load weight logs from localStorage
-      const weightLogs = loadLS("weightLogs", {});
+      const weightLogs = loadLS(K_WEIGHT_LOGS, {});
       // Extract weight logs for both periods
       const thisWeekWeights = sliceWeightLogs(
         weightLogs,

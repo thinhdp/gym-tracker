@@ -7,6 +7,7 @@ import {
   saveLS,
   K_UNIT,
   K_TAB,
+  K_WEIGHT_LOGS,
 } from "../lib/storage";
 import {
   downloadJSON,
@@ -34,7 +35,7 @@ export default function DataManagementMenu({
   // Export current exercises, workouts and other persisted data to a JSON file
   const onExport = () => {
     // gather additional persisted data
-    const weightLogs = loadLS("weightLogs", {});
+    const weightLogs = loadLS(K_WEIGHT_LOGS, {});
     const note = loadLS("mgym.note.v1", "");
     const unitPref = loadLS(K_UNIT, null);
     const tabPref = loadLS(K_TAB, null);
@@ -92,14 +93,11 @@ export default function DataManagementMenu({
         if (raw.tab != null) saveLS(K_TAB, raw.tab);
         if ("note" in raw) saveLS("mgym.note.v1", raw.note || "");
         if (raw.weightLogs && typeof raw.weightLogs === "object") {
-          localStorage.setItem(
-            "weightLogs",
-            JSON.stringify(raw.weightLogs)
-          );
+          saveLS(K_WEIGHT_LOGS, raw.weightLogs);
         }
         if (raw.weeklyNotes && typeof raw.weeklyNotes === "object") {
           Object.entries(raw.weeklyNotes).forEach(([k, v]) => {
-            localStorage.setItem(k, JSON.stringify(v));
+            saveLS(k, v);
           });
         }
         alert("Import complete.");
