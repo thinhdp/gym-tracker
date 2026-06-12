@@ -21,8 +21,8 @@
 
 > _Coming soon — screenshots of the Workouts, Calendar, Weight and Summary tabs will be added here._
 
-| Workouts | Calendar | Weight | Summary |
-|----------|----------|--------|---------|
+| Workouts             | Calendar             | Weight               | Summary              |
+| -------------------- | -------------------- | -------------------- | -------------------- |
 | _screenshot pending_ | _screenshot pending_ | _screenshot pending_ | _screenshot pending_ |
 
 ## Getting Started
@@ -38,27 +38,35 @@ This project requires **Node.js** and **npm**. The build tooling (Vite 5) needs 
    git clone https://github.com/thinhdp/gym-tracker.git
    cd gym-tracker
    ```
-2.	Install dependencies:
-   ```bash
-   npm install
-   ```
+2. Install dependencies:
+
+```bash
+npm install
+```
 
 ### Running the app
+
 The project uses Vite for development and build. To start a development server with hot reloading:
+
 ```bash
 npm run dev
 ```
+
 Vite will print a local development URL (typically http://localhost:5173). Open this in your browser to use Gym Tracker.
 To build a production bundle:
+
 ```bash
 npm run build
 ```
+
 The compiled files will be output to the dist directory. You can preview the production build locally with:
+
 ```bash
 npm run preview
 ```
 
 ## Project Structure
+
 ```graphql
 ├── src
 │   ├── components        # React components (planner, history, calendar, weight, summary, etc.)
@@ -77,26 +85,34 @@ npm run preview
 For a deeper walkthrough of the architecture, state model and data shapes, see the [Documentation](#documentation) section below.
 
 ## Key Components
-|Component|Description|
-| ----------- | ----------- |
-|WorkoutPlanner|Plan or log workouts. Allows adding exercises, specifying sets and reps, reordering exercises and saving multiple workouts.|
-|WorkoutHistory|Edit existing workouts. Similar interface to the planner but operates on previously logged workouts; supports modifying dates/names and viewing past sets.|
-|ExerciseManager|Create, update and delete exercises. Provides a “View history” modal to see all workouts containing an exercise.|
-|CalendarView|Calendar‑based overview of your training sessions; add or view workouts per day.|
-|WeightTracker|Log bodyweight on a monthly calendar; shows weekly average, change vs. last week, and a scrollable trend chart (`WeightChart`).|
-|DashboardSummary|Weekly/monthly analytics: frequency, total reps/sets, per‑muscle bars (`GroupedMuscleBar`), PRs and per‑week notes (`WeeklyNotes`), rendered as `PeriodCard`s.|
-|Notepad|Standalone notepad for any free‑form notes.|
-|DataManagementMenu|Dropdown menu to export/import all data (exercises, workouts, weight logs, notes, preferences).|
+
+| Component          | Description                                                                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WorkoutPlanner     | Plan or log workouts. Allows adding exercises, specifying sets and reps, reordering exercises and saving multiple workouts.                                    |
+| WorkoutHistory     | Edit existing workouts. Similar interface to the planner but operates on previously logged workouts; supports modifying dates/names and viewing past sets.     |
+| ExerciseManager    | Create, update and delete exercises. Provides a “View history” modal to see all workouts containing an exercise.                                               |
+| CalendarView       | Calendar‑based overview of your training sessions; add or view workouts per day.                                                                               |
+| WeightTracker      | Log bodyweight on a monthly calendar; shows weekly average, change vs. last week, and a scrollable trend chart (`WeightChart`).                                |
+| DashboardSummary   | Weekly/monthly analytics: frequency, total reps/sets, per‑muscle bars (`GroupedMuscleBar`), PRs and per‑week notes (`WeeklyNotes`), rendered as `PeriodCard`s. |
+| Notepad            | Standalone notepad for any free‑form notes.                                                                                                                    |
+| DataManagementMenu | Dropdown menu to export/import all data (exercises, workouts, weight logs, notes, preferences).                                                                |
+
 ## Data Persistence
+
 Gym Tracker stores everything—exercises, workouts, bodyweight logs, notes and preferences—in your browser’s localStorage. The core keys are defined in `src/lib/storage.js`; the full key inventory and object shapes are documented in [docs/DATA-MODEL.md](docs/DATA-MODEL.md). No data is sent to any server. Clearing your browser data will remove your history, so use the export feature in the Data menu to create a backup if needed.
 
 ## Documentation
+
 - [ARCHITECTURE.md](ARCHITECTURE.md) — how the app is built: state (AppContext), data flow, persistence, build pipeline.
 - [docs/DATA-MODEL.md](docs/DATA-MODEL.md) — exact localStorage schema and object shapes.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — local setup, conventions, and how to extend the app.
 
 ## Contributing
+
 Contributions are welcome! If you have ideas for new features, improvements or bug fixes, feel free to open an issue or submit a pull request. When making changes, please ensure that the UI remains consistent and that any new functionality adheres to the existing design patterns. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and conventions.
+
 ## License
+
 This project is intended to be released under the MIT License. _(No `LICENSE` file is currently committed to the repository.)_
-________________________________________
+
+---

@@ -23,7 +23,10 @@ export const todayStr = () => new Date().toISOString().slice(0, 10);
  * falling back to a Math.random/Date-based ID for environments where crypto.randomUUID is unavailable.
  */
 export const uuid = () => {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return crypto.randomUUID();
   }
   return Math.random().toString(36).slice(2) + Date.now().toString(36);

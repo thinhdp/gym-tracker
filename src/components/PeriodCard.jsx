@@ -6,7 +6,6 @@ import { loadLS, saveLS } from "../lib/storage";
 import GroupedMuscleBar from "./GroupedMuscleBar";
 import WeeklyNotes from "./WeeklyNotes";
 import Delta from "./Delta";
-import { Button } from "./ui/Button";
 
 export default function PeriodCard({
   period,
@@ -44,12 +43,20 @@ export default function PeriodCard({
       {open && (
         <div className="p-3 space-y-4">
           <div>
-            <div className="mb-2 text-sm font-medium">Reps &amp; Sets by Muscle (Now vs Last)</div>
+            <div className="mb-2 text-sm font-medium">
+              Reps &amp; Sets by Muscle (Now vs&nbsp;Last)
+            </div>
             <GroupedMuscleBar
-              current={{ reps: metrics.repsByMuscle, sets: metrics.setsByMuscle }}
+              current={{
+                reps: metrics.repsByMuscle,
+                sets: metrics.setsByMuscle,
+              }}
               previous={
                 prevMetrics
-                  ? { reps: prevMetrics.repsByMuscle, sets: prevMetrics.setsByMuscle }
+                  ? {
+                      reps: prevMetrics.repsByMuscle,
+                      sets: prevMetrics.setsByMuscle,
+                    }
                   : null
               }
             />
@@ -64,37 +71,46 @@ export default function PeriodCard({
               </div>
             </div>
             <div className="rounded-lg border p-2">
-              <div className="text-xs text-neutral-500">Total Reps</div>
+              <div className="text-xs text-neutral-500">Total&nbsp;Reps</div>
               <div className="text-lg font-semibold tabular-nums flex flex-wrap items-baseline gap-x-1">
                 {metrics.totalReps}
                 <Delta curr={metrics.totalReps} prev={prevMetrics?.totalReps} />
               </div>
             </div>
             <div className="rounded-lg border p-2">
-              <div className="text-xs text-neutral-500">Total Sets</div>
+              <div className="text-xs text-neutral-500">Total&nbsp;Sets</div>
               <div className="text-lg font-semibold tabular-nums flex flex-wrap items-baseline gap-x-1">
                 {metrics.totalSets}
                 <Delta curr={metrics.totalSets} prev={prevMetrics?.totalSets} />
               </div>
             </div>
             <div className="rounded-lg border p-2">
-              <div className="text-xs text-neutral-500">New PRs</div>
+              <div className="text-xs text-neutral-500">New&nbsp;PRs</div>
               <div className="text-lg font-semibold flex flex-wrap items-baseline gap-x-1">
                 {metrics.prs.length}
-                <Delta curr={metrics.prs.length} prev={prevMetrics?.prs?.length} />
+                <Delta
+                  curr={metrics.prs.length}
+                  prev={prevMetrics?.prs?.length}
+                />
               </div>
             </div>
             {isWeek ? (
               <div className="rounded-lg border p-2">
-                <div className="text-xs text-neutral-500">Avg Weight (This Week)</div>
+                <div className="text-xs text-neutral-500">
+                  Avg&nbsp;Weight (This&nbsp;Week)
+                </div>
                 <div className="text-lg font-semibold tabular-nums flex flex-wrap items-baseline gap-x-1">
                   {weekWeightAvg ?? "—"}
-                  <Delta curr={weekWeightAvg} prev={prevWeekWeightAvg} decimals={1} />
+                  <Delta
+                    curr={weekWeightAvg}
+                    prev={prevWeekWeightAvg}
+                    decimals={1}
+                  />
                 </div>
               </div>
             ) : (
               <div className="rounded-lg border p-2 opacity-50">
-                <div className="text-xs text-neutral-400">Avg Weight</div>
+                <div className="text-xs text-neutral-400">Avg&nbsp;Weight</div>
                 <div className="text-lg font-semibold text-neutral-400">—</div>
               </div>
             )}
@@ -105,17 +121,23 @@ export default function PeriodCard({
               <div className="text-sm font-medium">New PRs this period</div>
               <div className="text-sm border rounded-lg divide-y">
                 {metrics.prs.map((p) => (
-                  <div key={p.exercise} className="flex items-center justify-between px-2 py-1">
+                  <div
+                    key={p.exercise}
+                    className="flex items-center justify-between px-2 py-1"
+                  >
                     <div className="font-medium">{p.exercise}</div>
                     <div className="text-xs text-neutral-600">
-                      {p.prevBest} → <span className="font-semibold">{p.newBest}</span>
+                      {p.prevBest} →{" "}
+                      <span className="font-semibold">{p.newBest}</span>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="text-sm text-neutral-500">No new PRs this period.</div>
+            <div className="text-sm text-neutral-500">
+              No new PRs this period.
+            </div>
           )}
 
           {isWeek && <WeeklyNotes periodKey={period.key} />}

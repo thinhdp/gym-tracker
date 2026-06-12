@@ -30,7 +30,8 @@ function computeWeeklyAvgAndDelta(weightLogs, refDate) {
   const { from: prevFrom, to: prevTo } = weekRangeOf(lastWeekRef);
   const curr = averageWeightInRange(weightLogs, thisFrom, thisTo);
   const prev = averageWeightInRange(weightLogs, prevFrom, prevTo);
-  const delta = curr != null && prev != null ? Math.round((curr - prev) * 10) / 10 : null;
+  const delta =
+    curr != null && prev != null ? Math.round((curr - prev) * 10) / 10 : null;
   return { curr, prev, delta };
 }
 
@@ -63,7 +64,10 @@ export default function WeightTracker() {
   const todayYmd = ymdFromDate(new Date());
 
   // Weekly stats for current week (based on "today")
-  const { curr: weekAvg, delta: weekDelta } = useMemo(() => computeWeeklyAvgAndDelta(logs, new Date()), [logs]);
+  const { curr: weekAvg, delta: weekDelta } = useMemo(
+    () => computeWeeklyAvgAndDelta(logs, new Date()),
+    [logs],
+  );
 
   // Graph data toggle: "daily" | "weekly"
   const [mode, setMode] = useState("daily");
@@ -104,7 +108,8 @@ export default function WeightTracker() {
           ←
         </Button>
         <div className="font-semibold">
-          {monthCursor.getFullYear()}-{String(monthCursor.getMonth() + 1).padStart(2, "0")}
+          {monthCursor.getFullYear()}-
+          {String(monthCursor.getMonth() + 1).padStart(2, "0")}
         </div>
         <Button
           variant="secondary"
@@ -190,8 +195,8 @@ export default function WeightTracker() {
               weekDelta == null
                 ? "text-neutral-400"
                 : weekDelta > 0
-                ? "text-green-600"
-                : "text-red-600",
+                  ? "text-green-600"
+                  : "text-red-600",
             ].join(" ")}
           >
             {weekDelta == null ? "—" : (weekDelta > 0 ? "+" : "") + weekDelta}

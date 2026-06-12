@@ -18,13 +18,7 @@ import { MAX_SETS } from "../lib/constants";
  * for exercises, workouts and unit; onCreated callback remains optional.
  */
 export default function WorkoutPlanner({ onCreated }) {
-  const {
-    exercises,
-    setExercises,
-    workouts,
-    setWorkouts,
-    unit,
-  } = useApp();
+  const { exercises, setExercises, workouts, setWorkouts, unit } = useApp();
 
   const [dates, setDates] = useState([todayStr()]);
   const [name, setName] = useState("");
@@ -32,33 +26,24 @@ export default function WorkoutPlanner({ onCreated }) {
   const confirm = useConfirm();
   const [historyExercise, setHistoryExercise] = useState(null);
 
-  const moveItemUp = (idx) =>
-    setItems((prev) => moveItem(prev, idx, idx - 1));
+  const moveItemUp = (idx) => setItems((prev) => moveItem(prev, idx, idx - 1));
   const moveItemDown = (idx) =>
     setItems((prev) => moveItem(prev, idx, idx + 1));
 
-  const addDate = () =>
-    setDates((prev) => [...prev, todayStr()]);
+  const addDate = () => setDates((prev) => [...prev, todayStr()]);
   const removeDate = (idx) =>
     setDates((prev) => prev.filter((_, i) => i !== idx));
   const setDateAt = (idx, val) =>
-    setDates((prev) =>
-      prev.map((d, i) => (i === idx ? val : d))
-    );
+    setDates((prev) => prev.map((d, i) => (i === idx ? val : d)));
 
   // Use helper to create or fetch exercise and prefill sets
   const addExerciseByName = (rawName) => {
-    const entry = createExerciseEntry(
-      rawName,
-      exercises,
-      setExercises
-    );
+    const entry = createExerciseEntry(rawName, exercises, setExercises);
     if (!entry) return;
     if (
       !items.some(
         (i) =>
-          i.exerciseName.toLowerCase() ===
-          entry.exerciseName.toLowerCase()
+          i.exerciseName.toLowerCase() === entry.exerciseName.toLowerCase(),
       )
     ) {
       setItems((prev) => [...prev, entry]);
@@ -73,19 +58,15 @@ export default function WorkoutPlanner({ onCreated }) {
       name: (name && name.trim()) || date,
       exercises: items.map((i) => ({
         exerciseName: i.exerciseName.trim(),
-        sets: i.sets
-          .slice(0, MAX_SETS)
-          .map((s, idx) => ({
-            set: idx + 1,
-            weight: Number(s.weight) || 0,
-            reps: Number(s.reps) || 0,
-          })),
+        sets: i.sets.slice(0, MAX_SETS).map((s, idx) => ({
+          set: idx + 1,
+          weight: Number(s.weight) || 0,
+          reps: Number(s.reps) || 0,
+        })),
       })),
     }));
     setWorkouts((prev) =>
-      [...created, ...prev].sort((a, b) =>
-        a.date < b.date ? 1 : -1
-      )
+      [...created, ...prev].sort((a, b) => (a.date < b.date ? 1 : -1)),
     );
     setDates([todayStr()]);
     setName("");
@@ -104,9 +85,7 @@ export default function WorkoutPlanner({ onCreated }) {
         <div className="grid gap-3">
           {/* Date inputs */}
           <div className="space-y-2">
-            <label className="text-xs text-neutral-600">
-              Workout date(s)
-            </label>
+            <label className="text-xs text-neutral-600">Workout date(s)</label>
             {dates.map((d, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <Input
@@ -119,8 +98,7 @@ export default function WorkoutPlanner({ onCreated }) {
                   onClick={() => {
                     confirm({
                       title: "Remove this date?",
-                      message:
-                        "This only removes the date from the plan.",
+                      message: "This only removes the date from the plan.",
                       confirmText: "Remove",
                       tone: "destructive",
                     }).then((ok) => {
@@ -158,9 +136,8 @@ export default function WorkoutPlanner({ onCreated }) {
             )}
             {items.map((it, idx) => {
               const rec =
-                exercises.find(
-                  (e) => e.name === it.exerciseName
-                )?.recommendRep || "";
+                exercises.find((e) => e.name === it.exerciseName)
+                  ?.recommendRep || "";
               return (
                 <WorkoutExerciseEditor
                   key={it.exerciseName}
@@ -172,24 +149,22 @@ export default function WorkoutPlanner({ onCreated }) {
                       prev.map((x) =>
                         x.exerciseName === it.exerciseName
                           ? { ...x, ...patch }
-                          : x
-                      )
+                          : x,
+                      ),
                     )
                   }
                   onRemove={() => {
                     confirm({
                       title: `Remove "${it.exerciseName}"?`,
-                      message:
-                        "This removes it from the current plan.",
+                      message: "This removes it from the current plan.",
                       confirmText: "Remove",
                       tone: "destructive",
                     }).then((ok) => {
                       if (ok)
                         setItems((prev) =>
                           prev.filter(
-                            (x) =>
-                              x.exerciseName !== it.exerciseName
-                          )
+                            (x) => x.exerciseName !== it.exerciseName,
+                          ),
                         );
                     });
                   }}
@@ -197,9 +172,7 @@ export default function WorkoutPlanner({ onCreated }) {
                   onMoveDown={() => moveItemDown(idx)}
                   canMoveUp={idx > 0}
                   canMoveDown={idx < items.length - 1}
-                  onShowHistory={(name) =>
-                    setHistoryExercise(name)
-                  }
+                  onShowHistory={(name) => setHistoryExercise(name)}
                 />
               );
             })}

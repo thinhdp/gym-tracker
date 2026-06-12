@@ -20,11 +20,11 @@ If you prefer not to use a terminal, VS Code can run everything:
 
 1. Open the project folder in **VS Code**.
 2. Open the **npm Scripts** view in the Explorer sidebar (enable it via
-   *Settings → "npm: Enable Script Explorer"* if it isn't visible).
+   _Settings → "npm: Enable Script Explorer"_ if it isn't visible).
 3. The `package.json` scripts (`dev`, `build`, `preview`) appear as clickable
    ▶ entries — run them with a click; no commands to type.
 4. Run **install** first (click `package.json` in the Scripts panel, or use an
-   npm extension's *"npm install"*), then **dev**.
+   npm extension's _"npm install"_), then **dev**.
 5. Click the `http://localhost:5173` link Vite prints to open the app.
 
 ### Using a terminal
@@ -60,6 +60,7 @@ Match the patterns the existing code follows.
   ```
 
   All views follow this pattern; `AppContent` passes no data props.
+
 - **Persistence:** never call `localStorage` directly for the core data; use
   `loadLS` / `saveLS` from `src/lib/storage.js` and keep key constants there.
   Self-contained features that own their own slice (notes, weight logs, summary

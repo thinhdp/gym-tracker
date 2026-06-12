@@ -36,7 +36,7 @@ export default function ExerciseRow({
   const [rep, setRep] = useState(ex.recommendRep || "");
   const [mainMuscle, setMainMuscle] = useState(ex.mainMuscle || "");
   const [secondaryMuscles, setSecondaryMuscles] = useState(
-    ex.secondaryMuscles || ""
+    ex.secondaryMuscles || "",
   );
   const [type, setType] = useState(ex.type || "");
   const [equipment, setEquipment] = useState(ex.equipment || "");
@@ -45,7 +45,7 @@ export default function ExerciseRow({
 
   const usedCount = useMemo(
     () => workoutsWithExercise(workouts, ex.name).length,
-    [workouts, ex.name]
+    [workouts, ex.name],
   );
 
   return (
@@ -69,9 +69,7 @@ export default function ExerciseRow({
           <div className="mt-1 text-sm text-neutral-600 space-x-2">
             {ex.type && <span>{ex.type}</span>}
             {ex.equipment && <span>{ex.equipment}</span>}
-            {ex.mainMuscle && (
-              <span>Main: {ex.mainMuscle}</span>
-            )}
+            {ex.mainMuscle && <span>Main: {ex.mainMuscle}</span>}
             {ex.secondaryMuscles && (
               <span>Secondary: {ex.secondaryMuscles}</span>
             )}
@@ -80,10 +78,7 @@ export default function ExerciseRow({
         </div>
         <div className="flex items-center gap-2">
           {!editing ? (
-            <Button
-              variant="secondary"
-              onClick={() => setEditing(true)}
-            >
+            <Button variant="secondary" onClick={() => setEditing(true)}>
               <Pencil />
             </Button>
           ) : (
@@ -182,9 +177,7 @@ export default function ExerciseRow({
 
       {/* Last workout summary */}
       <div className="mt-2">
-        <p className="text-xs font-medium text-neutral-500">
-          Last workout
-        </p>
+        <p className="text-xs font-medium text-neutral-500">Last workout</p>
         {ex.lastWorkout ? (
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
             <Badge>
@@ -193,8 +186,8 @@ export default function ExerciseRow({
             <div className="flex flex-wrap gap-1">
               {ex.lastWorkout.sets.map((s) => (
                 <Badge key={s.set}>
-                  Set {s.set}: {toDisplayWeight(s.weight, unit)}{" "}
-                  {unit} × {s.reps}
+                  Set {s.set}: {toDisplayWeight(s.weight, unit)} {unit} ×{" "}
+                  {s.reps}
                 </Badge>
               ))}
             </div>

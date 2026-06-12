@@ -18,10 +18,7 @@ export default function ExerciseManager() {
   // Holds the name of the exercise whose history is being viewed.
   const [historyExercise, setHistoryExercise] = useState(null);
 
-  const options = useMemo(
-    () => extractExerciseOptions(exercises),
-    [exercises]
-  );
+  const options = useMemo(() => extractExerciseOptions(exercises), [exercises]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -42,17 +39,12 @@ export default function ExerciseManager() {
     });
   }, [exercises, query]);
 
-  const onCreate = (ex) =>
-    setExercises((prev) => [...prev, ex]);
+  const onCreate = (ex) => setExercises((prev) => [...prev, ex]);
   const onDelete = (name) =>
-    setExercises((prev) =>
-      prev.filter((e) => e.name !== name)
-    );
+    setExercises((prev) => prev.filter((e) => e.name !== name));
   const onUpdate = (name, patch) =>
     setExercises((prev) =>
-      prev.map((e) =>
-        e.name === name ? { ...e, ...patch, name: e.name } : e
-      )
+      prev.map((e) => (e.name === name ? { ...e, ...patch, name: e.name } : e)),
     );
 
   // Callback to open the history modal for a specific exercise

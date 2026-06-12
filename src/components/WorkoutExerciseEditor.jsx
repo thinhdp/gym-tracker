@@ -1,5 +1,4 @@
 import React from "react";
-import NumberInputAutoClear from "./NumberInputAutoClear";
 import WeightRepInputs from "./WeightRepInputs";
 import { Button } from "./ui/Button";
 import { Plus, Trash2 } from "./ui/Icons";
@@ -120,9 +119,7 @@ export default function WorkoutExerciseEditor({
           >
             {/* cyan accent bar for each set */}
             <div className="absolute inset-y-0 left-0 w-1 bg-cyan-200"></div>
-            <span className="w-16 text-sm text-neutral-600">
-              Set {idx + 1}
-            </span>
+            <span className="w-16 text-sm text-neutral-600">Set {idx + 1}</span>
             <WeightRepInputs
               weight={toDisplayWeight(s.weight, unit)}
               reps={s.reps}
@@ -131,15 +128,13 @@ export default function WorkoutExerciseEditor({
                   sets: sets.map((p, i) =>
                     i !== idx
                       ? p
-                      : { ...p, weight: fromDisplayWeight(v, unit) }
+                      : { ...p, weight: fromDisplayWeight(v, unit) },
                   ),
                 });
               }}
               onRepsChange={(v) => {
                 onChange({
-                  sets: sets.map((p, i) =>
-                    i !== idx ? p : { ...p, reps: v }
-                  ),
+                  sets: sets.map((p, i) => (i !== idx ? p : { ...p, reps: v })),
                 });
               }}
             />

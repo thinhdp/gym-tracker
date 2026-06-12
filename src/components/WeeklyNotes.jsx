@@ -8,9 +8,6 @@ import { prevWeekKeyFrom } from "../lib/dateUtils";
 import { Button } from "./ui/Button";
 import { ymdFromDate } from "../lib/date";
 
-// Storage key for the notepad contents
-const K_NOTE = "mgym.note.v1";
-
 // Extract weight logs within a date range (inclusive)
 function sliceWeightLogs(weightLogs, from, to) {
   const result = {};
@@ -51,6 +48,9 @@ export default function WeeklyNotes({ periodKey }) {
   const { workouts } = useApp();
 
   useEffect(() => {
+    // Re-sync from localStorage when the week (storageKey) changes — the
+    // useState initializer only runs on first mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSaved(loadLS(storageKey, ""));
   }, [storageKey]);
 
@@ -84,7 +84,7 @@ export default function WeeklyNotes({ periodKey }) {
       const thisWeekWeights = sliceWeightLogs(
         weightLogs,
         current.from,
-        current.to
+        current.to,
       );
       const lastWeekWeights = previous
         ? sliceWeightLogs(weightLogs, previous.from, previous.to)
@@ -164,7 +164,11 @@ export default function WeeklyNotes({ periodKey }) {
 
       {!editing ? (
         <div className="text-sm whitespace-pre-wrap text-neutral-800">
-          {saved ? saved : <span className="text-neutral-500">No notes yet.</span>}
+          {saved ? (
+            saved
+          ) : (
+            <span className="text-neutral-500">No notes yet.</span>
+          )}
         </div>
       ) : (
         <div className="space-y-2">

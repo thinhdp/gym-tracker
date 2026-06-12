@@ -33,10 +33,9 @@ export default function NewExerciseInline({ existing, options, onCreate }) {
     () =>
       name.trim() &&
       !existing.some(
-        (e) =>
-          e.name.trim().toLowerCase() === name.trim().toLowerCase()
+        (e) => e.name.trim().toLowerCase() === name.trim().toLowerCase(),
       ),
-    [existing, name]
+    [existing, name],
   );
   const resetFields = () => {
     setName("");
@@ -117,11 +116,7 @@ export default function NewExerciseInline({ existing, options, onCreate }) {
         <Button variant="ghost" onClick={resetFields}>
           Reset
         </Button>
-        <Button
-          variant="primary"
-          onClick={handleSave}
-          disabled={!isUnique}
-        >
+        <Button variant="primary" onClick={handleSave} disabled={!isUnique}>
           Save
         </Button>
       </div>

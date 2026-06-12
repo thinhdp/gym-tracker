@@ -1,4 +1,10 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 const ConfirmContext = createContext(null);
 
@@ -23,16 +29,19 @@ export function ConfirmProvider({ children }) {
   const onCancel = useCallback(() => {
     state.resolve && state.resolve(false);
     setState((prev) => ({ ...prev, open: false, resolve: null }));
-  }, [state.resolve]);
+  }, [state]);
 
   const onConfirm = useCallback(() => {
     state.resolve && state.resolve(true);
     setState((prev) => ({ ...prev, open: false, resolve: null }));
-  }, [state.resolve]);
+  }, [state]);
 
   // ESC to cancel
   useEffect(() => {
-    const onKey = (e) => { if (!state.open) return; if (e.key === "Escape") onCancel(); };
+    const onKey = (e) => {
+      if (!state.open) return;
+      if (e.key === "Escape") onCancel();
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [state.open, onCancel]);

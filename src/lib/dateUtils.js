@@ -36,7 +36,7 @@ export function weekLabel(date) {
   const e = endOfWeekSunday(date);
   const fmt = (d) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-      d.getDate()
+      d.getDate(),
     ).padStart(2, "0")}`;
   return `${fmt(s)} to ${fmt(e)}`;
 }

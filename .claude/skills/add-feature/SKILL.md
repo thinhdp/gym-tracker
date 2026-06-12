@@ -41,7 +41,16 @@ or read `localStorage` directly:
 
 ```jsx
 import { useApp } from "../context/AppContext";
-const { exercises, setExercises, workouts, setWorkouts, unit, setUnit, tab, setTab } = useApp();
+const {
+  exercises,
+  setExercises,
+  workouts,
+  setWorkouts,
+  unit,
+  setUnit,
+  tab,
+  setTab,
+} = useApp();
 ```
 
 All existing views follow this pattern — `AppContent` passes no data props.
@@ -59,8 +68,8 @@ from `src/lib/storage.js` under a clearly-named `mgym.*` key. **Never call
 import { loadLS, saveLS } from "../lib/storage";
 const K_NOTE = "mgym.note.v1";
 
-const [content, setContent] = useState(() => loadLS(K_NOTE, ""));   // lazy read
-useEffect(() => saveLS(K_NOTE, content), [content]);                 // reactive write
+const [content, setContent] = useState(() => loadLS(K_NOTE, "")); // lazy read
+useEffect(() => saveLS(K_NOTE, content), [content]); // reactive write
 ```
 
 Existing self-owned keys for reference: `mgym.note.v1` (Notepad), `weightLogs`
@@ -110,7 +119,9 @@ To add one, edit `src/App.jsx` (`AppContent`) in two places:
    ```
 2. **Render branch** (alongside the other `tab === "..."` blocks) — add:
    ```jsx
-   {tab === "goals" && <GoalsView />}
+   {
+     tab === "goals" && <GoalsView />;
+   }
    ```
 
 Import the new component at the top of `App.jsx`. Prefer having the new
