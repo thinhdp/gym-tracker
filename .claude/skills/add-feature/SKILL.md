@@ -44,9 +44,9 @@ import { useApp } from "../context/AppContext";
 const { exercises, setExercises, workouts, setWorkouts, unit, setUnit, tab, setTab } = useApp();
 ```
 
-> Note: `CalendarView` and `DataManagementMenu` still *receive* these as props,
-> and `ExerciseManager` is passed props it ignores. That's legacy mid-migration
-> code — **do not copy it**. New work uses `useApp()`.
+All existing views follow this pattern — `AppContent` passes no data props.
+Presentational children (e.g. `ExerciseRow`, `WorkoutHistoryItem`) receive what
+they render as plain props from their owning view.
 
 ## 4. Self-owned persistence
 

@@ -59,8 +59,7 @@ Match the patterns the existing code follows.
   const { exercises, setExercises, workouts, setWorkouts, unit } = useApp();
   ```
 
-  (Some older components — `CalendarView`, `DataManagementMenu` — still receive
-  these as props from `AppContent`. Prefer `useApp()` for new work.)
+  All views follow this pattern; `AppContent` passes no data props.
 - **Persistence:** never call `localStorage` directly for the core data; use
   `loadLS` / `saveLS` from `src/lib/storage.js` and keep key constants there.
   Self-contained features that own their own slice (notes, weight logs, summary

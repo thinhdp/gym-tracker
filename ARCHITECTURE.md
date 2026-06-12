@@ -55,17 +55,23 @@ gym-tracker/
     │   ├── storage.js            # localStorage keys + load/save + id/date helpers
     │   ├── backup.js             # Export/import normalize + merge logic
     │   ├── units.js              # kg <-> display-unit conversion
-    │   ├── date.js               # ymd() calendar-cell formatter
+    │   ├── date.js               # ymd() / ymdFromDate() YYYY-MM-DD formatters
     │   ├── dateUtils.js          # Week/month boundary + key/label helpers
-    │   ├── exerciseUtils.js      # createExerciseEntry() shared add-exercise logic
+    │   ├── exerciseUtils.js      # createExerciseEntry, workoutsWithExercise, extractExerciseOptions
+    │   ├── weightUtils.js        # averageWeightInRange for bodyweight logs
+    │   ├── arrayUtils.js         # moveItem() reorder helper
+    │   ├── constants.js          # MAX_SETS
     │   └── metrics.js            # Period bucketing + per-period metrics (reps/sets/PRs)
     └── components/
         ├── WorkoutPlanner.jsx       # "Plan / Log Workout" form (Workouts tab)
-        ├── WorkoutHistory.jsx       # Editable list of past workouts (Workouts tab)
+        ├── WorkoutHistory.jsx       # List of past workouts (Workouts tab)
+        ├── WorkoutHistoryItem.jsx   # One history card: header + expanded editor
         ├── WorkoutExerciseEditor.jsx# Per-exercise set editor (planner)
         ├── WeightRepInputs.jsx      # Shared weight+reps input pair
         ├── CalendarView.jsx         # Month grid + per-day workouts (Calendar tab)
         ├── ExerciseManager.jsx      # Exercise database CRUD (Exercises tab)
+        ├── NewExerciseInline.jsx    # Inline create-exercise form
+        ├── ExerciseRow.jsx          # One exercise row: info + edit/delete/history
         ├── ExerciseHistoryModal.jsx # Modal: all past workouts for one exercise
         ├── WeightTracker.jsx        # Bodyweight calendar + trend (Weight tab)
         ├── WeightChart.jsx          # Scrollable SVG line chart of bodyweight
@@ -79,7 +85,6 @@ gym-tracker/
         ├── AddExerciseInput.jsx     # Autocomplete "add exercise" combobox
         ├── NumberInputAutoClear.jsx # Numeric input that clears a leading 0
         ├── ConfirmDialog.jsx        # Promise-based confirm modal + context
-        ├── ImportExportControls.jsx # ⚠ legacy/unused (superseded by DataManagementMenu)
         └── ui/                      # Presentational primitives
             ├── Button.jsx           # Variant/size button
             ├── Input.jsx            # Input + Textarea
@@ -93,45 +98,41 @@ gym-tracker/
 
 ```
 main.jsx
-└── ConfirmProvider                 (outer; see note below)
+└── ConfirmProvider                 (single provider for all useConfirm() consumers)
     └── App
         └── AppProvider             (Context: tab, unit, exercises, workouts)
             └── AppContent          (consumes useApp())
-                └── ConfirmProvider (inner — the one components actually use)
-                    ├── DataManagementMenu        (header)
-                    ├── Button (unit toggle, tab buttons)
-                    │
-                    ├── [tab="workouts"]
-                    │   ├── WorkoutPlanner
-                    │   │   ├── AddExerciseInput
-                    │   │   ├── WorkoutExerciseEditor → WeightRepInputs / NumberInputAutoClear
-                    │   │   └── ExerciseHistoryModal
-                    │   └── WorkoutHistory
-                    │       ├── AddExerciseInput
-                    │       ├── WeightRepInputs / NumberInputAutoClear
-                    │       └── ExerciseHistoryModal
-                    │
-                    ├── [tab="calendar"]  CalendarView → AddExerciseInput
-                    │
-                    ├── [tab="exercises"] ExerciseManager
-                    │   ├── NewExerciseInline → ComboInput
-                    │   ├── ExerciseRow → ComboInput
-                    │   └── ExerciseHistoryModal
-                    │
-                    ├── [tab="weight"]    WeightTracker → WeightChart
-                    │
-                    ├── [tab="notepad"]   Notepad
-                    │
-                    └── [tab="summary"]   DashboardSummary
-                        └── PeriodCard
-                            ├── GroupedMuscleBar
-                            ├── Delta
-                            └── WeeklyNotes   (weekly periods only)
+                ├── DataManagementMenu        (header)
+                ├── Button (unit toggle, tab buttons)
+                │
+                ├── [tab="workouts"]
+                │   ├── WorkoutPlanner
+                │   │   ├── AddExerciseInput
+                │   │   ├── WorkoutExerciseEditor → WeightRepInputs / NumberInputAutoClear
+                │   │   └── ExerciseHistoryModal
+                │   └── WorkoutHistory
+                │       ├── WorkoutHistoryItem
+                │       │   ├── AddExerciseInput
+                │       │   └── WeightRepInputs / NumberInputAutoClear
+                │       └── ExerciseHistoryModal
+                │
+                ├── [tab="calendar"]  CalendarView → AddExerciseInput
+                │
+                ├── [tab="exercises"] ExerciseManager
+                │   ├── NewExerciseInline → ComboInput
+                │   ├── ExerciseRow → ComboInput
+                │   └── ExerciseHistoryModal
+                │
+                ├── [tab="weight"]    WeightTracker → WeightChart
+                │
+                ├── [tab="notepad"]   Notepad
+                │
+                └── [tab="summary"]   DashboardSummary
+                    └── PeriodCard
+                        ├── GroupedMuscleBar
+                        ├── Delta
+                        └── WeeklyNotes   (weekly periods only)
 ```
-
-> **Note — `ConfirmProvider` is mounted twice** (once in `main.jsx`, once inside
-> `AppContent`). The inner one wins for `useConfirm()` consumers. This is a
-> redundant nesting; see OPEN QUESTIONS.
 
 ## State-management model
 
@@ -153,19 +154,14 @@ All four are persisted by `useEffect`s in `AppProvider` that run whenever the
 value changes. (Unlike the earlier version of the app, **`unit` and `tab` are now
 persisted** too.)
 
-### How components get state — mixed, in transition
+### How components get state
 
-The app is mid-migration from prop-drilling to Context:
-
-- **Use Context directly** (no data props): `WorkoutPlanner`, `WorkoutHistory`,
-  `ExerciseManager`, `WeightTracker`, `DashboardSummary`, `WeeklyNotes`.
-- **Still receive props** from `AppContent`: `CalendarView` (gets `workouts`,
-  `setWorkouts`, `exercises`, `setExercises`, `unit`) and `DataManagementMenu`.
-  `AppContent` also still passes props to `ExerciseManager`, but that component
-  ignores them and reads Context instead — so those props are redundant.
-
-See OPEN QUESTIONS — this inconsistency is a cleanup candidate, not intended
-design.
+Every view that needs shared state reads it from `useApp()` directly:
+`WorkoutPlanner`, `WorkoutHistory`, `ExerciseManager`, `CalendarView`,
+`DataManagementMenu`, `WeightTracker`, `DashboardSummary`, `WeeklyNotes`.
+`AppContent` passes no data props. Presentational children (e.g.
+`WorkoutHistoryItem`, `ExerciseRow`, `WorkoutExerciseEditor`) receive what they
+render as props from their view.
 
 ### Locally-owned / self-persisting state
 
@@ -274,20 +270,20 @@ Tracing a workout from the planner to History, Calendar, and Summary:
 │    a) saveLS(K_WO, workouts) → mgym.workouts.v1                       │
 │    b) recompute each exercise.lastWorkout → setExercises → saveLS(K_EX)│
 └───────────────────────────────┬──────────────────────────────────────┘
-                                 │ same workouts via useApp()/props
+                                 │ same workouts via useApp()
           ┌──────────────────────┼──────────────────────┬───────────────┐
           ▼                      ▼                      ▼               ▼
 ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────┐
 │ HISTORY          │  │ CALENDAR         │  │ SUMMARY          │  │ EXERCISES    │
-│ (WorkoutHistory) │  │ (CalendarView,   │  │ (DashboardSummary│  │ lastWorkout +│
-│ edit/reorder/    │  │  props) buckets  │  │ → metrics.js     │  │ usage counts │
+│ (WorkoutHistory) │  │ (CalendarView)   │  │ (DashboardSummary│  │ lastWorkout +│
+│ edit/reorder/    │  │ buckets workouts │  │ → metrics.js     │  │ usage counts │
 │ add via          │  │ by date, badges  │  │ buildWeeks/Months│  │ reflect the  │
 │ setWorkouts      │  │ per day          │  │ + PR detection)  │  │ new workout  │
 └──────────────────┘  └──────────────────┘  └──────────────────┘  └──────────────┘
 ```
 
-Every view reads the **same `workouts`** (via Context or props from the same
-Context), so a save in the planner is reflected everywhere immediately. The
+Every view reads the **same `workouts`** via Context, so a save in the planner
+is reflected everywhere immediately. The
 Summary tab additionally runs `workouts` through `src/lib/metrics.js` to bucket
 by week/month and compute reps/sets-per-muscle, workout frequency, and PRs.
 
@@ -329,21 +325,14 @@ No lint or test step is configured. See [CONTRIBUTING.md](CONTRIBUTING.md).
 These reflect the code as it stands; documented here for a future refactor, not
 fixed by this documentation pass.
 
-1. **Double `ConfirmProvider`** — mounted in both `main.jsx` and `AppContent`.
-2. **`ImportExportControls.jsx` is dead code** — superseded by
-   `DataManagementMenu`; not imported anywhere.
-3. **Inconsistent state access** — most views use `useApp()`, but `CalendarView`
-   takes props and `ExerciseManager` is passed props it ignores.
-4. **Bodyweight logs aren't unit-converted** — `weightLogs` store raw numbers;
+1. **Bodyweight logs aren't unit-converted** — `weightLogs` store raw numbers;
    the kg/lb toggle only relabels them.
-5. **Import restores extra fields unvalidated** — `note`/`weightLogs`/
+2. **Import restores extra fields unvalidated** — `note`/`weightLogs`/
    `weeklyNotes`/`unit`/`tab` bypass `normalizeData`.
-6. **`normalizeWorkout` dead guard** — `if (!date || !normExercises)`;
+3. **`normalizeWorkout` dead guard** — `if (!date || !normExercises)`;
    `normExercises` is always an array (truthy), so that half never fires.
-7. **Dead code in `WeightTracker`** — an internal `LineChart` is defined but the
-   component actually renders `WeightChart`; `dailyPoints` is computed but unused.
-8. **`package.json` version is `1.1.0`** despite substantial feature growth.
-9. **README claims an MIT `LICENSE` file** that does not exist in the repo.
-10. **`fmtDate` is an identity function**, and date helpers are split across
-    `date.js` / `dateUtils.js` / inline `ymd()` copies in several components —
-    consolidation candidate.
+4. **`package.json` version is `1.1.0`** despite substantial feature growth.
+5. **README claims an MIT `LICENSE` file** that does not exist in the repo.
+6. **`window.prompt`/`window.alert` UX** — exercise rename in History uses
+   `prompt()`; import/export and weekly-log export report via `alert()`.
+   Candidates for in-app dialogs/toasts.
