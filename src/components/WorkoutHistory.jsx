@@ -7,17 +7,27 @@ import NumberInputAutoClear from "./NumberInputAutoClear";
 import WeightRepInputs from "./WeightRepInputs";
 import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
 import { useConfirm } from "./ConfirmDialog";
+import ExerciseHistoryModal from "./ExerciseHistoryModal";
+import { createExerciseEntry } from "../lib/exerciseUtils";
+import { useApp } from "../context/AppContext";
 
-export default function WorkoutHistory({
-  workouts,
-  setWorkouts,
-  exercises,
-  setExercises,
-  unit,
-}) {
+/**
+ * History component for editing existing workouts.  Uses AppContext
+ * to access workouts, exercises and unit; no props required.
+ */
+export default function WorkoutHistory() {
+  const {
+    workouts,
+    setWorkouts,
+    exercises,
+    setExercises,
+    unit,
+  } = useApp();
   const [expandedId, setExpandedId] = useState(null);
   const confirm = useConfirm();
+  const [historyExercise, setHistoryExercise] = useState(null);
 
+  // Helper to update a workout by id and keep list sorted by date
   const updateWorkout = (id, patch) => {
     setWorkouts((prev) =>
       prev
@@ -26,39 +36,21 @@ export default function WorkoutHistory({
     );
   };
 
+  // Delete a workout entirely
   const deleteWorkout = (id) => {
     setWorkouts((prev) => prev.filter((w) => w.id !== id));
   };
 
+  // Use helper to create or fetch exercise and prefill sets
   const addExerciseToWorkout = (workout, exerciseName) => {
-    const exists = exercises.find(
-      (e) => e.name.toLowerCase() === exerciseName.toLowerCase()
-    );
-    if (!exists) {
-      const created = {
-        name: exerciseName,
-        recommendRep: "",
-        lastWorkout: null,
-        mainMuscle: "",
-        secondaryMuscles: "",
-        type: "",
-        equipment: "",
-        force: "",
-      };
-      setExercises((prev) => [...prev, created]);
-    }
-    const last = exists?.lastWorkout?.sets?.length
-      ? exists.lastWorkout.sets.at(-1)
-      : null;
-    const newExercise = {
-      exerciseName,
-      sets: [
-        { set: 1, weight: last?.weight || 0, reps: last?.reps || 0 },
-      ],
-    };
-    updateWorkout(workout.id, { exercises: [...workout.exercises, newExercise] });
+    const entry = createExerciseEntry(exerciseName, exercises, setExercises);
+    if (!entry) return;
+    updateWorkout(workout.id, {
+      exercises: [...workout.exercises, entry],
+    });
   };
 
+  // Helper to reorder exercises within a workout
   const moveItem = (arr, from, to) => {
     if (to < 0 || to >= arr.length) return arr;
     const next = arr.slice();
@@ -141,9 +133,7 @@ export default function WorkoutHistory({
                   <Input
                     type="date"
                     value={w.date}
-                    onChange={(e) =>
-                      updateWorkout(w.id, { date: e.target.value })
-                    }
+                    onChange={(e) => updateWorkout(w.id, { date: e.target.value })}
                   />
                 </div>
                 <div className="space-y-1">
@@ -151,22 +141,15 @@ export default function WorkoutHistory({
                   <Input
                     value={w.name}
                     onChange={(e) =>
-                      updateWorkout(w.id, { name: e.target.value || w.date })
+                      updateWorkout(w.id, {
+                        name: e.target.value || w.date,
+                      })
                     }
                   />
                 </div>
               </div>
 
-              <div className="rounded-xl border p-3">
-                <div className="mb-2 font-medium text-sm">
-                  Add exercise to this workout
-                </div>
-                <AddExerciseInput
-                  allExercises={exercises}
-                  onAdd={(name) => addExerciseToWorkout(w, name)}
-                />
-              </div>
-
+              {/* Exercises list */}
               <div className="space-y-2">
                 {w.exercises.map((we, idx) => (
                   <div
@@ -177,12 +160,16 @@ export default function WorkoutHistory({
                     <div className="absolute inset-y-0 left-0 w-1 bg-cyan-300"></div>
                     <div className="mb-2 flex items-center justify-between">
                       <div className="font-medium">
-                        {we.exerciseName}
+                        <span
+                          className="cursor-pointer underline"
+                          onClick={() => setHistoryExercise(we.exerciseName)}
+                        >
+                          {we.exerciseName}
+                        </span>
                         {(() => {
                           const rec =
-                            exercises.find(
-                              (e) => e.name === we.exerciseName
-                            )?.recommendRep || "";
+                            exercises.find((e) => e.name === we.exerciseName)?.recommendRep ||
+                            "";
                           return rec ? (
                             <span className="ml-2 text-xs text-neutral-500">
                               ({rec})
@@ -216,9 +203,7 @@ export default function WorkoutHistory({
                             if (!newName) return;
                             updateWorkout(w.id, {
                               exercises: w.exercises.map((e2, i2) =>
-                                i2 === idx
-                                  ? { ...e2, exerciseName: newName }
-                                  : e2
+                                i2 === idx ? { ...e2, exerciseName: newName } : e2
                               ),
                             });
                           }}
@@ -237,9 +222,7 @@ export default function WorkoutHistory({
                             }).then((ok) => {
                               if (ok) {
                                 updateWorkout(w.id, {
-                                  exercises: w.exercises.filter(
-                                    (_, i2) => i2 !== idx
-                                  ),
+                                  exercises: w.exercises.filter((_, i2) => i2 !== idx),
                                 });
                               }
                             });
@@ -372,10 +355,28 @@ export default function WorkoutHistory({
                   </div>
                 ))}
               </div>
+
+              {/* Add exercise input moved below the list */}
+              <div className="rounded-xl border p-3">
+                <div className="mb-2 font-medium text-sm">
+                  Add exercise to this workout
+                </div>
+                <AddExerciseInput
+                  allExercises={exercises}
+                  onAdd={(name) => addExerciseToWorkout(w, name)}
+                />
+              </div>
             </div>
           )}
         </div>
       ))}
+      {/* Shared history modal */}
+      <ExerciseHistoryModal
+        exerciseName={historyExercise}
+        workouts={workouts}
+        unit={unit}
+        onClose={() => setHistoryExercise(null)}
+      />
     </div>
   );
 }

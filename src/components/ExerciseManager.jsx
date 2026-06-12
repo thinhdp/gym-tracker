@@ -7,6 +7,7 @@ import { Check, Pencil, Trash2, X, CalendarIcon } from "./ui/Icons";
 import { toDisplayWeight } from "../lib/units";
 import ComboInput from "./ui/ComboInput";
 import { useConfirm } from "./ConfirmDialog";
+import { useApp } from "../context/AppContext";
 
 /**
  * Inline component to create a new exercise. Collects various
@@ -374,12 +375,8 @@ function ExerciseRow({
  * and editing capabilities. A modal popup is used to display a full
  * history of any exercise across all recorded workouts.
  */
-export default function ExerciseManager({
-  exercises,
-  setExercises,
-  workouts,
-  unit,
-}) {
+export default function ExerciseManager() {
+  const { exercises, setExercises, workouts, unit } = useApp();
   const [query, setQuery] = useState("");
   // Holds the name of the exercise whose history is being viewed.
   const [historyExercise, setHistoryExercise] = useState(null);

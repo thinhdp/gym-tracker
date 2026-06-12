@@ -1,62 +1,40 @@
-import React, { useEffect, useState } from "react";
-import './index.css';
-import seedExercises from './data/exercises_seed.json';
-import { loadLS, saveLS, K_EX, K_WO } from './lib/storage';
-// Badge import removed because the Local/Offline indicator has been replaced by the data menu
-import { Button } from './components/ui/Button';
-import DataManagementMenu from './components/DataManagementMenu';
-import WorkoutPlanner from './components/WorkoutPlanner';
-import WorkoutHistory from './components/WorkoutHistory';
-import ExerciseManager from './components/ExerciseManager';
-import CalendarView from './components/CalendarView';
-import Notepad from './components/Notepad';
-import { ConfirmProvider } from './components/ConfirmDialog';
+import React from "react";
+import "./index.css";
+import { AppProvider, useApp } from "./context/AppContext";
+import { Button } from "./components/ui/Button";
+import DataManagementMenu from "./components/DataManagementMenu";
+import WorkoutPlanner from "./components/WorkoutPlanner";
+import WorkoutHistory from "./components/WorkoutHistory";
+import ExerciseManager from "./components/ExerciseManager";
+import CalendarView from "./components/CalendarView";
+import Notepad from "./components/Notepad";
+import { ConfirmProvider } from "./components/ConfirmDialog";
+import DashboardSummary from "./components/DashboardSummary";
+import WeightTracker from "./components/WeightTracker";
 
 /**
- * Main application component. Handles top‑level state for exercises and
- * workouts, persists them to localStorage, and renders the various
- * feature tabs (planner, calendar, exercises, notepad). A data
- * management menu is provided in the header to consolidate export and
- * import controls.
+ * Internal component that consumes AppContext and renders the app UI.
+ * This separates context consumption from the outer provider.
  */
-export default function App() {
-  const [tab, setTab] = useState('workouts');
-  const [exercises, setExercises] = useState(() => loadLS(K_EX, seedExercises));
-  const [workouts, setWorkouts] = useState(() => loadLS(K_WO, []));
-  const [unit, setUnit] = useState('kg');
-
-  // Persist to localStorage when exercises/workouts change
-  useEffect(() => saveLS(K_EX, exercises), [exercises]);
-  useEffect(() => saveLS(K_WO, workouts), [workouts]);
-
-  // Derive lastWorkout info for exercises whenever workouts update
-  useEffect(() => {
-    const latestByName = {};
-    for (const w of workouts) {
-      for (const ex of w.exercises || []) {
-        if (!latestByName[ex.exerciseName] || latestByName[ex.exerciseName].date < w.date) {
-          latestByName[ex.exerciseName] = { date: w.date, sets: ex.sets };
-        }
-      }
-    }
-    setExercises((prev) =>
-      prev.map((e) => ({
-        ...e,
-        lastWorkout: latestByName[e.name]
-          ? { date: latestByName[e.name].date, sets: latestByName[e.name].sets }
-          : null,
-      }))
-    );
-  }, [workouts, setExercises]);
+function AppContent() {
+  const {
+    tab,
+    setTab,
+    unit,
+    setUnit,
+    exercises,
+    setExercises,
+    workouts,
+    setWorkouts,
+  } = useApp();
 
   return (
     <ConfirmProvider>
       <div className="max-w-3xl mx-auto p-4 space-y-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-center justify-between gap-2">
           <h1 className="text-2xl font-bold">Gym&nbsp;Tracker</h1>
           <div className="flex items-center gap-4">
-            {/* Replace the Local • Offline indicator with the data menu */}
             <DataManagementMenu
               exercises={exercises}
               workouts={workouts}
@@ -65,63 +43,98 @@ export default function App() {
             />
             <Button
               variant="secondary"
-              onClick={() => setUnit((u) => (u === 'kg' ? 'lb' : 'kg'))}
+              onClick={() => setUnit((u) => (u === "kg" ? "lb" : "kg"))}
             >
               Unit: {unit.toUpperCase()}
             </Button>
           </div>
         </div>
-        {/* Tab navigation */}
-        <div className="flex gap-2 border-b pb-2">
-          <Button variant={tab === 'workouts' ? 'primary' : 'ghost'} onClick={() => setTab('workouts')}>
-            Workouts
-          </Button>
-          <Button variant={tab === 'calendar' ? 'primary' : 'ghost'} onClick={() => setTab('calendar')}>
-            Calendar
-          </Button>
-          <Button variant={tab === 'exercises' ? 'primary' : 'ghost'} onClick={() => setTab('exercises')}>
-            Exercises
-          </Button>
-          <Button variant={tab === 'notepad' ? 'primary' : 'ghost'} onClick={() => setTab('notepad')}>
-            Notepad
-          </Button>
+
+        {/* Tab navigation (scrollable) */}
+        <div className="overflow-x-auto whitespace-nowrap border-b pb-2">
+          <div className="inline-flex gap-2">
+            <Button
+              variant={tab === "workouts" ? "primary" : "ghost"}
+              onClick={() => setTab("workouts")}
+            >
+              Workouts
+            </Button>
+            <Button
+              variant={tab === "calendar" ? "primary" : "ghost"}
+              onClick={() => setTab("calendar")}
+            >
+              Calendar
+            </Button>
+            <Button
+              variant={tab === "exercises" ? "primary" : "ghost"}
+              onClick={() => setTab("exercises")}
+            >
+              Exercises
+            </Button>
+            <Button
+              variant={tab === "weight" ? "primary" : "ghost"}
+              onClick={() => setTab("weight")}
+            >
+              Weight
+            </Button>
+            <Button
+              variant={tab === "notepad" ? "primary" : "ghost"}
+              onClick={() => setTab("notepad")}
+            >
+              Notepad
+            </Button>
+            <Button
+              variant={tab === "summary" ? "primary" : "ghost"}
+              onClick={() => setTab("summary")}
+            >
+              Summary
+            </Button>
+          </div>
         </div>
+
         {/* Main content */}
-        {tab === 'workouts' && (
+        {tab === "workouts" && (
           <>
-            <WorkoutPlanner
-              exercises={exercises}
-              setExercises={setExercises}
-              workouts={workouts}
-              setWorkouts={setWorkouts}
-              unit={unit}
-            />
-            <WorkoutHistory
-              workouts={workouts}
-              setWorkouts={setWorkouts}
-              exercises={exercises}
-              setExercises={setExercises}
-              unit={unit}
-            />
+            <WorkoutPlanner />
+            <WorkoutHistory />
           </>
         )}
-        {tab === 'calendar' && (
-          <CalendarView workouts={workouts} />
-        )}
-        {tab === 'exercises' && (
-          <ExerciseManager
+
+        {tab === "calendar" && (
+          <CalendarView
+            workouts={workouts}
+            setWorkouts={setWorkouts}
             exercises={exercises}
             setExercises={setExercises}
-            workouts={workouts}
             unit={unit}
           />
         )}
-        {tab === 'notepad' && <Notepad />}
+
+        {tab === "exercises" && <ExerciseManager />}
+
+        {tab === "notepad" && <Notepad />}
+
+        {tab === "summary" && <DashboardSummary />}
+
+        {tab === "weight" && <WeightTracker />}
+
         {/* Footer */}
         <p className="text-center text-xs text-neutral-500">
           Data stored in your browser
         </p>
       </div>
     </ConfirmProvider>
+  );
+}
+
+/**
+ * Top-level component wraps the application in AppProvider
+ * so all children can access the shared state.
+ */
+export default function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }

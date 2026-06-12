@@ -1,11 +1,56 @@
-export const K_EX = "mgym.exercises.v1";
-export const K_WO = "mgym.workouts.v1";
-export const todayStr = () => new Date().toISOString().slice(0, 10);
-export const fmtDate = (d) => d;
-export const uuid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+// localStorage layer + shared id/date helpers. All persisted app data is
+// namespaced under the "mgym" prefix. See docs/DATA-MODEL.md for the full key
+// inventory (these constants cover the core AppContext state + preferences;
+// other keys like `weightLogs` and `weekly-note:*` are defined in their owners).
 
+/** localStorage key for the exercise database (Exercise[]). */
+export const K_EX = "mgym.exercises.v1";
+/** localStorage key for all workouts (Workout[]). */
+export const K_WO = "mgym.workouts.v1";
+/** localStorage key for the display-unit preference ("kg" | "lb"). */
+export const K_UNIT = "mgym.unit";
+/** localStorage key for the last active tab. */
+export const K_TAB = "mgym.tab";
+
+/** Today's date as a `YYYY-MM-DD` string (UTC-sliced). */
+export const todayStr = () => new Date().toISOString().slice(0, 10);
+
+/** Identity formatter for dates (dates are already stored as `YYYY-MM-DD`). */
+export const fmtDate = (d) => d;
+
+/**
+ * Generate a unique identifier.
+ * Uses the Web Crypto API's randomUUID if available for better uniqueness,
+ * falling back to a Math.random/Date-based ID for environments where crypto.randomUUID is unavailable.
+ */
+export const uuid = () => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+};
+
+/**
+ * Read and JSON-parse a value from localStorage.
+ * @param {string} key - localStorage key.
+ * @param {*} fallback - returned when the key is missing or parsing throws.
+ * @returns {*} the parsed value, or `fallback`.
+ */
 export function loadLS(key, fallback) {
-  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
-  catch { return fallback; }
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
 }
-export function saveLS(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+/**
+ * JSON-stringify a value and write it to localStorage.
+ * @param {string} key - localStorage key.
+ * @param {*} val - any JSON-serializable value.
+ * @returns {void}
+ */
+export function saveLS(key, val) {
+  localStorage.setItem(key, JSON.stringify(val));
+}
