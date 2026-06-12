@@ -10,6 +10,8 @@ import { useConfirm } from "./ConfirmDialog";
 import ExerciseHistoryModal from "./ExerciseHistoryModal";
 import { createExerciseEntry } from "../lib/exerciseUtils";
 import { useApp } from "../context/AppContext";
+import { moveItem } from "../lib/arrayUtils";
+import { MAX_SETS } from "../lib/constants";
 
 /**
  * Planner component for creating a new workout.  Uses AppContext
@@ -29,15 +31,6 @@ export default function WorkoutPlanner({ onCreated }) {
   const [items, setItems] = useState([]);
   const confirm = useConfirm();
   const [historyExercise, setHistoryExercise] = useState(null);
-
-  // Helper to move an element in an array
-  const moveItem = (arr, from, to) => {
-    if (to < 0 || to >= arr.length) return arr;
-    const next = arr.slice();
-    const [it] = next.splice(from, 1);
-    next.splice(to, 0, it);
-    return next;
-  };
 
   const moveItemUp = (idx) =>
     setItems((prev) => moveItem(prev, idx, idx - 1));
@@ -81,7 +74,7 @@ export default function WorkoutPlanner({ onCreated }) {
       exercises: items.map((i) => ({
         exerciseName: i.exerciseName.trim(),
         sets: i.sets
-          .slice(0, 5)
+          .slice(0, MAX_SETS)
           .map((s, idx) => ({
             set: idx + 1,
             weight: Number(s.weight) || 0,
@@ -105,7 +98,7 @@ export default function WorkoutPlanner({ onCreated }) {
       <CardContent>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold">Plan / Log Workout</h2>
-          <Badge>Up to 5 sets / exercise</Badge>
+          <Badge>Up to {MAX_SETS} sets / exercise</Badge>
         </div>
 
         <div className="grid gap-3">

@@ -1,4 +1,5 @@
 import { todayStr, uuid } from "./storage";
+import { MAX_SETS } from "./constants";
 
 export function downloadJSON(filename, data) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -29,7 +30,7 @@ export function normalizeWorkout(w) {
     .map((e) => {
       const exerciseName = String(e?.exerciseName || "").trim(); if (!exerciseName) return null;
       const setsRaw = Array.isArray(e?.sets) ? e.sets : [];
-      const sets = setsRaw.slice(0, 5).map((s, idx) => ({
+      const sets = setsRaw.slice(0, MAX_SETS).map((s, idx) => ({
         set: idx + 1, weight: Number(s?.weight) || 0, reps: Number(s?.reps) || 0
       }));
       return { exerciseName, sets: sets.length ? sets : [{ set: 1, weight: 0, reps: 0 }] };

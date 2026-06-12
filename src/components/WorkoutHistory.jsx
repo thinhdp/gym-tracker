@@ -10,6 +10,8 @@ import { useConfirm } from "./ConfirmDialog";
 import ExerciseHistoryModal from "./ExerciseHistoryModal";
 import { createExerciseEntry } from "../lib/exerciseUtils";
 import { useApp } from "../context/AppContext";
+import { moveItem } from "../lib/arrayUtils";
+import { MAX_SETS } from "../lib/constants";
 
 /**
  * History component for editing existing workouts.  Uses AppContext
@@ -48,15 +50,6 @@ export default function WorkoutHistory() {
     updateWorkout(workout.id, {
       exercises: [...workout.exercises, entry],
     });
-  };
-
-  // Helper to reorder exercises within a workout
-  const moveItem = (arr, from, to) => {
-    if (to < 0 || to >= arr.length) return arr;
-    const next = arr.slice();
-    const [it] = next.splice(from, 1);
-    next.splice(to, 0, it);
-    return next;
   };
 
   const moveExerciseUp = (workoutId, idx) => {
@@ -325,7 +318,7 @@ export default function WorkoutHistory() {
                         </div>
                       ))}
 
-                      {we.sets.length < 5 && (
+                      {we.sets.length < MAX_SETS && (
                         <Button
                           variant="secondary"
                           className="w-fit"

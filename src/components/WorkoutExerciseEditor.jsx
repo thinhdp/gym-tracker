@@ -5,6 +5,7 @@ import { Button } from "./ui/Button";
 import { Plus, Trash2 } from "./ui/Icons";
 import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
 import { useConfirm } from "./ConfirmDialog";
+import { MAX_SETS } from "../lib/constants";
 
 /**
  * Editor for a single exercise within a workout.
@@ -31,10 +32,10 @@ export default function WorkoutExerciseEditor({
   // Keep parent informed whenever sets change
   useEffect(() => onChange({ sets }), [sets, onChange]);
 
-  // Append a new set (up to a maximum of 5)
+  // Append a new set (up to MAX_SETS)
   const addSet = () =>
     setSets((prev) =>
-      prev.length >= 5 ? prev : [...prev, { set: prev.length + 1, weight: 0, reps: 0 }]
+      prev.length >= MAX_SETS ? prev : [...prev, { set: prev.length + 1, weight: 0, reps: 0 }]
     );
 
   // Delete an existing set after confirming with the user
@@ -157,7 +158,7 @@ export default function WorkoutExerciseEditor({
         <Button
           variant="secondary"
           onClick={addSet}
-          disabled={sets.length >= 5}
+          disabled={sets.length >= MAX_SETS}
         >
           <Plus /> Set
         </Button>
