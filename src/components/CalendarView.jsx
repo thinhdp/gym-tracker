@@ -8,6 +8,7 @@ import { ymd } from "../lib/date";
 import { toDisplayWeight } from "../lib/units";
 import { Plus, Trash2 } from "./ui/Icons";
 import { useConfirm } from "./ConfirmDialog";
+import { createExerciseEntry } from "../lib/exerciseUtils";
 
 export default function CalendarView({ workouts, setWorkouts, exercises, setExercises, unit }) {
   const [viewDate, setViewDate] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
@@ -29,14 +30,9 @@ export default function CalendarView({ workouts, setWorkouts, exercises, setExer
     setWorkouts((prev) => [w, ...prev].sort((a, b) => (a.date < b.date ? 1 : -1)));
   };
   const addExerciseToWorkout = (workout, exerciseName) => {
-    const exists = exercises.find((e) => e.name.toLowerCase() === exerciseName.toLowerCase());
-    if (!exists) {
-      const created = { name: exerciseName, recommendRep: "", lastWorkout: null, mainMuscle: "", secondaryMuscles: "", type: "", equipment: "", force: "" };
-      setExercises((prev) => [...prev, created]);
-    }
-    const last = exists?.lastWorkout?.sets?.length ? exists.lastWorkout.sets.at(-1) : null;
-    const newExercise = { exerciseName, sets: [{ set: 1, weight: last?.weight || 0, reps: last?.reps || 0 }] };
-    setWorkouts((prev) => prev.map((w) => w.id === workout.id ? { ...w, exercises: [...w.exercises, newExercise] } : w));
+    const entry = createExerciseEntry(exerciseName, exercises, setExercises);
+    if (!entry) return;
+    setWorkouts((prev) => prev.map((w) => w.id === workout.id ? { ...w, exercises: [...w.exercises, entry] } : w));
   };
   const deleteWorkout = (id) => setWorkouts((prev) => prev.filter((w) => w.id !== id));
   return (

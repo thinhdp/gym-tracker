@@ -9,6 +9,13 @@
  *
  * Returns an object with `exerciseName` and `sets`, or null if the name is blank.
  */
+/** All workouts that contain the named exercise. */
+export function workoutsWithExercise(workouts, exerciseName) {
+  return (workouts || []).filter((w) =>
+    (w.exercises || []).some((e) => e.exerciseName === exerciseName)
+  );
+}
+
 export function createExerciseEntry(rawName, exercises, setExercises) {
   const name = (rawName || "").trim();
   if (!name) return null;

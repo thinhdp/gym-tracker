@@ -3,6 +3,7 @@ import { Button } from "./ui/Button";
 import { Badge } from "./ui/Badge";
 import { CalendarIcon } from "./ui/Icons";
 import { toDisplayWeight } from "../lib/units";
+import { workoutsWithExercise } from "../lib/exerciseUtils";
 
 /**
  * Reusable modal for viewing an exercise's history.
@@ -25,9 +26,7 @@ export default function ExerciseHistoryModal({
   if (!exerciseName) return null;
 
   // Filter workouts that contain the exercise
-  const filtered = (workouts || []).filter((w) =>
-    (w.exercises || []).some((e) => e.exerciseName === exerciseName)
-  );
+  const filtered = workoutsWithExercise(workouts, exerciseName);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">

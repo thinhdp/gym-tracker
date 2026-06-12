@@ -8,6 +8,8 @@ import { toDisplayWeight } from "../lib/units";
 import ComboInput from "./ui/ComboInput";
 import { useConfirm } from "./ConfirmDialog";
 import { useApp } from "../context/AppContext";
+import { workoutsWithExercise } from "../lib/exerciseUtils";
+import ExerciseHistoryModal from "./ExerciseHistoryModal";
 
 /**
  * Inline component to create a new exercise. Collects various
@@ -191,12 +193,7 @@ function ExerciseRow({
   const confirm = useConfirm();
 
   const usedCount = useMemo(
-    () =>
-      workouts.filter((w) =>
-        (w.exercises || []).some(
-          (e) => e.exerciseName === ex.name
-        )
-      ).length,
+    () => workoutsWithExercise(workouts, ex.name).length,
     [workouts, ex.name]
   );
 
@@ -496,76 +493,12 @@ export default function ExerciseManager() {
       </Card>
 
       {/* Modal popup for viewing exercise history across past workouts */}
-      {historyExercise && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white max-w-lg w-full rounded-xl shadow-lg p-4 overflow-y-auto max-h-[80vh]">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="text-lg font-medium">
-                  {historyExercise}
-                </div>
-                <div className="text-sm text-neutral-500">
-                  Past workouts containing this exercise
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                onClick={() => setHistoryExercise(null)}
-              >
-                Close
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {workouts.filter((w) =>
-                (w.exercises || []).some(
-                  (e) => e.exerciseName === historyExercise
-                )
-              ).length === 0 && (
-                <p className="text-sm text-neutral-500">
-                  No past workouts.
-                </p>
-              )}
-              {workouts
-                .filter((w) =>
-                  (w.exercises || []).some(
-                    (e) => e.exerciseName === historyExercise
-                  )
-                )
-                .map((w) => {
-                  const item = (w.exercises || []).find(
-                    (e) =>
-                      e.exerciseName === historyExercise
-                  );
-                  if (!item) return null;
-                  return (
-                    <div
-                      key={w.id}
-                      className="border rounded-lg p-3 space-y-1"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge>
-                          <CalendarIcon /> {w.date}
-                        </Badge>
-                        <span className="font-medium text-sm">
-                          {w.name || w.date}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-1 ml-4">
-                        {item.sets.map((s) => (
-                          <Badge key={s.set}>
-                            Set {s.set}:{" "}
-                            {toDisplayWeight(s.weight, unit)}{" "}
-                            {unit} × {s.reps}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        </div>
-      )}
+      <ExerciseHistoryModal
+        exerciseName={historyExercise}
+        workouts={workouts}
+        unit={unit}
+        onClose={() => setHistoryExercise(null)}
+      />
     </div>
   );
 }
