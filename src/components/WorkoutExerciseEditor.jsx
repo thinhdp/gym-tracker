@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import NumberInputAutoClear from "./NumberInputAutoClear";
 import WeightRepInputs from "./WeightRepInputs";
 import { Button } from "./ui/Button";
@@ -26,17 +26,18 @@ export default function WorkoutExerciseEditor({
   canMoveDown = false,
   onShowHistory = () => {}, // NEW: optional handler to display history
 }) {
-  const [sets, setSets] = useState(item.sets);
+  // Controlled by the parent: sets live on `item`, every edit goes
+  // straight out through onChange (same pattern as the history editor).
+  const sets = item.sets;
   const confirm = useConfirm();
 
-  // Keep parent informed whenever sets change
-  useEffect(() => onChange({ sets }), [sets, onChange]);
-
   // Append a new set (up to MAX_SETS)
-  const addSet = () =>
-    setSets((prev) =>
-      prev.length >= MAX_SETS ? prev : [...prev, { set: prev.length + 1, weight: 0, reps: 0 }]
-    );
+  const addSet = () => {
+    if (sets.length >= MAX_SETS) return;
+    onChange({
+      sets: [...sets, { set: sets.length + 1, weight: 0, reps: 0 }],
+    });
+  };
 
   // Delete an existing set after confirming with the user
   const delSet = (index) => {
@@ -47,11 +48,11 @@ export default function WorkoutExerciseEditor({
       tone: "destructive",
     }).then((ok) => {
       if (!ok) return;
-      setSets((prev) =>
-        prev
+      onChange({
+        sets: sets
           .filter((_, idx) => idx !== index)
-          .map((s, idx) => ({ ...s, set: idx + 1 }))
-      );
+          .map((s, idx) => ({ ...s, set: idx + 1 })),
+      });
     });
   };
 
@@ -126,20 +127,20 @@ export default function WorkoutExerciseEditor({
               weight={toDisplayWeight(s.weight, unit)}
               reps={s.reps}
               onWeightChange={(v) => {
-                setSets((prev) =>
-                  prev.map((p, i) =>
+                onChange({
+                  sets: sets.map((p, i) =>
                     i !== idx
                       ? p
                       : { ...p, weight: fromDisplayWeight(v, unit) }
-                  )
-                );
+                  ),
+                });
               }}
               onRepsChange={(v) => {
-                setSets((prev) =>
-                  prev.map((p, i) =>
+                onChange({
+                  sets: sets.map((p, i) =>
                     i !== idx ? p : { ...p, reps: v }
-                  )
-                );
+                  ),
+                });
               }}
             />
             <Button
