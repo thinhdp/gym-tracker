@@ -9,8 +9,10 @@ import { toDisplayWeight } from "../lib/units";
 import { Plus, Trash2 } from "./ui/Icons";
 import { useConfirm } from "./ConfirmDialog";
 import { createExerciseEntry } from "../lib/exerciseUtils";
+import { useApp } from "../context/AppContext";
 
-export default function CalendarView({ workouts, setWorkouts, exercises, setExercises, unit }) {
+export default function CalendarView() {
+  const { workouts, setWorkouts, exercises, setExercises, unit } = useApp();
   const [viewDate, setViewDate] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [selected, setSelected] = useState(() => new Date().toISOString().slice(0, 10));
   const confirm = useConfirm();

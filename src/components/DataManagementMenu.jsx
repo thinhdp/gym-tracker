@@ -15,6 +15,7 @@ import {
   mergeExercises,
   mergeWorkouts,
 } from "../lib/backup";
+import { useApp } from "../context/AppContext";
 
 /**
  * Consolidated data management menu that combines export and import
@@ -22,12 +23,8 @@ import {
  * reveal a dropdown with options to export the current data
  * or import data in either merge or replace mode.
  */
-export default function DataManagementMenu({
-  exercises,
-  workouts,
-  setExercises,
-  setWorkouts,
-}) {
+export default function DataManagementMenu() {
+  const { exercises, workouts, setExercises, setWorkouts } = useApp();
   const [open, setOpen] = useState(false);
   const fileRef = useRef(null);
   const modeRef = useRef("merge");
