@@ -1,20 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useApp } from "../context/AppContext";
 import { toDisplayWeight, fromDisplayWeight } from "../lib/units";
 import { createExerciseEntry } from "../lib/exerciseUtils";
 import { MAX_SETS } from "../lib/constants";
 import {
-  isSetDone,
-  toggleDone,
-  doneCount,
+  isLogged,
+  completedSets,
   totalSets,
   formatClock,
   remapIndexAfterMove,
-  remapDoneAfterMove,
 } from "../lib/liveSession";
 import { moveItem } from "../lib/arrayUtils";
 import WeightRepInputs from "./WeightRepInputs";
 import AddExerciseInput from "./AddExerciseInput";
+import RpeFeedback from "./RpeFeedback";
 
 // Rest-timer presets: [label, seconds].
 const REST_PRESETS = [
@@ -57,6 +56,11 @@ export default function LiveSession() {
     return () => clearTimeout(id);
   }, [restLeft]);
 
+  // Drag-to-reorder the exercise chips. Pointer-based so it works on touch and
+  // mouse alike (HTML5 drag-and-drop doesn't fire on touch).
+  const [dragIdx, setDragIdx] = useState(null);
+  const suppressClickRef = useRef(false);
+
   // If the workout vanished (e.g. deleted elsewhere), close the session.
   useEffect(() => {
     if (session && !workout) endSession();
@@ -89,15 +93,17 @@ export default function LiveSession() {
       sets: ex.sets.map((s, j) => (j === setIdx ? { ...s, ...patch } : s)),
     }));
 
+  // A new set carries the previous set's weight as a convenience, but starts
+  // with no reps — entering reps is what marks it logged.
   const addSet = (exIdx) =>
     mapExercise(exIdx, (ex) => {
       if (ex.sets.length >= MAX_SETS) return ex;
-      const last = ex.sets.at(-1) || { weight: 0, reps: 0 };
+      const last = ex.sets.at(-1) || { weight: 0 };
       return {
         ...ex,
         sets: [
           ...ex.sets,
-          { set: ex.sets.length + 1, weight: last.weight, reps: last.reps },
+          { set: ex.sets.length + 1, weight: last.weight, reps: 0 },
         ],
       };
     });
@@ -113,25 +119,60 @@ export default function LiveSession() {
   const addExercise = (name) => {
     const entry = createExerciseEntry(name, exercises, setExercises);
     if (!entry) return;
+    // Keep the prefilled weight but clear reps so the set reads as "to do".
+    const fresh = {
+      ...entry,
+      sets: entry.sets.map((s) => ({ ...s, reps: 0 })),
+    };
     const newIdx = exs.length;
-    patchWorkout((w) => ({ ...w, exercises: [...w.exercises, entry] }));
+    patchWorkout((w) => ({ ...w, exercises: [...w.exercises, fresh] }));
     setSession((s) => ({ ...s, currentIdx: newIdx }));
   };
 
-  const toggleSetDone = (exIdx, setIdx) =>
-    setSession((s) => ({ ...s, done: toggleDone(s.done, exIdx, setIdx) }));
-
-  // Reorder exercises mid-session (e.g. a machine is taken). The done-map and
-  // the on-screen pointer are remapped so completed sets stay with their
-  // exercise.
+  // Reorder exercises mid-session (e.g. a machine is taken). Completion lives on
+  // each set's reps, so it moves with the exercise automatically; only the
+  // on-screen pointer needs remapping to stay on the same exercise.
   const moveExercise = (from, to) => {
     if (to < 0 || to >= exs.length) return;
     patchWorkout((w) => ({ ...w, exercises: moveItem(w.exercises, from, to) }));
     setSession((s) => ({
       ...s,
-      done: remapDoneAfterMove(s.done, from, to),
       currentIdx: remapIndexAfterMove(s.currentIdx || 0, from, to),
     }));
+  };
+
+  // Begin a chip drag. Window listeners live only for the duration of the drag
+  // and close over the current `moveExercise`, reordering live as the pointer
+  // passes over other chips.
+  const startChipDrag = (e, fromIdx) => {
+    const start = { x: e.clientX, y: e.clientY };
+    let idx = fromIdx;
+    let active = false;
+    const onMove = (ev) => {
+      if (!active) {
+        if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) < 6) return;
+        active = true;
+        setDragIdx(idx);
+      }
+      const chip = document
+        .elementFromPoint(ev.clientX, ev.clientY)
+        ?.closest("[data-chip-idx]");
+      if (!chip) return;
+      const over = Number(chip.getAttribute("data-chip-idx"));
+      if (Number.isInteger(over) && over !== idx) {
+        moveExercise(idx, over);
+        idx = over;
+        setDragIdx(over);
+      }
+    };
+    const onUp = () => {
+      if (active) suppressClickRef.current = true; // swallow the trailing click
+      setDragIdx(null);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
   };
 
   const goTo = (idx) => setSession((s) => ({ ...s, currentIdx: idx }));
@@ -145,7 +186,7 @@ export default function LiveSession() {
     endSession();
   };
 
-  const completed = doneCount(session.done);
+  const completed = completedSets(workout);
   const total = totalSets(workout);
 
   const surface =
@@ -180,16 +221,26 @@ export default function LiveSession() {
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className="mx-auto max-w-3xl space-y-4">
-          {/* Exercise nav chips */}
+          {/* Exercise nav chips — tap to jump, drag to reorder */}
           {exs.length > 0 && (
             <div className="flex gap-2 overflow-x-auto pb-1">
               {exs.map((ex, i) => (
                 <button
                   key={i}
                   type="button"
-                  onClick={() => goTo(i)}
+                  data-chip-idx={i}
+                  style={{ touchAction: "none" }}
+                  onPointerDown={(e) => startChipDrag(e, i)}
+                  onClick={() => {
+                    if (suppressClickRef.current) {
+                      suppressClickRef.current = false;
+                      return;
+                    }
+                    goTo(i);
+                  }}
                   className={[
-                    "whitespace-nowrap rounded-full px-3 py-1 text-xs transition",
+                    "cursor-grab select-none whitespace-nowrap rounded-full px-3 py-1 text-xs transition active:cursor-grabbing",
+                    dragIdx === i ? "opacity-60 " : "",
                     i === currentIdx
                       ? "bg-blue-600 text-white"
                       : "border bg-white text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300",
@@ -236,62 +287,56 @@ export default function LiveSession() {
               </div>
 
               {/* Column headers */}
-              <div className="mb-1 grid grid-cols-[28px,1fr,40px] items-center gap-2 px-1 text-[10px] uppercase text-neutral-400 dark:text-neutral-500">
+              <div className="mb-1 grid grid-cols-[28px,1fr,28px] items-center gap-2 px-1 text-[10px] uppercase text-neutral-400 dark:text-neutral-500">
                 <span>Set</span>
                 <span className="grid grid-cols-2 gap-3">
                   <span className="text-center">{unit}</span>
                   <span className="text-center">reps</span>
                 </span>
-                <span className="text-center">done</span>
+                <span className="text-center">✓</span>
               </div>
 
-              {/* Set rows */}
+              {/* Set rows — a set reads as logged once it has reps */}
               <div className="space-y-2">
-                {current.sets.map((s, j) => {
-                  const done = isSetDone(session.done, currentIdx, j);
-                  return (
-                    <div
-                      key={j}
-                      className="grid grid-cols-[28px,1fr,40px] items-center gap-2"
+                {current.sets.map((s, j) => (
+                  <div
+                    key={j}
+                    className="grid grid-cols-[28px,1fr,28px] items-center gap-2"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => removeSet(currentIdx, j)}
+                      aria-label={`Remove set ${j + 1}`}
+                      className="text-sm text-neutral-500 hover:text-red-600 dark:text-neutral-400"
+                      title="Remove set"
                     >
-                      <button
-                        type="button"
-                        onClick={() => removeSet(currentIdx, j)}
-                        aria-label={`Remove set ${j + 1}`}
-                        className="text-sm text-neutral-500 hover:text-red-600 dark:text-neutral-400"
-                        title="Remove set"
-                      >
-                        {j + 1}
-                      </button>
-                      <WeightRepInputs
-                        weight={toDisplayWeight(s.weight, unit)}
-                        reps={s.reps}
-                        onWeightChange={(v) =>
-                          updateSet(currentIdx, j, {
-                            weight: fromDisplayWeight(v, unit),
-                          })
-                        }
-                        onRepsChange={(v) =>
-                          updateSet(currentIdx, j, { reps: v })
-                        }
-                      />
-                      <button
-                        type="button"
-                        onClick={() => toggleSetDone(currentIdx, j)}
-                        aria-label={`Mark set ${j + 1} done`}
-                        aria-pressed={done}
-                        className={[
-                          "mx-auto flex h-8 w-8 items-center justify-center rounded-full border text-sm transition",
-                          done
-                            ? "border-green-600 bg-green-600 text-white"
-                            : "border-neutral-300 text-neutral-400 hover:border-green-600 dark:border-neutral-600 dark:text-neutral-500",
-                        ].join(" ")}
-                      >
-                        ✓
-                      </button>
-                    </div>
-                  );
-                })}
+                      {j + 1}
+                    </button>
+                    <WeightRepInputs
+                      weight={toDisplayWeight(s.weight, unit)}
+                      reps={s.reps}
+                      onWeightChange={(v) =>
+                        updateSet(currentIdx, j, {
+                          weight: fromDisplayWeight(v, unit),
+                        })
+                      }
+                      onRepsChange={(v) =>
+                        updateSet(currentIdx, j, { reps: v })
+                      }
+                    />
+                    <span
+                      aria-hidden="true"
+                      className={[
+                        "mx-auto text-base",
+                        isLogged(s)
+                          ? "text-green-600 dark:text-green-500"
+                          : "text-transparent",
+                      ].join(" ")}
+                    >
+                      ✓
+                    </span>
+                  </div>
+                ))}
               </div>
 
               <button
@@ -302,6 +347,17 @@ export default function LiveSession() {
               >
                 + Add set
               </button>
+
+              {/* RPE + feedback for this exercise */}
+              <div className="mt-3 border-t pt-3 dark:border-neutral-800">
+                <RpeFeedback
+                  rpe={current.rpe ?? null}
+                  feedback={current.feedback ?? ""}
+                  onChange={(patch) =>
+                    mapExercise(currentIdx, (ex) => ({ ...ex, ...patch }))
+                  }
+                />
+              </div>
             </div>
           ) : (
             <div className={`${surface} p-4 text-center`}>

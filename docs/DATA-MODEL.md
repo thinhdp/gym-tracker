@@ -132,8 +132,7 @@ workout (which lives in `workouts`) and tracks transient logging UI state.
 {
   "workoutId": "…",
   "startedAt": 1718275200000,
-  "currentIdx": 0,
-  "done": { "0:0": true, "0:1": true }
+  "currentIdx": 0
 }
 ```
 
@@ -142,11 +141,12 @@ workout (which lives in `workouts`) and tracks transient logging UI state.
 | `workoutId`  | `string` | `Workout.id` being logged; live edits write through to it.  |
 | `startedAt`  | `number` | Epoch ms when the session began (drives the elapsed clock). |
 | `currentIdx` | `number` | Index of the exercise currently on screen.                  |
-| `done`       | `object` | Completed-set map keyed `"exerciseIdx:setIdx"` → `true`.    |
 
-The `done` flags are **session-only** — they are not written onto `Set` objects,
-so finishing a session leaves the workout as ordinary logged data. Helpers in
-`src/lib/liveSession.js`. Not included in backups.
+There is **no done-flag map**: a set is treated as logged once it has `reps > 0`,
+so completion lives on the `Set` itself (and follows it when exercises are
+reordered). The session only tracks which workout, when it started, and which
+exercise is on screen. Helpers in `src/lib/liveSession.js`. Not included in
+backups.
 
 ### Bodyweight log (`weightLogs`)
 

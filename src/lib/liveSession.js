@@ -1,28 +1,11 @@
 // src/lib/liveSession.js
-// Pure helpers for the live-logging session. The "done" state is a flat map
-// keyed by `${exerciseIndex}:${setIndex}` so it survives JSON round-trips and
-// is cheap to persist alongside the session pointer.
+// Pure helpers for the live-logging session. A set is considered "logged" once
+// it has reps entered (> 0) — there is no separate done flag, so completion
+// lives on the set itself and moves with its exercise when reordered.
 
-/** Stable key for a set's done-state within a session. */
-export const setKey = (exIdx, setIdx) => `${exIdx}:${setIdx}`;
-
-/** Is a given set marked done in this session's done-map? */
-export function isSetDone(done, exIdx, setIdx) {
-  return Boolean(done?.[setKey(exIdx, setIdx)]);
-}
-
-/** Toggle a set's done flag, returning a new done-map (false entries removed). */
-export function toggleDone(done, exIdx, setIdx) {
-  const key = setKey(exIdx, setIdx);
-  const next = { ...(done || {}) };
-  if (next[key]) delete next[key];
-  else next[key] = true;
-  return next;
-}
-
-/** Count of done sets across a whole session. */
-export function doneCount(done) {
-  return Object.values(done || {}).filter(Boolean).length;
+/** A set counts as logged once it has reps entered (> 0). */
+export function isLogged(set) {
+  return Number(set?.reps) > 0;
 }
 
 /** Total number of sets in a workout. */
@@ -32,28 +15,24 @@ export function totalSets(workout) {
   return n;
 }
 
+/** Count of logged sets across a whole workout. */
+export function completedSets(workout) {
+  let n = 0;
+  for (const ex of workout?.exercises || [])
+    for (const s of ex.sets || []) if (isLogged(s)) n += 1;
+  return n;
+}
+
 /**
  * New index of an exercise originally at `index` after moving the exercise at
- * `from` to `to` (matching arrayUtils.moveItem semantics).
+ * `from` to `to` (matching arrayUtils.moveItem semantics). Used to keep the
+ * on-screen exercise pointer (`currentIdx`) on the same exercise after a reorder.
  */
 export function remapIndexAfterMove(index, from, to) {
   if (index === from) return to;
   if (from < to) return index > from && index <= to ? index - 1 : index;
   if (from > to) return index >= to && index < from ? index + 1 : index;
   return index;
-}
-
-/**
- * Rebuild a done-map (keyed `"exerciseIdx:setIdx"`) so its exercise indices
- * follow a moveItem(from, to) reorder of the exercise list.
- */
-export function remapDoneAfterMove(done, from, to) {
-  const out = {};
-  for (const [k, v] of Object.entries(done || {})) {
-    const [ei, si] = k.split(":").map(Number);
-    out[setKey(remapIndexAfterMove(ei, from, to), si)] = v;
-  }
-  return out;
 }
 
 /**

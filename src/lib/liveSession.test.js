@@ -1,33 +1,27 @@
 import {
-  setKey,
-  isSetDone,
-  toggleDone,
-  doneCount,
+  isLogged,
   totalSets,
-  formatClock,
+  completedSets,
   remapIndexAfterMove,
-  remapDoneAfterMove,
+  formatClock,
 } from "./liveSession";
 
-describe("done-map helpers", () => {
-  it("keys by exercise:set", () => {
-    expect(setKey(1, 2)).toBe("1:2");
+describe("isLogged / completedSets", () => {
+  it("treats a set with reps > 0 as logged", () => {
+    expect(isLogged({ reps: 8 })).toBe(true);
+    expect(isLogged({ reps: 0 })).toBe(false);
+    expect(isLogged({})).toBe(false);
+    expect(isLogged(null)).toBe(false);
   });
 
-  it("toggles a set on and off immutably", () => {
-    const a = toggleDone({}, 0, 0);
-    expect(isSetDone(a, 0, 0)).toBe(true);
-    const b = toggleDone(a, 0, 0);
-    expect(isSetDone(b, 0, 0)).toBe(false);
-    // original map untouched
-    expect(isSetDone(a, 0, 0)).toBe(true);
-  });
-
-  it("counts done sets", () => {
-    let done = {};
-    done = toggleDone(done, 0, 0);
-    done = toggleDone(done, 0, 1);
-    expect(doneCount(done)).toBe(2);
+  it("counts logged sets across exercises", () => {
+    const workout = {
+      exercises: [
+        { sets: [{ reps: 8 }, { reps: 0 }] },
+        { sets: [{ reps: 5 }] },
+      ],
+    };
+    expect(completedSets(workout)).toBe(2);
   });
 });
 
@@ -68,21 +62,6 @@ describe("remapIndexAfterMove", () => {
   it("handles an adjacent swap", () => {
     expect(remapIndexAfterMove(1, 1, 2)).toBe(2);
     expect(remapIndexAfterMove(2, 1, 2)).toBe(1);
-  });
-});
-
-describe("remapDoneAfterMove", () => {
-  it("keeps done flags attached to their exercise after a swap", () => {
-    // exercise 0 has set 0 done, exercise 1 has set 1 done; swap 0<->1
-    const done = { "0:0": true, "1:1": true };
-    expect(remapDoneAfterMove(done, 0, 1)).toEqual({
-      "1:0": true,
-      "0:1": true,
-    });
-  });
-
-  it("leaves set indices untouched", () => {
-    expect(remapDoneAfterMove({ "2:3": true }, 0, 1)).toEqual({ "2:3": true });
   });
 });
 

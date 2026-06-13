@@ -59,7 +59,7 @@ export function AppProvider({ children }) {
 
   // Start a live-logging session for an existing workout.
   const startSession = (workoutId) =>
-    setSession({ workoutId, startedAt: Date.now(), currentIdx: 0, done: {} });
+    setSession({ workoutId, startedAt: Date.now(), currentIdx: 0 });
   // Create a fresh, empty workout dated today and start logging it.
   const startEmptyWorkout = () => {
     const w = {

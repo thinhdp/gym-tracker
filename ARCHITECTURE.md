@@ -232,7 +232,7 @@ set-by-set, persisted to `mgym.session.v1` so a refresh mid-workout resumes:
 
 ```js
 {
-  (workoutId, startedAt, currentIdx, done);
+  (workoutId, startedAt, currentIdx);
 }
 ```
 
@@ -240,18 +240,23 @@ set-by-set, persisted to `mgym.session.v1` so a refresh mid-workout resumes:
   `workouts`; live edits write through to it).
 - `startedAt` — epoch ms, for the elapsed clock.
 - `currentIdx` — index of the exercise on screen.
-- `done` — a **flat map** of completed sets keyed `"exerciseIdx:setIdx"` → `true`.
-  This is transient session state; it is **not** stored on the `Set` itself.
+
+There is **no separate done flag**: a set counts as logged once it has reps
+entered (`reps > 0`), so completion lives on the set itself and rides along when
+exercises are reordered. Newly added sets/exercises start with `reps: 0` (the
+weight prefills as a convenience); each exercise also has its own RPE + feedback
+(reusing `RpeFeedback`).
 
 When `session` is non-null, `App` renders `LiveSession` full-screen instead of the
-tabbed layout. Pure helpers (`setKey`, `toggleDone`, `doneCount`, `totalSets`,
-`formatClock`) live in `src/lib/liveSession.js`. Exercises can be **reordered**
-mid-session (machines get taken); since the `done` map is keyed by exercise
-index, `remapDoneAfterMove` / `remapIndexAfterMove` shift those keys (and the
-on-screen pointer) to follow a `moveItem` reorder. Entry points: **Home**'s today
-card and each **WorkoutHistoryItem** ("▶ Start") call `startSession`; **Home** and
-the **Workouts** tab offer "Start empty workout" (`startEmptyWorkout`). `Finish`
-calls `endSession`, and drops the workout if it was left with zero exercises.
+tabbed layout. Pure helpers (`isLogged`, `completedSets`, `totalSets`,
+`remapIndexAfterMove`, `formatClock`) live in `src/lib/liveSession.js`. Exercises
+can be **reordered** mid-session (machines get taken) by dragging the chips
+(pointer-based, touch + mouse) or the per-exercise up/down buttons; only the
+on-screen pointer needs `remapIndexAfterMove` to stay on the same exercise.
+Entry points: **Home**'s today card and each **WorkoutHistoryItem** ("▶ Start")
+call `startSession`; **Home** and the **Workouts** tab offer "Start empty workout"
+(`startEmptyWorkout`). `Finish` calls `endSession`, and drops the workout if it
+was left with zero exercises.
 
 ## Data model
 

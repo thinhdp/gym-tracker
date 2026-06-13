@@ -16,12 +16,7 @@ function seedAndRender() {
       ],
     },
   ]);
-  saveLS(K_SESSION, {
-    workoutId: "w1",
-    startedAt: Date.now(),
-    currentIdx: 0,
-    done: {},
-  });
+  saveLS(K_SESSION, { workoutId: "w1", startedAt: Date.now(), currentIdx: 0 });
   return render(
     <AppProvider>
       <LiveSession />
@@ -34,17 +29,16 @@ describe("LiveSession", () => {
     seedAndRender();
     expect(screen.getByText("Bench")).toBeInTheDocument();
     expect(screen.getByText(/Exercise 1 of 1/)).toBeInTheDocument();
-    expect(screen.getByText(/0\/1 sets/)).toBeInTheDocument();
+    // The seeded set has reps, so it already counts as logged.
+    expect(screen.getByText(/1\/1 sets/)).toBeInTheDocument();
   });
 
-  it("marks a set done and updates the counter", async () => {
+  it("an added set starts unlogged until reps are entered", async () => {
     const user = userEvent.setup();
     seedAndRender();
-    const doneBtn = screen.getByRole("button", { name: /Mark set 1 done/i });
-    expect(doneBtn).toHaveAttribute("aria-pressed", "false");
-    await user.click(doneBtn);
-    expect(doneBtn).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText(/1\/1 sets/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Add set/i }));
+    // Two sets now, but the new one has no reps yet → still 1 logged of 2.
+    expect(screen.getByText(/1\/2 sets/)).toBeInTheDocument();
   });
 
   it("adds a set", async () => {
@@ -56,6 +50,13 @@ describe("LiveSession", () => {
     expect(screen.getAllByRole("spinbutton")).toHaveLength(4);
   });
 
+  it("offers an RPE / feedback control for the exercise", () => {
+    seedAndRender();
+    expect(
+      screen.getByRole("button", { name: /RPE \/ note/i }),
+    ).toBeInTheDocument();
+  });
+
   it("starts a rest timer from a preset and skips it", async () => {
     const user = userEvent.setup();
     seedAndRender();
@@ -65,7 +66,7 @@ describe("LiveSession", () => {
     expect(screen.queryByText(/Rest ·/)).not.toBeInTheDocument();
   });
 
-  it("reorders exercises, keeping the done flag and pointer on the moved one", async () => {
+  it("reorders exercises and keeps the pointer on the moved one", async () => {
     const user = userEvent.setup();
     saveLS(K_WO, [
       {
@@ -82,7 +83,6 @@ describe("LiveSession", () => {
       workoutId: "w2",
       startedAt: Date.now(),
       currentIdx: 0,
-      done: {},
     });
     render(
       <AppProvider>
@@ -91,18 +91,16 @@ describe("LiveSession", () => {
     );
 
     expect(screen.getByText("Exercise 1 of 2")).toBeInTheDocument();
-    // Complete Bench's set, then move Bench later.
-    await user.click(screen.getByRole("button", { name: /Mark set 1 done/i }));
     await user.click(
       screen.getByRole("button", { name: /Move exercise later/i }),
     );
 
-    // The view follows Bench to position 2, and its done flag came along.
+    // The view follows Bench to position 2; the first chip is now Squat.
     expect(screen.getByText("Exercise 2 of 2")).toBeInTheDocument();
     expect(screen.getByText("Bench")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Mark set 1 done/i }),
-    ).toHaveAttribute("aria-pressed", "true");
+      screen.getByRole("button", { name: /1\. Squat/ }),
+    ).toBeInTheDocument();
   });
 
   it("closes the session when finished", async () => {
