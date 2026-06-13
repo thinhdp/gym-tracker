@@ -10,16 +10,18 @@ versioned, and that is the only versioning.
 
 ## localStorage keys
 
-| Key                        | Written by              | Holds                                   | Default when absent                              |
-| -------------------------- | ----------------------- | --------------------------------------- | ------------------------------------------------ |
-| `mgym.exercises.v1`        | `AppContext` (`K_EX`)   | `Exercise[]`                            | the 76-entry seed `src/data/exercises_seed.json` |
-| `mgym.workouts.v1`         | `AppContext` (`K_WO`)   | `Workout[]`                             | `[]`                                             |
-| `mgym.unit`                | `AppContext` (`K_UNIT`) | `"kg"` \| `"lb"`                        | `"kg"`                                           |
-| `mgym.tab`                 | `AppContext` (`K_TAB`)  | active tab string                       | `"workouts"`                                     |
-| `mgym.note.v1`             | `Notepad` (`K_NOTE`)    | `string` — global note                  | `""`                                             |
-| `weightLogs`               | `WeightTracker`         | `{ [YYYY-MM-DD]: number }` — bodyweight | `{}`                                             |
-| `weekly-note:<weekKey>`    | `WeeklyNotes`           | `string` — one note per ISO week        | `""`                                             |
-| `summary-open:<periodKey>` | `PeriodCard`            | `boolean` — card collapse state         | card default                                     |
+| Key                        | Written by                 | Holds                                                                                | Default when absent                              |
+| -------------------------- | -------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| `mgym.exercises.v1`        | `AppContext` (`K_EX`)      | `Exercise[]`                                                                         | the 76-entry seed `src/data/exercises_seed.json` |
+| `mgym.workouts.v1`         | `AppContext` (`K_WO`)      | `Workout[]`                                                                          | `[]`                                             |
+| `mgym.unit`                | `AppContext` (`K_UNIT`)    | `"kg"` \| `"lb"` (toggle UI hidden; effectively `"kg"`)                              | `"kg"`                                           |
+| `mgym.tab`                 | `AppContext` (`K_TAB`)     | active tab: `home`/`workouts`/`progress`/`exercises`/`more` (legacy values remapped) | `"workouts"`                                     |
+| `mgym.theme`               | `AppContext` (`K_THEME`)   | `"system"` \| `"light"` \| `"dark"`                                                  | `"system"`                                       |
+| `mgym.session.v1`          | `AppContext` (`K_SESSION`) | live-logging session object, or `null`                                               | `null`                                           |
+| `mgym.note.v1`             | `Notepad` (`K_NOTE`)       | `string` — global note                                                               | `""`                                             |
+| `weightLogs`               | `WeightTracker`            | `{ [YYYY-MM-DD]: number }` — bodyweight                                              | `{}`                                             |
+| `weekly-note:<weekKey>`    | `WeeklyNotes`              | `string` — one note per ISO week                                                     | `""`                                             |
+| `summary-open:<periodKey>` | `PeriodCard`               | `boolean` — card collapse state                                                      | card default                                     |
 
 All values are stored with `JSON.stringify`. String values (the notes) are
 stored as JSON strings (e.g. the literal `""`).
@@ -72,8 +74,10 @@ One training session on a given date.
 | `name`      | `string`                | Display name; falls back to the date when left blank.                                                                   | the `date` |
 | `exercises` | `WorkoutExercise[]`     | Exercises performed (user-controlled order).                                                                            | `[]`       |
 
-A workout may have an empty `exercises` array — the Calendar tab can create an
-empty workout for a day before exercises are added.
+A workout may have an empty `exercises` array — the Calendar view can create an
+empty workout for a day, and "Start empty workout" creates one to log into. An
+empty workout left after a live session is finished is discarded (see
+[Live session](#live-session-mgymsessionv1)).
 
 ### WorkoutExercise
 
@@ -83,7 +87,7 @@ from `Exercise`.
 | Field          | Type             | Purpose                                                 | Default                         |
 | -------------- | ---------------- | ------------------------------------------------------- | ------------------------------- |
 | `exerciseName` | `string`         | Reference to an `Exercise` by its `name` (not an id).   | required                        |
-| `sets`         | `Set[]`          | Sets performed; 1–5 entries.                            | `[{ set:1, weight:0, reps:0 }]` |
+| `sets`         | `Set[]`          | Sets performed; 1–`MAX_SETS` (10) entries.              | `[{ set:1, weight:0, reps:0 }]` |
 | `rpe`          | `number \| null` | Optional rate of perceived exertion, 6–10 in 0.5 steps. | `null`                          |
 | `feedback`     | `string`         | Optional free-text note reviewing the exercise.         | `""`                            |
 
@@ -119,6 +123,31 @@ Constraints enforced in code:
   `toDisplayWeight`/`fromDisplayWeight` (`src/lib/units.js`). See
   [ARCHITECTURE.md → Unit handling](../ARCHITECTURE.md#unit-handling-kg--lb).
 
+### Live session (`mgym.session.v1`)
+
+The in-progress live-logging session, or `null` when not logging. It points at a
+workout (which lives in `workouts`) and tracks transient logging UI state.
+
+```json
+{
+  "workoutId": "…",
+  "startedAt": 1718275200000,
+  "currentIdx": 0,
+  "done": { "0:0": true, "0:1": true }
+}
+```
+
+| Field        | Type     | Purpose                                                     |
+| ------------ | -------- | ----------------------------------------------------------- |
+| `workoutId`  | `string` | `Workout.id` being logged; live edits write through to it.  |
+| `startedAt`  | `number` | Epoch ms when the session began (drives the elapsed clock). |
+| `currentIdx` | `number` | Index of the exercise currently on screen.                  |
+| `done`       | `object` | Completed-set map keyed `"exerciseIdx:setIdx"` → `true`.    |
+
+The `done` flags are **session-only** — they are not written onto `Set` objects,
+so finishing a session leaves the workout as ordinary logged data. Helpers in
+`src/lib/liveSession.js`. Not included in backups.
+
 ### Bodyweight log (`weightLogs`)
 
 A flat map used by the Weight tab:
@@ -133,8 +162,10 @@ A flat map used by the Weight tab:
 | value | `number`                | Bodyweight as entered. |
 
 > **Not unit-converted.** Unlike workout `weight`, these are the raw numbers the
-> user typed; the kg/lb toggle only relabels them. Weekly averages and the
-> Summary "Avg Weight" KPI are computed directly from these numbers.
+> user typed; the kg/lb toggle only relabels them. Because that mislabels
+> bodyweight in lb, the **toggle UI is currently hidden** and the app shows kg
+> only. Weekly averages and the Progress "Avg Weight" KPI are computed directly
+> from these numbers.
 
 ### Notes
 
@@ -188,6 +219,9 @@ On import, exercises/workouts go through `normalizeData()` then **merge** or
 **replace** (rules in
 [ARCHITECTURE.md → Export / import](../ARCHITECTURE.md#export--import-backup));
 the remaining fields are written straight back to their keys.
+
+The `mgym.theme` preference and the `mgym.session.v1` live session are **not**
+part of the backup payload — they are device-local UI state.
 
 ## Worth knowing before building on this
 

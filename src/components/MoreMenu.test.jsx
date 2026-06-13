@@ -18,8 +18,13 @@ describe("MoreMenu", () => {
   it("renders the settings sections", () => {
     renderMore();
     expect(screen.getByRole("heading", { name: "More" })).toBeInTheDocument();
-    expect(screen.getByText("Units")).toBeInTheDocument();
+    expect(screen.getByText("Theme")).toBeInTheDocument();
     expect(screen.getByText("DATA")).toBeInTheDocument();
+  });
+
+  it("does not show the units toggle while it is hidden", () => {
+    renderMore();
+    expect(screen.queryByText("Units")).not.toBeInTheDocument();
   });
 
   it("opens the notepad as a sub-screen and returns", async () => {

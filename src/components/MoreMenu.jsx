@@ -19,7 +19,7 @@ function SectionLabel({ children }) {
 }
 
 export default function MoreMenu() {
-  const { unit, setUnit, theme, setTheme } = useApp();
+  const { theme, setTheme } = useApp();
   const [view, setView] = useState("menu");
 
   if (view === "notepad") {
@@ -51,17 +51,15 @@ export default function MoreMenu() {
       <div>
         <SectionLabel>Preferences</SectionLabel>
         <div className={`${card} divide-y dark:divide-neutral-800`}>
-          <div className="flex items-center justify-between px-3 py-3">
-            <span className={rowText}>Units</span>
-            <Segmented
-              options={[
-                ["kg", "kg"],
-                ["lb", "lb"],
-              ]}
-              value={unit}
-              onChange={setUnit}
-            />
-          </div>
+          {/*
+            Units (kg/lb) toggle temporarily hidden: bodyweight logs aren't
+            unit-converted yet (ARCHITECTURE.md open question #1), so switching
+            to lb mislabels bodyweight. Restore this row once that's fixed.
+              <div className="flex items-center justify-between px-3 py-3">
+                <span className={rowText}>Units</span>
+                <Segmented options={[["kg","kg"],["lb","lb"]]} value={unit} onChange={setUnit} />
+              </div>
+          */}
           <div className="flex items-center justify-between px-3 py-3">
             <span className={rowText}>Theme</span>
             <Segmented
