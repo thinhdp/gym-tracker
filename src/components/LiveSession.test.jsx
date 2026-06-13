@@ -2,8 +2,19 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AppProvider } from "../context/AppContext";
+import { ConfirmProvider } from "./ConfirmDialog";
 import { saveLS, K_WO, K_SESSION } from "../lib/storage";
 import LiveSession from "./LiveSession";
+
+function renderLive() {
+  return render(
+    <ConfirmProvider>
+      <AppProvider>
+        <LiveSession />
+      </AppProvider>
+    </ConfirmProvider>,
+  );
+}
 
 function seedAndRender() {
   saveLS(K_WO, [
@@ -17,11 +28,23 @@ function seedAndRender() {
     },
   ]);
   saveLS(K_SESSION, { workoutId: "w1", startedAt: Date.now(), currentIdx: 0 });
-  return render(
-    <AppProvider>
-      <LiveSession />
-    </AppProvider>,
-  );
+  return renderLive();
+}
+
+function seedTwo() {
+  saveLS(K_WO, [
+    {
+      id: "w2",
+      date: "2026-06-13",
+      name: "Push Day",
+      exercises: [
+        { exerciseName: "Bench", sets: [{ set: 1, weight: 80, reps: 8 }] },
+        { exerciseName: "Squat", sets: [{ set: 1, weight: 100, reps: 5 }] },
+      ],
+    },
+  ]);
+  saveLS(K_SESSION, { workoutId: "w2", startedAt: Date.now(), currentIdx: 0 });
+  return renderLive();
 }
 
 describe("LiveSession", () => {
@@ -68,27 +91,7 @@ describe("LiveSession", () => {
 
   it("reorders exercises and keeps the pointer on the moved one", async () => {
     const user = userEvent.setup();
-    saveLS(K_WO, [
-      {
-        id: "w2",
-        date: "2026-06-13",
-        name: "Push Day",
-        exercises: [
-          { exerciseName: "Bench", sets: [{ set: 1, weight: 80, reps: 8 }] },
-          { exerciseName: "Squat", sets: [{ set: 1, weight: 100, reps: 5 }] },
-        ],
-      },
-    ]);
-    saveLS(K_SESSION, {
-      workoutId: "w2",
-      startedAt: Date.now(),
-      currentIdx: 0,
-    });
-    render(
-      <AppProvider>
-        <LiveSession />
-      </AppProvider>,
-    );
+    seedTwo();
 
     expect(screen.getByText("Exercise 1 of 2")).toBeInTheDocument();
     await user.click(
@@ -101,6 +104,40 @@ describe("LiveSession", () => {
     expect(
       screen.getByRole("button", { name: /1\. Squat/ }),
     ).toBeInTheDocument();
+  });
+
+  it("replaces the current exercise in place", async () => {
+    const user = userEvent.setup();
+    seedTwo();
+    await user.click(screen.getByRole("button", { name: "Replace exercise" }));
+    // The swap picker is the first exercise search box on screen.
+    const search = screen.getAllByPlaceholderText(/Search by name/i)[0];
+    await user.type(search, "Dips");
+    await user.click(screen.getAllByRole("button", { name: /^Add$/ })[0]);
+
+    // Bench (exercise 1) becomes Dips; Squat is untouched at position 2.
+    expect(
+      screen.getByRole("button", { name: /1\. Dips/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /1\. Bench/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /2\. Squat/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("removes the current exercise after confirming", async () => {
+    const user = userEvent.setup();
+    seedTwo();
+    expect(screen.getByText("Exercise 1 of 2")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Remove exercise" }));
+    // Confirm in the dialog.
+    await user.click(screen.getByRole("button", { name: "Remove" }));
+
+    expect(screen.getByText("Exercise 1 of 1")).toBeInTheDocument();
+    expect(screen.queryByText(/Bench/)).not.toBeInTheDocument();
+    expect(screen.getByText("Squat")).toBeInTheDocument();
   });
 
   it("closes the session when finished", async () => {

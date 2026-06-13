@@ -14,6 +14,8 @@ import { moveItem } from "../lib/arrayUtils";
 import WeightRepInputs from "./WeightRepInputs";
 import AddExerciseInput from "./AddExerciseInput";
 import RpeFeedback from "./RpeFeedback";
+import { Trash2 } from "./ui/Icons";
+import { useConfirm } from "./ConfirmDialog";
 
 // Rest-timer presets: [label, seconds].
 const REST_PRESETS = [
@@ -60,6 +62,9 @@ export default function LiveSession() {
   // mouse alike (HTML5 drag-and-drop doesn't fire on touch).
   const [dragIdx, setDragIdx] = useState(null);
   const suppressClickRef = useRef(false);
+  // Inline "replace exercise" picker for the current exercise.
+  const [swapping, setSwapping] = useState(false);
+  const confirm = useConfirm();
 
   // If the workout vanished (e.g. deleted elsewhere), close the session.
   useEffect(() => {
@@ -116,17 +121,49 @@ export default function LiveSession() {
         .map((s, k) => ({ ...s, set: k + 1 })),
     }));
 
-  const addExercise = (name) => {
+  // Build a fresh entry for `name`: prefilled weight from its own history, but
+  // reps cleared so it reads as "to do".
+  const freshEntry = (name) => {
     const entry = createExerciseEntry(name, exercises, setExercises);
-    if (!entry) return;
-    // Keep the prefilled weight but clear reps so the set reads as "to do".
-    const fresh = {
-      ...entry,
-      sets: entry.sets.map((s) => ({ ...s, reps: 0 })),
-    };
+    if (!entry) return null;
+    return { ...entry, sets: entry.sets.map((s) => ({ ...s, reps: 0 })) };
+  };
+
+  const addExercise = (name) => {
+    const fresh = freshEntry(name);
+    if (!fresh) return;
     const newIdx = exs.length;
     patchWorkout((w) => ({ ...w, exercises: [...w.exercises, fresh] }));
     setSession((s) => ({ ...s, currentIdx: newIdx }));
+  };
+
+  // Swap the current exercise for another in place (machine taken, etc.).
+  const replaceExercise = (exIdx, name) => {
+    const fresh = freshEntry(name);
+    if (!fresh) return;
+    mapExercise(exIdx, () => fresh);
+    setSwapping(false);
+  };
+
+  // Drop an exercise from the session (confirmed — it discards its logged sets).
+  const removeExercise = (exIdx) => {
+    confirm({
+      title: "Remove this exercise?",
+      message: "It will be taken out of this workout, along with its sets.",
+      confirmText: "Remove",
+      tone: "destructive",
+    }).then((ok) => {
+      if (!ok) return;
+      patchWorkout((w) => ({
+        ...w,
+        exercises: w.exercises.filter((_, i) => i !== exIdx),
+      }));
+      const newLen = exs.length - 1;
+      setSession((s) => ({
+        ...s,
+        currentIdx: Math.max(0, Math.min(s.currentIdx || 0, newLen - 1)),
+      }));
+    });
   };
 
   // Reorder exercises mid-session (e.g. a machine is taken). Completion lives on
@@ -175,7 +212,10 @@ export default function LiveSession() {
     window.addEventListener("pointerup", onUp);
   };
 
-  const goTo = (idx) => setSession((s) => ({ ...s, currentIdx: idx }));
+  const goTo = (idx) => {
+    setSwapping(false);
+    setSession((s) => ({ ...s, currentIdx: idx }));
+  };
   const setName = (name) => patchWorkout((w) => ({ ...w, name }));
 
   const finish = () => {
@@ -259,32 +299,67 @@ export default function LiveSession() {
                 Exercise {currentIdx + 1} of {exs.length}
               </div>
               <div className="mb-3 flex items-center justify-between gap-2">
-                <div className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                <div className="min-w-0 flex-1 truncate text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                   {current.exerciseName}
                 </div>
-                {exs.length > 1 && (
-                  <div className="flex shrink-0 items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => moveExercise(currentIdx, currentIdx - 1)}
-                      disabled={currentIdx === 0}
-                      aria-label="Move exercise earlier"
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border text-neutral-600 transition hover:bg-neutral-50 disabled:opacity-30 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveExercise(currentIdx, currentIdx + 1)}
-                      disabled={currentIdx === exs.length - 1}
-                      aria-label="Move exercise later"
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border text-neutral-600 transition hover:bg-neutral-50 disabled:opacity-30 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
-                    >
-                      ↓
-                    </button>
-                  </div>
-                )}
+                <div className="flex shrink-0 items-center gap-1">
+                  {exs.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => moveExercise(currentIdx, currentIdx - 1)}
+                        disabled={currentIdx === 0}
+                        aria-label="Move exercise earlier"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border text-neutral-600 transition hover:bg-neutral-50 disabled:opacity-30 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveExercise(currentIdx, currentIdx + 1)}
+                        disabled={currentIdx === exs.length - 1}
+                        aria-label="Move exercise later"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border text-neutral-600 transition hover:bg-neutral-50 disabled:opacity-30 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                      >
+                        ↓
+                      </button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSwapping((v) => !v)}
+                    aria-label="Replace exercise"
+                    aria-pressed={swapping}
+                    className={[
+                      "flex h-8 w-8 items-center justify-center rounded-lg border text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800",
+                      swapping ? "bg-neutral-100 dark:bg-neutral-800" : "",
+                    ].join(" ")}
+                  >
+                    ⇄
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeExercise(currentIdx)}
+                    aria-label="Remove exercise"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border text-red-600 transition hover:bg-red-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
+                  >
+                    <Trash2 />
+                  </button>
+                </div>
               </div>
+
+              {/* Inline replace picker */}
+              {swapping && (
+                <div className="mb-3 rounded-xl border border-dashed border-neutral-300 p-3 dark:border-neutral-700">
+                  <div className="mb-2 text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                    Replace with
+                  </div>
+                  <AddExerciseInput
+                    allExercises={exercises}
+                    onAdd={(name) => replaceExercise(currentIdx, name)}
+                  />
+                </div>
+              )}
 
               {/* Column headers */}
               <div className="mb-1 grid grid-cols-[28px,1fr,28px] items-center gap-2 px-1 text-[10px] uppercase text-neutral-400 dark:text-neutral-500">
