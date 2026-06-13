@@ -96,6 +96,29 @@ describe("normalizeWorkout", () => {
     expect(w.name).toBe("2026-06-01");
   });
 
+  it("normalizes per-exercise rpe and feedback, dropping out-of-range rpe", () => {
+    const w = normalizeWorkout({
+      date: "2026-06-01",
+      exercises: [
+        { exerciseName: "Squat", sets: [], rpe: 7.5, feedback: "  solid  " },
+        { exerciseName: "Bench", sets: [], rpe: 99, feedback: 12345 },
+      ],
+    });
+    expect(w.exercises[0].rpe).toBe(7.5);
+    expect(w.exercises[0].feedback).toBe("  solid  ");
+    expect(w.exercises[1].rpe).toBeNull();
+    expect(w.exercises[1].feedback).toBe("");
+  });
+
+  it("defaults rpe to null and feedback to '' when absent", () => {
+    const w = normalizeWorkout({
+      date: "2026-06-01",
+      exercises: [{ exerciseName: "Squat", sets: [] }],
+    });
+    expect(w.exercises[0].rpe).toBeNull();
+    expect(w.exercises[0].feedback).toBe("");
+  });
+
   it("slices a full ISO datetime down to YYYY-MM-DD", () => {
     const w = normalizeWorkout({
       date: "2026-06-01T10:30:00.000Z",

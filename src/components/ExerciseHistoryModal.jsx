@@ -1,4 +1,5 @@
 import React from "react";
+import RpeFeedback from "./RpeFeedback";
 import { Button } from "./ui/Button";
 import { Badge } from "./ui/Badge";
 import { CalendarIcon } from "./ui/Icons";
@@ -73,6 +74,14 @@ export default function ExerciseHistoryModal({
                       {s.reps}
                     </Badge>
                   ))}
+                </div>
+                {/* RPE + feedback, when logged */}
+                <div className="ml-4">
+                  <RpeFeedback
+                    mode="read"
+                    rpe={item.rpe ?? null}
+                    feedback={item.feedback ?? ""}
+                  />
                 </div>
               </div>
             );

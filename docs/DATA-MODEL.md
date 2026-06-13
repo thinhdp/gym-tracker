@@ -80,13 +80,22 @@ empty workout for a day before exercises are added.
 An exercise **inside** a workout — a name reference plus the logged sets. Distinct
 from `Exercise`.
 
-| Field          | Type     | Purpose                                               | Default                         |
-| -------------- | -------- | ----------------------------------------------------- | ------------------------------- |
-| `exerciseName` | `string` | Reference to an `Exercise` by its `name` (not an id). | required                        |
-| `sets`         | `Set[]`  | Sets performed; 1–5 entries.                          | `[{ set:1, weight:0, reps:0 }]` |
+| Field          | Type             | Purpose                                                 | Default                         |
+| -------------- | ---------------- | ------------------------------------------------------- | ------------------------------- |
+| `exerciseName` | `string`         | Reference to an `Exercise` by its `name` (not an id).   | required                        |
+| `sets`         | `Set[]`          | Sets performed; 1–5 entries.                            | `[{ set:1, weight:0, reps:0 }]` |
+| `rpe`          | `number \| null` | Optional rate of perceived exertion, 6–10 in 0.5 steps. | `null`                          |
+| `feedback`     | `string`         | Optional free-text note reviewing the exercise.         | `""`                            |
 
 Because the link is by name, renaming or deleting an exercise does **not** rewrite
 historical `exerciseName` values; past workouts keep the original name.
+
+`rpe` and `feedback` are both **optional** and authored by the user after a set.
+On import they pass through `normalizeRpe` / `normalizeFeedback` (`src/lib/rpe.js`):
+`rpe` is coerced to a number snapped to the nearest 0.5 within `[6, 10]` (anything
+else becomes `null`); `feedback` is coerced to a string capped at 2000 chars. Free
+text is safe because all storage and export round-trips through
+`JSON.stringify`/`JSON.parse` — no manual escaping is involved.
 
 ### Set
 

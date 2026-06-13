@@ -1,5 +1,6 @@
 import React from "react";
 import WeightRepInputs from "./WeightRepInputs";
+import RpeFeedback from "./RpeFeedback";
 import { Button } from "./ui/Button";
 import { Plus, Trash2 } from "./ui/Icons";
 import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
@@ -158,6 +159,15 @@ export default function WorkoutExerciseEditor({
         >
           <Plus /> Set
         </Button>
+      </div>
+
+      {/* Optional RPE + feedback for this exercise */}
+      <div className="mt-2">
+        <RpeFeedback
+          rpe={item.rpe ?? null}
+          feedback={item.feedback ?? ""}
+          onChange={onChange}
+        />
       </div>
     </div>
   );

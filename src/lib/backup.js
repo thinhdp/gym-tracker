@@ -1,5 +1,6 @@
 import { todayStr, uuid } from "./storage";
 import { MAX_SETS } from "./constants";
+import { normalizeRpe, normalizeFeedback } from "./rpe";
 
 export function downloadJSON(filename, data) {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -47,6 +48,8 @@ export function normalizeWorkout(w) {
       return {
         exerciseName,
         sets: sets.length ? sets : [{ set: 1, weight: 0, reps: 0 }],
+        rpe: normalizeRpe(e?.rpe),
+        feedback: normalizeFeedback(e?.feedback),
       };
     })
     .filter(Boolean);

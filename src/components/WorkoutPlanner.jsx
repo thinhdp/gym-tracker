@@ -12,6 +12,7 @@ import { createExerciseEntry } from "../lib/exerciseUtils";
 import { useApp } from "../context/AppContext";
 import { moveItem } from "../lib/arrayUtils";
 import { MAX_SETS } from "../lib/constants";
+import { normalizeRpe, normalizeFeedback } from "../lib/rpe";
 
 /**
  * Planner component for creating a new workout.  Uses AppContext
@@ -63,6 +64,8 @@ export default function WorkoutPlanner({ onCreated }) {
           weight: Number(s.weight) || 0,
           reps: Number(s.reps) || 0,
         })),
+        rpe: normalizeRpe(i.rpe),
+        feedback: normalizeFeedback(i.feedback),
       })),
     }));
     setWorkouts((prev) =>
