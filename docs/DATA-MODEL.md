@@ -100,8 +100,10 @@ One set within a `WorkoutExercise`.
 
 Constraints enforced in code:
 
-- **Max 5 sets per exercise** — add-set disables at 5; import truncates with
-  `slice(0, 5)`.
+- **Max `MAX_SETS` (10) sets per exercise** — add-set disables at the limit;
+  import truncates with `slice(0, MAX_SETS)`. The cap is defined in
+  `src/lib/constants.js` and gates new sets only; stored workouts with more
+  sets (e.g. from older data) are never mutated except on re-import.
 - **At least 1 set** — delete-set disabled at one remaining; import guarantees a
   default set.
 - **Weight stored in kg** — converted at the input boundary via

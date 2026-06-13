@@ -193,7 +193,7 @@ The app works with these shapes (full field tables in
   `lastWorkout`.
 - **Workout** — a session: `id`, `date` (`YYYY-MM-DD`), `name`, `exercises[]`.
 - **WorkoutExercise** — `exerciseName` (a by-name reference) + `sets[]`.
-- **Set** — `set`, `weight` (**always kg**), `reps`; capped at **5 sets/exercise**.
+- **Set** — `set`, `weight` (**always kg**), `reps`; capped at **10 sets/exercise** (`MAX_SETS`).
 - **Bodyweight log** — `weightLogs` map of date → number.
 - **Notes** — global notepad string + per-week note strings.
 

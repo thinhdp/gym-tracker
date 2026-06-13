@@ -46,7 +46,7 @@ describe("normalizeWorkout", () => {
   });
 
   it("truncates sets to MAX_SETS and renumbers them 1..n", () => {
-    const sets = Array.from({ length: 8 }, (_, i) => ({
+    const sets = Array.from({ length: MAX_SETS + 3 }, (_, i) => ({
       set: 99,
       weight: i,
       reps: i,
@@ -57,7 +57,9 @@ describe("normalizeWorkout", () => {
     });
     const norm = w.exercises[0].sets;
     expect(norm).toHaveLength(MAX_SETS);
-    expect(norm.map((s) => s.set)).toEqual([1, 2, 3, 4, 5]);
+    expect(norm.map((s) => s.set)).toEqual(
+      Array.from({ length: MAX_SETS }, (_, i) => i + 1),
+    );
   });
 
   it("coerces non-numeric weight/reps to 0", () => {
