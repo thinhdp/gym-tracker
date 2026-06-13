@@ -13,7 +13,12 @@ import {
 import WeightRepInputs from "./WeightRepInputs";
 import AddExerciseInput from "./AddExerciseInput";
 
-const REST_DEFAULT = 90;
+// Rest-timer presets: [label, seconds].
+const REST_PRESETS = [
+  ["3 min", 180],
+  ["2 min", 120],
+  ["1.5 min", 90],
+];
 
 export default function LiveSession() {
   const {
@@ -284,13 +289,21 @@ export default function LiveSession() {
         <div className="mx-auto max-w-3xl space-y-3">
           {/* Rest timer (manual) */}
           {restLeft == null ? (
-            <button
-              type="button"
-              onClick={() => setRestLeft(REST_DEFAULT)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-100 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
-            >
-              Start rest timer
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                Rest
+              </span>
+              {REST_PRESETS.map(([label, secs]) => (
+                <button
+                  key={secs}
+                  type="button"
+                  onClick={() => setRestLeft(secs)}
+                  className="flex-1 rounded-xl bg-neutral-100 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           ) : (
             <div className="flex items-center justify-between gap-2 rounded-xl bg-blue-50 px-3 py-2 dark:bg-neutral-800">
               <span className="text-sm font-medium text-blue-700 dark:text-blue-300">

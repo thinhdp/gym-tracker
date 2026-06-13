@@ -56,11 +56,11 @@ describe("LiveSession", () => {
     expect(screen.getAllByRole("spinbutton")).toHaveLength(4);
   });
 
-  it("starts and skips the manual rest timer", async () => {
+  it("starts a rest timer from a preset and skips it", async () => {
     const user = userEvent.setup();
     seedAndRender();
-    await user.click(screen.getByRole("button", { name: /Start rest timer/i }));
-    expect(screen.getByText(/Rest ·/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "2 min" }));
+    expect(screen.getByText("Rest · 2:00")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Skip" }));
     expect(screen.queryByText(/Rest ·/)).not.toBeInTheDocument();
   });
