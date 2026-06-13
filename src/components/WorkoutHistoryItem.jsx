@@ -4,6 +4,7 @@ import { Button } from "./ui/Button";
 import { Plus, Trash2, ChevronDown } from "./ui/Icons";
 import AddExerciseInput from "./AddExerciseInput";
 import WeightRepInputs from "./WeightRepInputs";
+import RpeFeedback from "./RpeFeedback";
 import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
 import { useConfirm } from "./ConfirmDialog";
 import { MAX_SETS } from "../lib/constants";
@@ -298,6 +299,21 @@ export default function WorkoutHistoryItem({
                       <Plus /> Add set
                     </Button>
                   )}
+                </div>
+
+                {/* Optional RPE + feedback for this exercise */}
+                <div className="mt-2">
+                  <RpeFeedback
+                    rpe={we.rpe ?? null}
+                    feedback={we.feedback ?? ""}
+                    onChange={(patch) =>
+                      updateWorkout(w.id, {
+                        exercises: w.exercises.map((e2, i2) =>
+                          i2 === idx ? { ...e2, ...patch } : e2,
+                        ),
+                      })
+                    }
+                  />
                 </div>
               </div>
             ))}
