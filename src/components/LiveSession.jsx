@@ -9,7 +9,10 @@ import {
   doneCount,
   totalSets,
   formatClock,
+  remapIndexAfterMove,
+  remapDoneAfterMove,
 } from "../lib/liveSession";
+import { moveItem } from "../lib/arrayUtils";
 import WeightRepInputs from "./WeightRepInputs";
 import AddExerciseInput from "./AddExerciseInput";
 
@@ -118,6 +121,19 @@ export default function LiveSession() {
   const toggleSetDone = (exIdx, setIdx) =>
     setSession((s) => ({ ...s, done: toggleDone(s.done, exIdx, setIdx) }));
 
+  // Reorder exercises mid-session (e.g. a machine is taken). The done-map and
+  // the on-screen pointer are remapped so completed sets stay with their
+  // exercise.
+  const moveExercise = (from, to) => {
+    if (to < 0 || to >= exs.length) return;
+    patchWorkout((w) => ({ ...w, exercises: moveItem(w.exercises, from, to) }));
+    setSession((s) => ({
+      ...s,
+      done: remapDoneAfterMove(s.done, from, to),
+      currentIdx: remapIndexAfterMove(s.currentIdx || 0, from, to),
+    }));
+  };
+
   const goTo = (idx) => setSession((s) => ({ ...s, currentIdx: idx }));
   const setName = (name) => patchWorkout((w) => ({ ...w, name }));
 
@@ -191,8 +207,32 @@ export default function LiveSession() {
               <div className="mb-1 text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                 Exercise {currentIdx + 1} of {exs.length}
               </div>
-              <div className="mb-3 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                {current.exerciseName}
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                  {current.exerciseName}
+                </div>
+                {exs.length > 1 && (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => moveExercise(currentIdx, currentIdx - 1)}
+                      disabled={currentIdx === 0}
+                      aria-label="Move exercise earlier"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border text-neutral-600 transition hover:bg-neutral-50 disabled:opacity-30 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveExercise(currentIdx, currentIdx + 1)}
+                      disabled={currentIdx === exs.length - 1}
+                      aria-label="Move exercise later"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border text-neutral-600 transition hover:bg-neutral-50 disabled:opacity-30 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                    >
+                      ↓
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Column headers */}

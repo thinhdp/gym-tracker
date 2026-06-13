@@ -245,7 +245,10 @@ set-by-set, persisted to `mgym.session.v1` so a refresh mid-workout resumes:
 
 When `session` is non-null, `App` renders `LiveSession` full-screen instead of the
 tabbed layout. Pure helpers (`setKey`, `toggleDone`, `doneCount`, `totalSets`,
-`formatClock`) live in `src/lib/liveSession.js`. Entry points: **Home**'s today
+`formatClock`) live in `src/lib/liveSession.js`. Exercises can be **reordered**
+mid-session (machines get taken); since the `done` map is keyed by exercise
+index, `remapDoneAfterMove` / `remapIndexAfterMove` shift those keys (and the
+on-screen pointer) to follow a `moveItem` reorder. Entry points: **Home**'s today
 card and each **WorkoutHistoryItem** ("▶ Start") call `startSession`; **Home** and
 the **Workouts** tab offer "Start empty workout" (`startEmptyWorkout`). `Finish`
 calls `endSession`, and drops the workout if it was left with zero exercises.

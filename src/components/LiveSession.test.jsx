@@ -65,6 +65,46 @@ describe("LiveSession", () => {
     expect(screen.queryByText(/Rest ·/)).not.toBeInTheDocument();
   });
 
+  it("reorders exercises, keeping the done flag and pointer on the moved one", async () => {
+    const user = userEvent.setup();
+    saveLS(K_WO, [
+      {
+        id: "w2",
+        date: "2026-06-13",
+        name: "Push Day",
+        exercises: [
+          { exerciseName: "Bench", sets: [{ set: 1, weight: 80, reps: 8 }] },
+          { exerciseName: "Squat", sets: [{ set: 1, weight: 100, reps: 5 }] },
+        ],
+      },
+    ]);
+    saveLS(K_SESSION, {
+      workoutId: "w2",
+      startedAt: Date.now(),
+      currentIdx: 0,
+      done: {},
+    });
+    render(
+      <AppProvider>
+        <LiveSession />
+      </AppProvider>,
+    );
+
+    expect(screen.getByText("Exercise 1 of 2")).toBeInTheDocument();
+    // Complete Bench's set, then move Bench later.
+    await user.click(screen.getByRole("button", { name: /Mark set 1 done/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Move exercise later/i }),
+    );
+
+    // The view follows Bench to position 2, and its done flag came along.
+    expect(screen.getByText("Exercise 2 of 2")).toBeInTheDocument();
+    expect(screen.getByText("Bench")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Mark set 1 done/i }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("closes the session when finished", async () => {
     const user = userEvent.setup();
     seedAndRender();

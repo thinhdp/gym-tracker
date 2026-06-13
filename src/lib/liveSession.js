@@ -33,6 +33,30 @@ export function totalSets(workout) {
 }
 
 /**
+ * New index of an exercise originally at `index` after moving the exercise at
+ * `from` to `to` (matching arrayUtils.moveItem semantics).
+ */
+export function remapIndexAfterMove(index, from, to) {
+  if (index === from) return to;
+  if (from < to) return index > from && index <= to ? index - 1 : index;
+  if (from > to) return index >= to && index < from ? index + 1 : index;
+  return index;
+}
+
+/**
+ * Rebuild a done-map (keyed `"exerciseIdx:setIdx"`) so its exercise indices
+ * follow a moveItem(from, to) reorder of the exercise list.
+ */
+export function remapDoneAfterMove(done, from, to) {
+  const out = {};
+  for (const [k, v] of Object.entries(done || {})) {
+    const [ei, si] = k.split(":").map(Number);
+    out[setKey(remapIndexAfterMove(ei, from, to), si)] = v;
+  }
+  return out;
+}
+
+/**
  * Format a duration in seconds as `M:SS` (or `H:MM:SS` past an hour). Negative
  * inputs clamp to zero.
  */
