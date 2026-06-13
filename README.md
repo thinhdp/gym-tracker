@@ -6,7 +6,7 @@
 
 ## Features
 
-- **Plan & Log Workouts** – Create workouts for multiple dates, name them, add exercises and specify up to five sets per exercise. You can adjust weights and reps on the fly, reorder exercises within a workout and save multiple workouts at once.
+- **Plan & Log Workouts** – Create workouts for multiple dates, name them, add exercises and specify up to ten sets per exercise. You can adjust weights and reps on the fly, reorder exercises within a workout and save multiple workouts at once.
 - **Exercise Management** – Maintain a library of exercises with recommended rep ranges and meta‑information such as main muscle, secondary muscles, type, equipment and force. Rename or delete exercises and see how many workouts each exercise appears in.
 - **History View** – Edit past workouts, change dates or names, add or remove exercises and modify individual sets. The history view mirrors the planner interface so editing feels familiar.
 - **Exercise History Modal** – Click on an exercise name anywhere in the planner or history to open a modal showing all past workouts containing that exercise. Each entry lists the date, workout name and sets with weight and reps.
