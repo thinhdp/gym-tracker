@@ -49,24 +49,24 @@ export default function ExerciseRow({
   );
 
   return (
-    <div className="rounded-2xl border p-3 space-y-2">
+    <div className="rounded-2xl border dark:border-neutral-800 p-3 space-y-2">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h4 className="text-base font-semibold">
             {ex.name}
             {ex.recommendRep ? (
-              <span className="ml-2 text-xs text-neutral-500">
+              <span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">
                 ({ex.recommendRep})
               </span>
             ) : null}
             {usedCount > 0 && (
-              <span className="ml-2 text-xs text-neutral-500">
+              <span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">
                 {usedCount} workout
                 {usedCount > 1 ? "s" : ""}
               </span>
             )}
           </h4>
-          <div className="mt-1 text-sm text-neutral-600 space-x-2">
+          <div className="mt-1 text-sm text-neutral-600 dark:text-neutral-300 space-x-2">
             {ex.type && <span>{ex.type}</span>}
             {ex.equipment && <span>{ex.equipment}</span>}
             {ex.mainMuscle && <span>Main: {ex.mainMuscle}</span>}
@@ -177,7 +177,9 @@ export default function ExerciseRow({
 
       {/* Last workout summary */}
       <div className="mt-2">
-        <p className="text-xs font-medium text-neutral-500">Last workout</p>
+        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+          Last workout
+        </p>
         {ex.lastWorkout ? (
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
             <Badge>
@@ -193,7 +195,7 @@ export default function ExerciseRow({
             </div>
           </div>
         ) : (
-          <p className="text-sm text-neutral-400">—</p>
+          <p className="text-sm text-neutral-400 dark:text-neutral-500">—</p>
         )}
       </div>
 

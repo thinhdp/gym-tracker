@@ -121,7 +121,7 @@ export default function DataManagementMenu() {
         onChange={onFileChange}
       />
       {open && (
-        <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow z-10">
+        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 border dark:border-neutral-800 rounded shadow z-10">
           <Button
             variant="ghost"
             className="w-full justify-start px-4 py-2"

@@ -10,7 +10,9 @@ import { buildWeightSeries } from "../lib/weightSeries";
 function SimpleLineChart({ points, height = 200, width = 720, padding = 32 }) {
   if (!points || points.length < 2) {
     return (
-      <div className="text-sm text-neutral-500">Not enough data to plot.</div>
+      <div className="text-sm text-neutral-500 dark:text-neutral-400">
+        Not enough data to plot.
+      </div>
     );
   }
   const ys = points.map((p) => p.y);

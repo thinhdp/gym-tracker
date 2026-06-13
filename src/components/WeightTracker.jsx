@@ -141,7 +141,10 @@ export default function WeightTracker() {
       {/* Calendar grid */}
       <div className="grid grid-cols-7 gap-1 text-xs">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-          <div key={d} className="text-center text-neutral-500 py-1">
+          <div
+            key={d}
+            className="text-center text-neutral-500 dark:text-neutral-400 py-1"
+          >
             {d}
           </div>
         ))}
@@ -155,13 +158,15 @@ export default function WeightTracker() {
             <div
               key={key}
               className={[
-                "relative h-16 border rounded-md p-1 cursor-pointer",
-                inMonth ? "bg-white" : "bg-neutral-50",
+                "relative h-16 border dark:border-neutral-800 rounded-md p-1 cursor-pointer",
+                inMonth
+                  ? "bg-white dark:bg-neutral-900"
+                  : "bg-neutral-50 dark:bg-neutral-800",
                 isToday ? "ring-2 ring-blue-500" : "",
               ].join(" ")}
               onClick={() => onCellClick(d)}
             >
-              <div className="absolute top-1 left-1 text-[10px] text-neutral-500">
+              <div className="absolute top-1 left-1 text-[10px] text-neutral-500 dark:text-neutral-400">
                 {d.getDate()}
               </div>
               {editingKey === key ? (
@@ -170,7 +175,7 @@ export default function WeightTracker() {
                     autoFocus
                     type="number"
                     step="0.1"
-                    className="w-full text-center border rounded px-2 py-1 text-sm"
+                    className="w-full text-center border rounded px-2 py-1 text-sm bg-white dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     onBlur={commitEdit}
@@ -185,7 +190,10 @@ export default function WeightTracker() {
                   {/* Smaller weight text so it doesn't cover the date */}
                   <div className="text-[10px] md:text-xs font-semibold">
                     {val}
-                    <span className="text-[9px] text-neutral-500"> {unit}</span>
+                    <span className="text-[9px] text-neutral-500 dark:text-neutral-400">
+                      {" "}
+                      {unit}
+                    </span>
                   </div>
                 </div>
               ) : null}
@@ -195,20 +203,24 @@ export default function WeightTracker() {
       </div>
 
       {/* Weekly average + delta */}
-      <div className="rounded-lg border p-3 grid grid-cols-2 gap-3">
+      <div className="rounded-lg border dark:border-neutral-800 p-3 grid grid-cols-2 gap-3">
         <div>
-          <div className="text-xs text-neutral-500">This Week Avg</div>
+          <div className="text-xs text-neutral-500 dark:text-neutral-400">
+            This Week Avg
+          </div>
           <div className="text-lg font-semibold">
             {weekAvg != null ? `${weekAvg} ${unit}` : "—"}
           </div>
         </div>
         <div>
-          <div className="text-xs text-neutral-500">Δ vs Last Week</div>
+          <div className="text-xs text-neutral-500 dark:text-neutral-400">
+            Δ vs Last Week
+          </div>
           <div
             className={[
               "text-lg font-semibold",
               weekDelta == null
-                ? "text-neutral-400"
+                ? "text-neutral-400 dark:text-neutral-500"
                 : weekDelta > 0
                   ? "text-green-600"
                   : "text-red-600",
@@ -260,20 +272,22 @@ export default function WeightTracker() {
         {period === "custom" && (
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <label className="flex items-center gap-1">
-              <span className="text-neutral-500">From</span>
+              <span className="text-neutral-500 dark:text-neutral-400">
+                From
+              </span>
               <input
                 type="date"
-                className="border rounded px-2 py-1"
+                className="border rounded px-2 py-1 bg-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:[color-scheme:dark]"
                 value={customFrom}
                 max={customTo || todayYmd}
                 onChange={(e) => setCustomFrom(e.target.value)}
               />
             </label>
             <label className="flex items-center gap-1">
-              <span className="text-neutral-500">To</span>
+              <span className="text-neutral-500 dark:text-neutral-400">To</span>
               <input
                 type="date"
-                className="border rounded px-2 py-1"
+                className="border rounded px-2 py-1 bg-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:[color-scheme:dark]"
                 value={customTo}
                 min={customFrom || undefined}
                 onChange={(e) => setCustomTo(e.target.value)}
@@ -289,9 +303,9 @@ export default function WeightTracker() {
           filled days per ISO week. Passing the logs ensures it uses the same
           data that WeightTracker manages.
         */}
-        <div className="rounded-lg border p-3">
+        <div className="rounded-lg border dark:border-neutral-800 p-3">
           {period === "custom" && !customFrom ? (
-            <div className="text-sm text-neutral-500">
+            <div className="text-sm text-neutral-500 dark:text-neutral-400">
               Pick a start date to plot a custom range.
             </div>
           ) : (

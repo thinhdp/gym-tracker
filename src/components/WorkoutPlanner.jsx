@@ -88,7 +88,9 @@ export default function WorkoutPlanner({ onCreated }) {
         <div className="grid gap-3">
           {/* Date inputs */}
           <div className="space-y-2">
-            <label className="text-xs text-neutral-600">Workout date(s)</label>
+            <label className="text-xs text-neutral-600 dark:text-neutral-300">
+              Workout date(s)
+            </label>
             {dates.map((d, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <Input
@@ -120,7 +122,7 @@ export default function WorkoutPlanner({ onCreated }) {
 
           {/* Workout name */}
           <div className="space-y-1">
-            <label className="text-xs text-neutral-600">
+            <label className="text-xs text-neutral-600 dark:text-neutral-300">
               Workout name (optional)
             </label>
             <Input
@@ -133,7 +135,7 @@ export default function WorkoutPlanner({ onCreated }) {
           {/* Exercises list */}
           <div className="space-y-2">
             {items.length === 0 && (
-              <p className="text-sm text-neutral-500">
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 No exercises added yet.
               </p>
             )}

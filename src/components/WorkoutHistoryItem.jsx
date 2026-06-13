@@ -7,6 +7,7 @@ import WeightRepInputs from "./WeightRepInputs";
 import RpeFeedback from "./RpeFeedback";
 import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
 import { useConfirm } from "./ConfirmDialog";
+import { useApp } from "../context/AppContext";
 import { MAX_SETS } from "../lib/constants";
 
 /**
@@ -41,15 +42,21 @@ export default function WorkoutHistoryItem({
   onShowHistory,
 }) {
   const confirm = useConfirm();
+  const { startSession } = useApp();
 
   return (
-    <div className="rounded-2xl border">
+    <div className="rounded-2xl border dark:border-neutral-800">
       <div className="flex items-center justify-between px-4 py-3">
         <div>
           <div className="text-base font-medium">{w.name}</div>
-          <div className="text-xs text-neutral-600">{w.date}</div>
+          <div className="text-xs text-neutral-600 dark:text-neutral-300">
+            {w.date}
+          </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="primary" onClick={() => startSession(w.id)}>
+            ▶ Start
+          </Button>
           <Button variant="secondary" onClick={onToggle}>
             Details <ChevronDown open={expanded} />
           </Button>
@@ -75,7 +82,9 @@ export default function WorkoutHistoryItem({
         <div className="space-y-3 p-4 border-t">
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-xs text-neutral-600">Date</label>
+              <label className="text-xs text-neutral-600 dark:text-neutral-300">
+                Date
+              </label>
               <Input
                 type="date"
                 value={w.date}
@@ -83,7 +92,9 @@ export default function WorkoutHistoryItem({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-neutral-600">Workout name</label>
+              <label className="text-xs text-neutral-600 dark:text-neutral-300">
+                Workout name
+              </label>
               <Input
                 value={w.name}
                 onChange={(e) =>
@@ -100,7 +111,7 @@ export default function WorkoutHistoryItem({
             {w.exercises.map((we, idx) => (
               <div
                 key={idx}
-                className="relative rounded-xl border p-3 overflow-hidden"
+                className="relative rounded-xl border dark:border-neutral-800 p-3 overflow-hidden"
               >
                 {/* cyan accent bar for each exercise */}
                 <div className="absolute inset-y-0 left-0 w-1 bg-cyan-300"></div>
@@ -117,7 +128,7 @@ export default function WorkoutHistoryItem({
                         exercises.find((e) => e.name === we.exerciseName)
                           ?.recommendRep || "";
                       return rec ? (
-                        <span className="ml-2 text-xs text-neutral-500">
+                        <span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">
                           ({rec})
                         </span>
                       ) : null;
@@ -182,7 +193,7 @@ export default function WorkoutHistoryItem({
                 </div>
 
                 <div className="grid gap-2">
-                  <div className="flex items-center gap-3 px-3 py-1 text-xs text-neutral-500">
+                  <div className="flex items-center gap-3 px-3 py-1 text-xs text-neutral-500 dark:text-neutral-400">
                     <span className="w-16" />
                     <div className="flex-1 grid grid-cols-2 gap-3">
                       <div>Weight ({unit})</div>
@@ -194,11 +205,11 @@ export default function WorkoutHistoryItem({
                   {we.sets.map((s, sidx) => (
                     <div
                       key={sidx}
-                      className="relative flex items-center gap-3 rounded-xl border px-3 py-2 shadow-sm overflow-hidden"
+                      className="relative flex items-center gap-3 rounded-xl border dark:border-neutral-800 px-3 py-2 shadow-sm overflow-hidden"
                     >
                       {/* cyan accent bar for each set */}
                       <div className="absolute inset-y-0 left-0 w-1 bg-cyan-200"></div>
-                      <span className="w-16 text-sm text-neutral-600">
+                      <span className="w-16 text-sm text-neutral-600 dark:text-neutral-300">
                         Set {sidx + 1}
                       </span>
                       <WeightRepInputs
@@ -320,7 +331,7 @@ export default function WorkoutHistoryItem({
           </div>
 
           {/* Add exercise input moved below the list */}
-          <div className="rounded-xl border p-3">
+          <div className="rounded-xl border dark:border-neutral-800 p-3">
             <div className="mb-2 font-medium text-sm">
               Add exercise to this workout
             </div>

@@ -49,7 +49,7 @@ export default function Notepad() {
         placeholder="Write your notes here..."
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        className="w-full resize-y overflow-auto border rounded p-2"
+        className="w-full resize-y overflow-auto border rounded p-2 bg-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder-neutral-500"
       />
     </div>
   );

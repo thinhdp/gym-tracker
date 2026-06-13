@@ -53,7 +53,7 @@ export function ConfirmProvider({ children }) {
         <div className="fixed inset-0 z-[9999]">
           <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
           <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="w-full max-w-md overflow-hidden rounded-2xl border bg-white shadow-xl">
+            <div className="w-full max-w-md overflow-hidden rounded-2xl border dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
               {/* Header */}
               <div className="flex items-center gap-3 bg-blue-50 px-5 py-4">
                 <div className="h-7 w-7 rounded-full bg-blue-600" />
@@ -62,14 +62,14 @@ export function ConfirmProvider({ children }) {
                 </div>
               </div>
               {/* Body */}
-              <div className="px-5 py-4 text-sm text-neutral-700 whitespace-pre-line">
+              <div className="px-5 py-4 text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-line">
                 {state.message || "This action cannot be undone."}
               </div>
               {/* Footer */}
               <div className="flex justify-end gap-2 px-5 py-4">
                 <button
                   onClick={onCancel}
-                  className="inline-flex items-center justify-center rounded-xl border border-neutral-300 bg-white px-3 py-1.5 text-sm hover:bg-neutral-50"
+                  className="inline-flex items-center justify-center rounded-xl border dark:border-neutral-800 border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-1.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 >
                   {state.cancelText || "Cancel"}
                 </button>

@@ -116,7 +116,9 @@ export default function DashboardSummary() {
             ),
           )
         ) : (
-          <div className="text-sm text-neutral-500">No weekly data yet.</div>
+          <div className="text-sm text-neutral-500 dark:text-neutral-400">
+            No weekly data yet.
+          </div>
         )
       ) : monthData.length ? (
         monthData.map(({ period, metrics, prevMetrics }) => (
@@ -130,7 +132,9 @@ export default function DashboardSummary() {
           />
         ))
       ) : (
-        <div className="text-sm text-neutral-500">No monthly data yet.</div>
+        <div className="text-sm text-neutral-500 dark:text-neutral-400">
+          No monthly data yet.
+        </div>
       )}
     </div>
   );

@@ -4,7 +4,7 @@ export function Card({ children, className = "" }) {
   // Use a light gradient to better distinguish stacked cards
   return (
     <div
-      className={`bg-gradient-to-b from-white to-neutral-100 shadow border rounded-2xl ${className}`}
+      className={`bg-gradient-to-b from-white to-neutral-100 dark:from-neutral-900 dark:to-neutral-900 dark:border-neutral-800 shadow border rounded-2xl ${className}`}
     >
       {children}
     </div>

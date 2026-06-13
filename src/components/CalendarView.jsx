@@ -75,7 +75,7 @@ export default function CalendarView() {
               Next ›
             </Button>
           </div>
-          <div className="grid grid-cols-7 text-xs text-neutral-600 mb-1">
+          <div className="grid grid-cols-7 text-xs text-neutral-600 dark:text-neutral-300 mb-1">
             {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
               <div key={d} className="py-1 text-center">
                 {d}
@@ -89,7 +89,7 @@ export default function CalendarView() {
               return (
                 <button
                   key={idx}
-                  className={`aspect-square rounded-xl border text-sm flex flex-col items-center justify-center ${isSelected ? "bg-blue-600 text-white" : "bg-white"}`}
+                  className={`aspect-square rounded-xl border dark:border-neutral-800 text-sm flex flex-col items-center justify-center ${isSelected ? "bg-blue-600 text-white" : "bg-white dark:bg-neutral-900"}`}
                   onClick={() => ds && setSelected(ds)}
                   disabled={!ds}
                 >
@@ -98,7 +98,7 @@ export default function CalendarView() {
                   </span>
                   {count > 0 && (
                     <span
-                      className={`mt-1 text-[10px] ${isSelected ? "text-white" : "text-neutral-600"}`}
+                      className={`mt-1 text-[10px] ${isSelected ? "text-white" : "text-neutral-600 dark:text-neutral-300"}`}
                     >
                       {count} workout{count > 1 ? "s" : ""}
                     </span>
@@ -118,11 +118,16 @@ export default function CalendarView() {
             </Button>
           </div>
           {selectedWorkouts.length === 0 && (
-            <p className="text-sm text-neutral-500">No workouts on this day.</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              No workouts on this day.
+            </p>
           )}
           <div className="space-y-3">
             {selectedWorkouts.map((w) => (
-              <div key={w.id} className="rounded-xl border p-3">
+              <div
+                key={w.id}
+                className="rounded-xl border dark:border-neutral-800 p-3"
+              >
                 <div className="mb-2 flex items-center justify-between">
                   <div className="font-medium">{w.name}</div>
                   <div className="flex items-center gap-2">
@@ -144,13 +149,15 @@ export default function CalendarView() {
                   </div>
                 </div>
                 {w.exercises.length === 0 ? (
-                  <p className="text-sm text-neutral-500">No exercises yet.</p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    No exercises yet.
+                  </p>
                 ) : (
                   <div className="grid gap-2">
                     {w.exercises.map((we, i) => (
                       <div
                         key={i}
-                        className="rounded-lg border px-3 py-2 text-sm"
+                        className="rounded-lg border dark:border-neutral-800 px-3 py-2 text-sm"
                       >
                         <div className="font-medium">
                           {we.exerciseName}
@@ -159,7 +166,7 @@ export default function CalendarView() {
                               exercises.find((e) => e.name === we.exerciseName)
                                 ?.recommendRep || "";
                             return rec ? (
-                              <span className="ml-2 text-xs text-neutral-500">
+                              <span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">
                                 ({rec})
                               </span>
                             ) : null;
@@ -177,7 +184,7 @@ export default function CalendarView() {
                     ))}
                   </div>
                 )}
-                <div className="rounded-xl border p-3 mt-2">
+                <div className="rounded-xl border dark:border-neutral-800 p-3 mt-2">
                   <div className="mb-2 font-medium text-sm">Add exercise</div>
                   <AddExerciseInput
                     allExercises={exercises}

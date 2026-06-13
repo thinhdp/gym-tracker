@@ -14,10 +14,23 @@ browser's `localStorage`, so the app is local-first and works offline after the
 initial load. Data never leaves the device unless you explicitly use the Data
 menu to export a JSON backup.
 
-The UI is a single column with six tabs — **Workouts**, **Calendar**,
-**Exercises**, **Weight**, **Notepad**, and **Summary** — switched by buttons in
-the header. There is no client-side router; the active tab is a piece of shared
-state (and is itself persisted).
+The UI is a single centered column navigated by a **fixed five-tab bottom bar** —
+**Home**, **Workouts**, **Progress**, **Exercises**, **More**. There is no
+client-side router; the active tab is a piece of shared state (and is itself
+persisted). Several earlier top-level tabs were consolidated: **Progress** merges
+the old Weight + Summary views (Bodyweight / Strength toggle), **Calendar** folds
+into Workouts as a List/Calendar toggle, and **Notepad** + data export/import +
+preferences live under **More**. **Home** is a dashboard (greeting, streak,
+today's plan, week stats, recent activity). Legacy persisted `tab` values
+(`calendar`/`weight`/`summary`/`notepad`) are mapped onto the new destinations in
+`App.jsx` so returning users never land on a blank screen.
+
+Two things render **outside** this tabbed layout:
+
+- **Live-logging session** — when a workout session is active, `LiveSession`
+  takes over the whole screen (the bottom nav is hidden) for set-by-set logging.
+- **Theme** — a light/dark/system preference applied by toggling the `dark` class
+  on `<html>` (Tailwind class-based dark mode).
 
 ## Tech stack and the role of each tool
 
@@ -31,7 +44,9 @@ state (and is itself persisted).
 | **PostCSS**              | 8.4                      | CSS pipeline Tailwind plugs into. Config in `postcss.config.js`.                                                            |
 | **autoprefixer**         | 10.4                     | PostCSS plugin adding vendor prefixes at build time.                                                                        |
 
-There is **no TypeScript, router, or data-fetching library**. Charts (weight
+There is **no TypeScript, router, or data-fetching library**. Dark mode is
+class-based Tailwind (`darkMode: "class"` in `tailwind.config.js`); icons are
+inline SVG/emoji (no icon library). Charts (weight
 trend, muscle bars) are hand-rolled SVG — no charting dependency. Tests use
 **Vitest + React Testing Library** (see [docs/TESTING.md](docs/TESTING.md));
 ESLint + Prettier enforce style.
@@ -47,10 +62,10 @@ gym-tracker/
 ├── postcss.config.js          # Tailwind + autoprefixer
 └── src/
     ├── main.jsx               # Entry: mounts <App/>
-    ├── App.jsx                # Wraps AppProvider; renders header, tabs, active view
+    ├── App.jsx                # Wraps AppProvider; renders active view + BottomNav (or LiveSession)
     ├── index.css              # Tailwind directives + a few base styles
     ├── context/
-    │   └── AppContext.jsx     # Shared state (tab, unit, exercises, workouts) + persistence
+    │   └── AppContext.jsx     # Shared state (tab, unit, theme, exercises, workouts, session) + persistence
     ├── data/
     │   └── exercises_seed.json   # 76 default exercises (first-run seed)
     ├── lib/                   # Framework-free helpers
@@ -63,8 +78,16 @@ gym-tracker/
     │   ├── weightUtils.js        # averageWeightInRange for bodyweight logs
     │   ├── arrayUtils.js         # moveItem() reorder helper
     │   ├── constants.js          # MAX_SETS
-    │   └── metrics.js            # Period bucketing + per-period metrics (reps/sets/PRs)
+    │   ├── metrics.js            # Period bucketing + per-period metrics (reps/sets/PRs)
+    │   ├── homeStats.js          # Home dashboard: volume/streak/week helpers
+    │   ├── theme.js              # resolveDark / applyTheme (light|dark|system)
+    │   └── liveSession.js        # Live-session done-map + clock helpers
     └── components/
+        ├── Home.jsx                 # Home dashboard (Home tab)
+        ├── WorkoutsTab.jsx          # Workouts tab shell: List/Calendar toggle + Start
+        ├── Progress.jsx             # Progress tab shell: Bodyweight/Strength toggle
+        ├── MoreMenu.jsx             # More tab: prefs (theme), Notepad, data export/import
+        ├── LiveSession.jsx          # Full-screen set-by-set live workout logger
         ├── WorkoutPlanner.jsx       # "Plan / Log Workout" form (Workouts tab)
         ├── WorkoutHistory.jsx       # List of past workouts (Workouts tab)
         ├── WorkoutHistoryItem.jsx   # One history card: header + expanded editor
@@ -92,6 +115,8 @@ gym-tracker/
             ├── Input.jsx            # Input + Textarea
             ├── Card.jsx             # Card + CardContent
             ├── Badge.jsx            # Pill label
+            ├── BottomNav.jsx        # Fixed 5-tab bottom navigation (inline SVG icons)
+            ├── Segmented.jsx        # Pill segmented toggle (List/Calendar, etc.)
             ├── ComboInput.jsx       # <datalist>-backed free-text + suggestions
             └── Icons.jsx            # Emoji icon components
 ```
@@ -102,38 +127,38 @@ gym-tracker/
 main.jsx
 └── ConfirmProvider                 (single provider for all useConfirm() consumers)
     └── App
-        └── AppProvider             (Context: tab, unit, exercises, workouts)
+        └── AppProvider             (Context: tab, unit, theme, exercises, workouts, session)
             └── AppContent          (consumes useApp())
-                ├── DataManagementMenu        (header)
-                ├── Button (unit toggle, tab buttons)
                 │
-                ├── [tab="workouts"]
-                │   ├── WorkoutPlanner
-                │   │   ├── AddExerciseInput
-                │   │   ├── WorkoutExerciseEditor → WeightRepInputs / NumberInputAutoClear
-                │   │   └── ExerciseHistoryModal
-                │   └── WorkoutHistory
-                │       ├── WorkoutHistoryItem
-                │       │   ├── AddExerciseInput
-                │       │   └── WeightRepInputs / NumberInputAutoClear
-                │       └── ExerciseHistoryModal
+                ├── session active? → LiveSession        (full-screen; bottom nav hidden)
+                │       ├── WeightRepInputs / NumberInputAutoClear   (per-set inputs)
+                │       └── AddExerciseInput                          (add exercise mid-session)
                 │
-                ├── [tab="calendar"]  CalendarView → AddExerciseInput
-                │
-                ├── [tab="exercises"] ExerciseManager
-                │   ├── NewExerciseInline → ComboInput
-                │   ├── ExerciseRow → ComboInput
-                │   └── ExerciseHistoryModal
-                │
-                ├── [tab="weight"]    WeightTracker → WeightChart
-                │
-                ├── [tab="notepad"]   Notepad
-                │
-                └── [tab="summary"]   DashboardSummary
-                    └── PeriodCard
-                        ├── GroupedMuscleBar
-                        ├── Delta
-                        └── WeeklyNotes   (weekly periods only)
+                └── otherwise: <active view> + BottomNav
+                    │
+                    ├── [tab="home"]      Home            (dashboard; uses homeStats.js)
+                    │
+                    ├── [tab="workouts"]  WorkoutsTab     (Segmented: List | Calendar)
+                    │   ├── (list) WorkoutPlanner
+                    │   │       ├── AddExerciseInput
+                    │   │       ├── WorkoutExerciseEditor → WeightRepInputs / NumberInputAutoClear
+                    │   │       └── ExerciseHistoryModal
+                    │   ├── (list) WorkoutHistory → WorkoutHistoryItem  (▶ Start → live session)
+                    │   └── (calendar) CalendarView → AddExerciseInput
+                    │
+                    ├── [tab="progress"]  Progress        (Segmented: Bodyweight | Strength)
+                    │   ├── (bodyweight) WeightTracker → WeightChart
+                    │   └── (strength)   DashboardSummary → PeriodCard
+                    │                         ├── GroupedMuscleBar
+                    │                         ├── Delta
+                    │                         └── WeeklyNotes   (weekly periods only)
+                    │
+                    ├── [tab="exercises"] ExerciseManager (search + muscle-group chips)
+                    │   ├── NewExerciseInline → ComboInput
+                    │   ├── ExerciseRow → ComboInput
+                    │   └── ExerciseHistoryModal
+                    │
+                    └── [tab="more"]      MoreMenu        (theme; Notepad sub-screen; DataManagementMenu)
 ```
 
 ## State-management model
@@ -145,16 +170,24 @@ props.
 
 ### State owned by `AppProvider`
 
-| State       | Initial value                 | Purpose                         | Persisted to        |
-| ----------- | ----------------------------- | ------------------------------- | ------------------- |
-| `tab`       | `loadLS(K_TAB, "workouts")`   | Active tab                      | `mgym.tab`          |
-| `unit`      | `loadLS(K_UNIT, "kg")`        | Display unit (`"kg"` \| `"lb"`) | `mgym.unit`         |
-| `exercises` | `loadLS(K_EX, seedExercises)` | Exercise database               | `mgym.exercises.v1` |
-| `workouts`  | `loadLS(K_WO, [])`            | All logged/planned workouts     | `mgym.workouts.v1`  |
+| State       | Initial value                 | Purpose                                        | Persisted to        |
+| ----------- | ----------------------------- | ---------------------------------------------- | ------------------- |
+| `tab`       | `loadLS(K_TAB, "workouts")`   | Active tab (new IA; legacy values remapped)    | `mgym.tab`          |
+| `unit`      | `loadLS(K_UNIT, "kg")`        | Display unit (`"kg"` \| `"lb"`; toggle hidden) | `mgym.unit`         |
+| `theme`     | `loadLS(K_THEME, "system")`   | Theme pref (`"system"`\|`"light"`\|`"dark"`)   | `mgym.theme`        |
+| `exercises` | `loadLS(K_EX, seedExercises)` | Exercise database                              | `mgym.exercises.v1` |
+| `workouts`  | `loadLS(K_WO, [])`            | All logged/planned workouts                    | `mgym.workouts.v1`  |
+| `session`   | `loadLS(K_SESSION, null)`     | In-progress live-logging session (or `null`)   | `mgym.session.v1`   |
 
-All four are persisted by `useEffect`s in `AppProvider` that run whenever the
-value changes. (Unlike the earlier version of the app, **`unit` and `tab` are now
-persisted** too.)
+All six are persisted by `useEffect`s in `AppProvider` that run whenever the
+value changes. `theme` additionally triggers `applyTheme()` (toggles the `dark`
+class on `<html>`) and, while the preference is `"system"`, a `matchMedia`
+listener re-applies on OS light/dark changes.
+
+`AppProvider` also exposes live-session helpers: **`startSession(workoutId)`**
+(begin logging an existing workout), **`startEmptyWorkout()`** (create a fresh
+empty workout dated today, then start it), and **`endSession()`**. See
+[Live-logging session](#live-logging-session) below.
 
 ### How components get state
 
@@ -183,6 +216,47 @@ use). It is **derived from `workouts`**, not authored. An effect in
 `AppProvider` recomputes it whenever `workouts` changes and writes it back onto
 `exercises` — so the derived value is also persisted into `mgym.exercises.v1`.
 Treat it as a cache of `workouts`; it can briefly lag until the effect runs.
+
+### Theme
+
+`theme` is one of `"system" | "light" | "dark"`, persisted to `mgym.theme`.
+`src/lib/theme.js` resolves a preference to a concrete mode (`resolveDark`) and
+applies it (`applyTheme`) by toggling the `dark` class on `<html>`. Tailwind runs
+in class-based dark mode (`darkMode: "class"`), so every `dark:` utility keys off
+that class. The Light/Dark/Auto control lives in the **More** tab.
+
+### Live-logging session
+
+`session` is `null` or an object describing an in-progress workout being logged
+set-by-set, persisted to `mgym.session.v1` so a refresh mid-workout resumes:
+
+```js
+{
+  (workoutId, startedAt, currentIdx);
+}
+```
+
+- `workoutId` — the `Workout.id` being logged (the workout itself lives in
+  `workouts`; live edits write through to it).
+- `startedAt` — epoch ms, for the elapsed clock.
+- `currentIdx` — index of the exercise on screen.
+
+There is **no separate done flag**: a set counts as logged once it has reps
+entered (`reps > 0`), so completion lives on the set itself and rides along when
+exercises are reordered. Newly added sets/exercises start with `reps: 0` (the
+weight prefills as a convenience); each exercise also has its own RPE + feedback
+(reusing `RpeFeedback`).
+
+When `session` is non-null, `App` renders `LiveSession` full-screen instead of the
+tabbed layout. Pure helpers (`isLogged`, `completedSets`, `totalSets`,
+`remapIndexAfterMove`, `formatClock`) live in `src/lib/liveSession.js`. Exercises
+can be **reordered** mid-session (machines get taken) by dragging the chips
+(pointer-based, touch + mouse) or the per-exercise up/down buttons; only the
+on-screen pointer needs `remapIndexAfterMove` to stay on the same exercise.
+Entry points: **Home**'s today card and each **WorkoutHistoryItem** ("▶ Start")
+call `startSession`; **Home** and the **Workouts** tab offer "Start empty workout"
+(`startEmptyWorkout`). `Finish` calls `endSession`, and drops the workout if it
+was left with zero exercises.
 
 ## Data model
 
@@ -233,7 +307,9 @@ inventory is documented in
 }
 ```
 
-Downloaded as `gym-tracker-backup-<YYYY-MM-DD>.json`.
+Downloaded as `gym-tracker-backup-<YYYY-MM-DD>.json`. The `theme` preference and
+any in-progress live `session` are **not** included in the backup (they are
+device-local UI state, not data worth migrating).
 
 **Import** parses the file, runs exercises/workouts through `normalizeData()`
 (coerces/validates, drops invalid rows), then applies them in one of two modes:
@@ -291,6 +367,12 @@ by week/month and compute reps/sets-per-muscle, workout frequency, and PRs.
 
 ## Unit handling (kg / lb)
 
+> **The kg/lb toggle UI is temporarily hidden.** The `unit` state, storage key
+> (`mgym.unit`), and `toDisplayWeight`/`fromDisplayWeight` conversion all remain
+> in place and default to `"kg"`, so the app currently displays kilograms
+> everywhere. The control (a row in the **More** tab) is commented out pending the
+> bodyweight-conversion fix below — restore that row to re-enable switching.
+
 **Workout weights are always stored in kilograms.** The `unit` toggle only
 affects display, converted in `src/lib/units.js`:
 
@@ -332,7 +414,9 @@ These reflect the code as it stands; documented here for a future refactor, not
 fixed by this documentation pass.
 
 1. **Bodyweight logs aren't unit-converted** — `weightLogs` store raw numbers;
-   the kg/lb toggle only relabels them.
+   the kg/lb toggle only relabels them. The toggle UI is currently **hidden** (see
+   [Unit handling](#unit-handling-kg--lb)) so the app shows kg only; restore the
+   More-tab Units row once bodyweight conversion is handled.
 2. **Import restores extra fields unvalidated** — `note`/`weightLogs`/
    `weeklyNotes`/`unit`/`tab` bypass `normalizeData`.
 3. **`normalizeWorkout` dead guard** — `if (!date || !normExercises)`;

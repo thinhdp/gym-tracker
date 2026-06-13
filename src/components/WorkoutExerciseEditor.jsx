@@ -57,7 +57,7 @@ export default function WorkoutExerciseEditor({
   };
 
   return (
-    <div className="relative rounded-2xl border p-3 overflow-hidden">
+    <div className="relative rounded-2xl border dark:border-neutral-800 p-3 overflow-hidden">
       {/* cyan accent bar for the whole exercise */}
       <div className="absolute inset-y-0 left-0 w-1 bg-cyan-300"></div>
       <div className="mb-2 flex items-center justify-between">
@@ -70,7 +70,7 @@ export default function WorkoutExerciseEditor({
             {item.exerciseName}
           </span>
           {recommendRep ? (
-            <span className="ml-2 text-xs text-neutral-500">
+            <span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">
               ({recommendRep})
             </span>
           ) : null}
@@ -102,7 +102,7 @@ export default function WorkoutExerciseEditor({
       </div>
 
       {/* Header row for sets */}
-      <div className="flex items-center gap-3 px-3 py-1 text-xs text-neutral-500">
+      <div className="flex items-center gap-3 px-3 py-1 text-xs text-neutral-500 dark:text-neutral-400">
         <span className="w-16" />
         <div className="flex-1 grid grid-cols-2 gap-3">
           <div>Weight ({unit})</div>
@@ -116,11 +116,13 @@ export default function WorkoutExerciseEditor({
         {sets.map((s, idx) => (
           <div
             key={idx}
-            className="relative flex items-center gap-3 rounded-xl border px-3 py-2 shadow-sm overflow-hidden"
+            className="relative flex items-center gap-3 rounded-xl border dark:border-neutral-800 px-3 py-2 shadow-sm overflow-hidden"
           >
             {/* cyan accent bar for each set */}
             <div className="absolute inset-y-0 left-0 w-1 bg-cyan-200"></div>
-            <span className="w-16 text-sm text-neutral-600">Set {idx + 1}</span>
+            <span className="w-16 text-sm text-neutral-600 dark:text-neutral-300">
+              Set {idx + 1}
+            </span>
             <WeightRepInputs
               weight={toDisplayWeight(s.weight, unit)}
               reps={s.reps}

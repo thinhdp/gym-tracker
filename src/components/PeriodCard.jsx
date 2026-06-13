@@ -28,14 +28,14 @@ export default function PeriodCard({
   }, [open, period.key]);
 
   return (
-    <div className="rounded-xl border border-neutral-200 bg-white shadow-sm mb-3 overflow-hidden">
+    <div className="rounded-xl border dark:border-neutral-800 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm mb-3 overflow-hidden">
       <button
         type="button"
-        className="w-full text-left px-3 py-2 bg-neutral-50 flex items-center justify-between"
+        className="w-full text-left px-3 py-2 bg-neutral-50 dark:bg-neutral-800 flex items-center justify-between"
         onClick={() => setOpen((o) => !o)}
       >
         <div className="font-semibold">{period.label}</div>
-        <div className="text-xs text-neutral-500">
+        <div className="text-xs text-neutral-500 dark:text-neutral-400">
           {open ? "Collapse ▲" : "Expand ▼"}
         </div>
       </button>
@@ -63,29 +63,37 @@ export default function PeriodCard({
           </div>
 
           <div className="grid grid-cols-5 gap-2">
-            <div className="rounded-lg border p-2">
-              <div className="text-xs text-neutral-500">Workouts</div>
+            <div className="rounded-lg border dark:border-neutral-800 p-2">
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                Workouts
+              </div>
               <div className="text-lg font-semibold flex flex-wrap items-baseline gap-x-1">
                 {metrics.frequency}
                 <Delta curr={metrics.frequency} prev={prevMetrics?.frequency} />
               </div>
             </div>
-            <div className="rounded-lg border p-2">
-              <div className="text-xs text-neutral-500">Total&nbsp;Reps</div>
+            <div className="rounded-lg border dark:border-neutral-800 p-2">
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                Total&nbsp;Reps
+              </div>
               <div className="text-lg font-semibold tabular-nums flex flex-wrap items-baseline gap-x-1">
                 {metrics.totalReps}
                 <Delta curr={metrics.totalReps} prev={prevMetrics?.totalReps} />
               </div>
             </div>
-            <div className="rounded-lg border p-2">
-              <div className="text-xs text-neutral-500">Total&nbsp;Sets</div>
+            <div className="rounded-lg border dark:border-neutral-800 p-2">
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                Total&nbsp;Sets
+              </div>
               <div className="text-lg font-semibold tabular-nums flex flex-wrap items-baseline gap-x-1">
                 {metrics.totalSets}
                 <Delta curr={metrics.totalSets} prev={prevMetrics?.totalSets} />
               </div>
             </div>
-            <div className="rounded-lg border p-2">
-              <div className="text-xs text-neutral-500">New&nbsp;PRs</div>
+            <div className="rounded-lg border dark:border-neutral-800 p-2">
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                New&nbsp;PRs
+              </div>
               <div className="text-lg font-semibold flex flex-wrap items-baseline gap-x-1">
                 {metrics.prs.length}
                 <Delta
@@ -95,8 +103,8 @@ export default function PeriodCard({
               </div>
             </div>
             {isWeek ? (
-              <div className="rounded-lg border p-2">
-                <div className="text-xs text-neutral-500">
+              <div className="rounded-lg border dark:border-neutral-800 p-2">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">
                   Avg&nbsp;Weight (This&nbsp;Week)
                 </div>
                 <div className="text-lg font-semibold tabular-nums flex flex-wrap items-baseline gap-x-1">
@@ -109,9 +117,13 @@ export default function PeriodCard({
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border p-2 opacity-50">
-                <div className="text-xs text-neutral-400">Avg&nbsp;Weight</div>
-                <div className="text-lg font-semibold text-neutral-400">—</div>
+              <div className="rounded-lg border dark:border-neutral-800 p-2 opacity-50">
+                <div className="text-xs text-neutral-400 dark:text-neutral-500">
+                  Avg&nbsp;Weight
+                </div>
+                <div className="text-lg font-semibold text-neutral-400 dark:text-neutral-500">
+                  —
+                </div>
               </div>
             )}
           </div>
@@ -119,14 +131,14 @@ export default function PeriodCard({
           {metrics.prs.length > 0 ? (
             <div className="space-y-1">
               <div className="text-sm font-medium">New PRs this period</div>
-              <div className="text-sm border rounded-lg divide-y">
+              <div className="text-sm border dark:border-neutral-800 rounded-lg divide-y dark:divide-neutral-800">
                 {metrics.prs.map((p) => (
                   <div
                     key={p.exercise}
                     className="flex items-center justify-between px-2 py-1"
                   >
                     <div className="font-medium">{p.exercise}</div>
-                    <div className="text-xs text-neutral-600">
+                    <div className="text-xs text-neutral-600 dark:text-neutral-300">
                       {p.prevBest} →{" "}
                       <span className="font-semibold">{p.newBest}</span>
                     </div>
@@ -135,7 +147,7 @@ export default function PeriodCard({
               </div>
             </div>
           ) : (
-            <div className="text-sm text-neutral-500">
+            <div className="text-sm text-neutral-500 dark:text-neutral-400">
               No new PRs this period.
             </div>
           )}

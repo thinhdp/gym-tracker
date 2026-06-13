@@ -31,12 +31,12 @@ export default function ExerciseHistoryModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white max-w-lg w-full rounded-xl shadow-lg p-4 overflow-y-auto max-h-[80vh]">
+      <div className="bg-white dark:bg-neutral-900 max-w-lg w-full rounded-xl shadow-lg p-4 overflow-y-auto max-h-[80vh]">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="text-lg font-medium">{exerciseName}</div>
-            <div className="text-sm text-neutral-500">
+            <div className="text-sm text-neutral-500 dark:text-neutral-400">
               Past workouts containing this exercise
             </div>
           </div>
@@ -48,7 +48,9 @@ export default function ExerciseHistoryModal({
         {/* Body */}
         <div className="space-y-3">
           {filtered.length === 0 && (
-            <p className="text-sm text-neutral-500">No past workouts.</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              No past workouts.
+            </p>
           )}
           {filtered.map((w) => {
             const item = (w.exercises || []).find(
@@ -56,7 +58,10 @@ export default function ExerciseHistoryModal({
             );
             if (!item) return null;
             return (
-              <div key={w.id} className="border rounded-lg p-3 space-y-1">
+              <div
+                key={w.id}
+                className="border dark:border-neutral-800 rounded-lg p-3 space-y-1"
+              >
                 {/* Date and workout name */}
                 <div className="flex items-center gap-2">
                   <Badge>

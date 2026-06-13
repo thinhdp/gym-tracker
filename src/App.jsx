@@ -1,111 +1,48 @@
 import React from "react";
 import "./index.css";
 import { AppProvider, useApp } from "./context/AppContext";
-import { Button } from "./components/ui/Button";
-import DataManagementMenu from "./components/DataManagementMenu";
-import WorkoutPlanner from "./components/WorkoutPlanner";
-import WorkoutHistory from "./components/WorkoutHistory";
+import BottomNav from "./components/ui/BottomNav";
+import Home from "./components/Home";
+import WorkoutsTab from "./components/WorkoutsTab";
+import Progress from "./components/Progress";
 import ExerciseManager from "./components/ExerciseManager";
-import CalendarView from "./components/CalendarView";
-import Notepad from "./components/Notepad";
-import DashboardSummary from "./components/DashboardSummary";
-import WeightTracker from "./components/WeightTracker";
+import MoreMenu from "./components/MoreMenu";
+import LiveSession from "./components/LiveSession";
 
-/**
- * Internal component that consumes AppContext and renders the app UI.
- * This separates context consumption from the outer provider.
- */
+// The five primary destinations rendered by the bottom nav.
+const VIEWS = {
+  home: Home,
+  workouts: WorkoutsTab,
+  progress: Progress,
+  exercises: ExerciseManager,
+  more: MoreMenu,
+};
+
+// Map legacy persisted tab values (the old six-tab IA) onto the new destinations
+// so returning users don't land on a blank screen.
+const LEGACY = {
+  calendar: "workouts",
+  weight: "progress",
+  summary: "progress",
+  notepad: "more",
+};
+
 function AppContent() {
-  const { tab, setTab, unit, setUnit } = useApp();
+  const { tab, setTab, session } = useApp();
+  const active = VIEWS[tab] ? tab : LEGACY[tab] || "home";
+  const View = VIEWS[active];
+
+  // A live-logging session takes over the whole screen.
+  if (session) return <LiveSession />;
 
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">Gym&nbsp;Tracker</h1>
-        <div className="flex items-center gap-4">
-          <DataManagementMenu />
-          <Button
-            variant="secondary"
-            onClick={() => setUnit((u) => (u === "kg" ? "lb" : "kg"))}
-          >
-            Unit: {unit.toUpperCase()}
-          </Button>
-        </div>
-      </div>
-
-      {/* Tab navigation (scrollable) */}
-      <div className="overflow-x-auto whitespace-nowrap border-b pb-2">
-        <div className="inline-flex gap-2">
-          <Button
-            variant={tab === "workouts" ? "primary" : "ghost"}
-            onClick={() => setTab("workouts")}
-          >
-            Workouts
-          </Button>
-          <Button
-            variant={tab === "calendar" ? "primary" : "ghost"}
-            onClick={() => setTab("calendar")}
-          >
-            Calendar
-          </Button>
-          <Button
-            variant={tab === "exercises" ? "primary" : "ghost"}
-            onClick={() => setTab("exercises")}
-          >
-            Exercises
-          </Button>
-          <Button
-            variant={tab === "weight" ? "primary" : "ghost"}
-            onClick={() => setTab("weight")}
-          >
-            Weight
-          </Button>
-          <Button
-            variant={tab === "notepad" ? "primary" : "ghost"}
-            onClick={() => setTab("notepad")}
-          >
-            Notepad
-          </Button>
-          <Button
-            variant={tab === "summary" ? "primary" : "ghost"}
-            onClick={() => setTab("summary")}
-          >
-            Summary
-          </Button>
-        </div>
-      </div>
-
-      {/* Main content */}
-      {tab === "workouts" && (
-        <>
-          <WorkoutPlanner />
-          <WorkoutHistory />
-        </>
-      )}
-
-      {tab === "calendar" && <CalendarView />}
-
-      {tab === "exercises" && <ExerciseManager />}
-
-      {tab === "notepad" && <Notepad />}
-
-      {tab === "summary" && <DashboardSummary />}
-
-      {tab === "weight" && <WeightTracker />}
-
-      {/* Footer */}
-      <p className="text-center text-xs text-neutral-500">
-        Data stored in your browser
-      </p>
+    <div className="mx-auto min-h-full max-w-3xl px-4 pb-24 pt-5">
+      <View />
+      <BottomNav active={active} onSelect={setTab} />
     </div>
   );
 }
 
-/**
- * Top-level component wraps the application in AppProvider
- * so all children can access the shared state.
- */
 export default function App() {
   return (
     <AppProvider>

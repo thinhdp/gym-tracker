@@ -28,7 +28,7 @@ export default function ComboInput({
     <>
       <input
         list={listId}
-        className="border rounded-xl px-3 py-1.5 text-sm w-full"
+        className="border rounded-xl px-3 py-1.5 text-sm w-full bg-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder-neutral-500"
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
