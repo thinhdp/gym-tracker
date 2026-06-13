@@ -15,6 +15,7 @@ import {
   endOfWeekSunday,
 } from "../lib/dateUtils";
 import { averageWeightInRange } from "../lib/weightUtils";
+import { rangeForPeriod } from "../lib/weightSeries";
 
 function weekRangeOf(date) {
   const from = startOfWeekMonday(date);
@@ -71,6 +72,20 @@ export default function WeightTracker() {
 
   // Graph data toggle: "daily" | "weekly"
   const [mode, setMode] = useState("daily");
+
+  // Chart period: "1m" | "3m" | "6m" | "1y" | "custom"
+  const [period, setPeriod] = useState("3m");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+
+  const { from: chartFrom, to: chartTo } = useMemo(() => {
+    if (period === "custom") {
+      const f = customFrom ? new Date(customFrom + "T00:00:00") : null;
+      const t = customTo ? new Date(customTo + "T00:00:00") : new Date();
+      return { from: f, to: t };
+    }
+    return rangeForPeriod(period);
+  }, [period, customFrom, customTo]);
 
   const onCellClick = (date) => {
     const key = ymdFromDate(date);
@@ -206,6 +221,7 @@ export default function WeightTracker() {
 
       {/* Trend graph with markers + labels (day/value) */}
       <div className="space-y-2">
+        {/* Daily / Weekly view toggle */}
         <div className="flex gap-2">
           <Button
             variant={mode === "daily" ? "primary" : "secondary"}
@@ -220,17 +236,72 @@ export default function WeightTracker() {
             Weekly
           </Button>
         </div>
+
+        {/* Period selector */}
+        <div className="flex flex-wrap gap-2">
+          {[
+            ["1m", "1M"],
+            ["3m", "3M"],
+            ["6m", "6M"],
+            ["1y", "1Y"],
+            ["custom", "Custom"],
+          ].map(([key, label]) => (
+            <Button
+              key={key}
+              variant={period === key ? "primary" : "secondary"}
+              onClick={() => setPeriod(key)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        {/* Custom range inputs */}
+        {period === "custom" && (
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <label className="flex items-center gap-1">
+              <span className="text-neutral-500">From</span>
+              <input
+                type="date"
+                className="border rounded px-2 py-1"
+                value={customFrom}
+                max={customTo || todayYmd}
+                onChange={(e) => setCustomFrom(e.target.value)}
+              />
+            </label>
+            <label className="flex items-center gap-1">
+              <span className="text-neutral-500">To</span>
+              <input
+                type="date"
+                className="border rounded px-2 py-1"
+                value={customTo}
+                min={customFrom || undefined}
+                onChange={(e) => setCustomTo(e.target.value)}
+              />
+            </label>
+          </div>
+        )}
+
         {/*
-          Use the WeightChart component to render the line chart. It
-          automatically aggregates data based on the view (daily or
-          weekly) and renders a horizontally scrollable graph. The
-          window displays at most 14 days or 12 weeks at once, but
-          you can scroll left/right to view the rest of your weight
-          history. Passing the logs ensures it uses the same data
-          that WeightTracker manages.
+          WeightChart plots every day in the selected range. Days without a
+          logged weight carry the last recorded weight forward, so adjacent
+          points always represent consecutive days. Weekly view averages the
+          filled days per ISO week. Passing the logs ensures it uses the same
+          data that WeightTracker manages.
         */}
-        <div className="rounded-lg border p-3 overflow-x-auto">
-          <WeightChart view={mode} logs={logs} />
+        <div className="rounded-lg border p-3">
+          {period === "custom" && !customFrom ? (
+            <div className="text-sm text-neutral-500">
+              Pick a start date to plot a custom range.
+            </div>
+          ) : (
+            <WeightChart
+              view={mode}
+              logs={logs}
+              from={chartFrom}
+              to={chartTo}
+            />
+          )}
         </div>
       </div>
     </div>
