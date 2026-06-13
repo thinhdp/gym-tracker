@@ -7,6 +7,7 @@ import WeightRepInputs from "./WeightRepInputs";
 import RpeFeedback from "./RpeFeedback";
 import { fromDisplayWeight, toDisplayWeight } from "../lib/units";
 import { useConfirm } from "./ConfirmDialog";
+import { useApp } from "../context/AppContext";
 import { MAX_SETS } from "../lib/constants";
 
 /**
@@ -41,6 +42,7 @@ export default function WorkoutHistoryItem({
   onShowHistory,
 }) {
   const confirm = useConfirm();
+  const { startSession } = useApp();
 
   return (
     <div className="rounded-2xl border dark:border-neutral-800">
@@ -52,6 +54,9 @@ export default function WorkoutHistoryItem({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="primary" onClick={() => startSession(w.id)}>
+            ▶ Start
+          </Button>
           <Button variant="secondary" onClick={onToggle}>
             Details <ChevronDown open={expanded} />
           </Button>

@@ -3,13 +3,16 @@ import seedExercises from "../data/exercises_seed.json";
 import {
   loadLS,
   saveLS,
+  uuid,
   K_EX,
   K_WO,
   K_UNIT,
   K_TAB,
   K_THEME,
+  K_SESSION,
 } from "../lib/storage";
 import { applyTheme } from "../lib/theme";
+import { ymdFromDate } from "../lib/date";
 
 /**
  * AppContext stores the top‑level app state: current tab,
@@ -26,6 +29,9 @@ export function AppProvider({ children }) {
   const [theme, setTheme] = useState(() => loadLS(K_THEME, "system"));
   const [exercises, setExercises] = useState(() => loadLS(K_EX, seedExercises));
   const [workouts, setWorkouts] = useState(() => loadLS(K_WO, []));
+  // In-progress live-logging session (or null). Persisted so a refresh mid-set
+  // resumes where you left off.
+  const [session, setSession] = useState(() => loadLS(K_SESSION, null));
 
   // Persist tab and unit when they change
   useEffect(() => saveLS(K_TAB, tab), [tab]);
@@ -49,6 +55,23 @@ export function AppProvider({ children }) {
   // Persist exercises and workouts when they change
   useEffect(() => saveLS(K_EX, exercises), [exercises]);
   useEffect(() => saveLS(K_WO, workouts), [workouts]);
+  useEffect(() => saveLS(K_SESSION, session), [session]);
+
+  // Start a live-logging session for an existing workout.
+  const startSession = (workoutId) =>
+    setSession({ workoutId, startedAt: Date.now(), currentIdx: 0, done: {} });
+  // Create a fresh, empty workout dated today and start logging it.
+  const startEmptyWorkout = () => {
+    const w = {
+      id: uuid(),
+      date: ymdFromDate(new Date()),
+      name: "",
+      exercises: [],
+    };
+    setWorkouts((prev) => [w, ...prev]);
+    startSession(w.id);
+  };
+  const endSession = () => setSession(null);
 
   // Update each exercise’s lastWorkout property whenever workouts change
   useEffect(() => {
@@ -95,6 +118,11 @@ export function AppProvider({ children }) {
         setExercises,
         workouts,
         setWorkouts,
+        session,
+        setSession,
+        startSession,
+        startEmptyWorkout,
+        endSession,
       }}
     >
       {children}

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Segmented from "./ui/Segmented";
+import { useApp } from "../context/AppContext";
 import WorkoutPlanner from "./WorkoutPlanner";
 import WorkoutHistory from "./WorkoutHistory";
 import CalendarView from "./CalendarView";
@@ -10,6 +11,7 @@ import CalendarView from "./CalendarView";
  */
 export default function WorkoutsTab() {
   const [view, setView] = useState("list");
+  const { startEmptyWorkout } = useApp();
 
   return (
     <div className="space-y-4">
@@ -29,6 +31,13 @@ export default function WorkoutsTab() {
 
       {view === "list" ? (
         <>
+          <button
+            type="button"
+            onClick={startEmptyWorkout}
+            className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
+          >
+            ▶ Start empty workout
+          </button>
           <WorkoutPlanner />
           <WorkoutHistory />
         </>

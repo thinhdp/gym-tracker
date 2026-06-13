@@ -7,6 +7,7 @@ import WorkoutsTab from "./components/WorkoutsTab";
 import Progress from "./components/Progress";
 import ExerciseManager from "./components/ExerciseManager";
 import MoreMenu from "./components/MoreMenu";
+import LiveSession from "./components/LiveSession";
 
 // The five primary destinations rendered by the bottom nav.
 const VIEWS = {
@@ -27,9 +28,12 @@ const LEGACY = {
 };
 
 function AppContent() {
-  const { tab, setTab } = useApp();
+  const { tab, setTab, session } = useApp();
   const active = VIEWS[tab] ? tab : LEGACY[tab] || "home";
   const View = VIEWS[active];
+
+  // A live-logging session takes over the whole screen.
+  if (session) return <LiveSession />;
 
   return (
     <div className="mx-auto min-h-full max-w-3xl px-4 pb-24 pt-5">

@@ -18,10 +18,13 @@ describe("Home", () => {
     ).toBeInTheDocument();
   });
 
-  it("prompts to plan a workout when none is logged today", () => {
+  it("offers to start or plan a workout when none is logged today", () => {
     renderHome();
     expect(
-      screen.getByRole("button", { name: /Plan a workout/i }),
+      screen.getByRole("button", { name: /Start workout/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Plan ahead/i }),
     ).toBeInTheDocument();
   });
 
