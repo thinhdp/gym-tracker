@@ -6,20 +6,20 @@ import DataManagementMenu from "./DataManagementMenu";
 
 /**
  * "More" destination — a settings hub for everything that doesn't warrant its
- * own tab: unit preference, the notepad (as a sub-screen), and data
- * export/import. Theme is shown as a placeholder for the future dark direction.
+ * own tab: unit + theme preferences, the notepad (as a sub-screen), and data
+ * export/import.
  */
 
 function SectionLabel({ children }) {
   return (
-    <div className="mb-1.5 px-1 text-[10px] uppercase tracking-wide text-neutral-400">
+    <div className="mb-1.5 px-1 text-[10px] uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
       {children}
     </div>
   );
 }
 
 export default function MoreMenu() {
-  const { unit, setUnit } = useApp();
+  const { unit, setUnit, theme, setTheme } = useApp();
   const [view, setView] = useState("menu");
 
   if (view === "notepad") {
@@ -28,7 +28,7 @@ export default function MoreMenu() {
         <button
           type="button"
           onClick={() => setView("menu")}
-          className="flex items-center gap-1 text-sm text-blue-600"
+          className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400"
         >
           <span aria-hidden>←</span> More
         </button>
@@ -37,16 +37,22 @@ export default function MoreMenu() {
     );
   }
 
+  const card =
+    "rounded-xl border bg-white dark:border-neutral-800 dark:bg-neutral-900";
+  const rowText = "text-sm text-neutral-900 dark:text-neutral-100";
+
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-semibold text-neutral-900">More</h1>
+      <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+        More
+      </h1>
 
       {/* Preferences */}
       <div>
         <SectionLabel>Preferences</SectionLabel>
-        <div className="divide-y rounded-xl border bg-white">
+        <div className={`${card} divide-y dark:divide-neutral-800`}>
           <div className="flex items-center justify-between px-3 py-3">
-            <span className="text-sm text-neutral-900">Units</span>
+            <span className={rowText}>Units</span>
             <Segmented
               options={[
                 ["kg", "kg"],
@@ -57,8 +63,16 @@ export default function MoreMenu() {
             />
           </div>
           <div className="flex items-center justify-between px-3 py-3">
-            <span className="text-sm text-neutral-900">Theme</span>
-            <span className="text-xs text-neutral-400">Light · dark soon</span>
+            <span className={rowText}>Theme</span>
+            <Segmented
+              options={[
+                ["system", "Auto"],
+                ["light", "Light"],
+                ["dark", "Dark"],
+              ]}
+              value={theme}
+              onChange={setTheme}
+            />
           </div>
         </div>
       </div>
@@ -66,14 +80,17 @@ export default function MoreMenu() {
       {/* Content */}
       <div>
         <SectionLabel>Content</SectionLabel>
-        <div className="rounded-xl border bg-white">
+        <div className={card}>
           <button
             type="button"
             onClick={() => setView("notepad")}
-            className="flex w-full items-center justify-between px-3 py-3 text-left transition hover:bg-neutral-50"
+            className="flex w-full items-center justify-between px-3 py-3 text-left transition hover:bg-neutral-50 dark:hover:bg-neutral-800"
           >
-            <span className="text-sm text-neutral-900">Notepad</span>
-            <span aria-hidden className="text-neutral-400">
+            <span className={rowText}>Notepad</span>
+            <span
+              aria-hidden
+              className="text-neutral-400 dark:text-neutral-500"
+            >
               ›
             </span>
           </button>
@@ -83,10 +100,10 @@ export default function MoreMenu() {
       {/* Data */}
       <div>
         <SectionLabel>Data</SectionLabel>
-        <div className="flex items-center justify-between rounded-xl border bg-white px-3 py-3">
+        <div className={`${card} flex items-center justify-between px-3 py-3`}>
           <div>
-            <div className="text-sm text-neutral-900">Backup</div>
-            <div className="text-[11px] text-neutral-500">
+            <div className={rowText}>Backup</div>
+            <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
               Export or import your data as JSON
             </div>
           </div>
@@ -94,7 +111,7 @@ export default function MoreMenu() {
         </div>
       </div>
 
-      <p className="px-1 text-center text-[11px] text-neutral-400">
+      <p className="px-1 text-center text-[11px] text-neutral-400 dark:text-neutral-500">
         Gym Tracker · data stored in your browser
       </p>
     </div>

@@ -34,7 +34,7 @@ export default function RpeFeedback({
 
   const rpeBadge =
     rpe != null ? (
-      <span className="shrink-0 rounded-xl border border-cyan-300 bg-cyan-50 px-2 py-0.5 text-xs font-medium text-cyan-800">
+      <span className="shrink-0 rounded-xl border dark:border-neutral-800 border-cyan-300 bg-cyan-50 px-2 py-0.5 text-xs font-medium text-cyan-800">
         RPE {rpe}
       </span>
     ) : null;
@@ -45,7 +45,7 @@ export default function RpeFeedback({
       <div className="flex items-start gap-2">
         {rpeBadge}
         {feedback.trim() !== "" && (
-          <span className="whitespace-pre-wrap text-sm text-neutral-600">
+          <span className="whitespace-pre-wrap text-sm text-neutral-600 dark:text-neutral-300">
             {feedback}
           </span>
         )}
@@ -60,7 +60,7 @@ export default function RpeFeedback({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1 text-xs text-neutral-600 hover:text-neutral-900"
+          className="inline-flex items-center gap-1 text-xs text-neutral-600 dark:text-neutral-300 hover:text-neutral-900"
         >
           <Plus /> RPE / note
         </button>
@@ -70,13 +70,15 @@ export default function RpeFeedback({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex max-w-full items-center gap-2 rounded-xl border px-2.5 py-1.5 text-left hover:bg-neutral-50"
+        className="flex max-w-full items-center gap-2 rounded-xl border dark:border-neutral-800 px-2.5 py-1.5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800"
       >
         {rpeBadge}
         {feedback.trim() !== "" && (
-          <span className="truncate text-sm text-neutral-600">{feedback}</span>
+          <span className="truncate text-sm text-neutral-600 dark:text-neutral-300">
+            {feedback}
+          </span>
         )}
-        <span className="ml-auto shrink-0 text-neutral-400">
+        <span className="ml-auto shrink-0 text-neutral-400 dark:text-neutral-500">
           <Pencil />
         </span>
       </button>
@@ -87,12 +89,15 @@ export default function RpeFeedback({
   return (
     <div className="space-y-2 border-t border-dashed pt-2">
       <div className="flex items-center gap-2">
-        <label className="w-9 text-xs text-neutral-600" htmlFor="rpe-select">
+        <label
+          className="w-9 text-xs text-neutral-600 dark:text-neutral-300"
+          htmlFor="rpe-select"
+        >
           RPE
         </label>
         <select
           id="rpe-select"
-          className="rounded-xl border px-2 py-1.5 text-sm"
+          className="rounded-xl border dark:border-neutral-800 px-2 py-1.5 text-sm"
           value={rpe == null ? "" : String(rpe)}
           onChange={(e) =>
             onChange({
@@ -107,7 +112,9 @@ export default function RpeFeedback({
             </option>
           ))}
         </select>
-        <span className="text-xs text-neutral-400">optional</span>
+        <span className="text-xs text-neutral-400 dark:text-neutral-500">
+          optional
+        </span>
         <Button
           variant="ghost"
           size="sm"

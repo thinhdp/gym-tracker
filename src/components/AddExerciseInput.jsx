@@ -75,19 +75,19 @@ export default function AddExerciseInput({ allExercises, onAdd }) {
         </Button>
       </div>
       {open && options.length > 0 && (
-        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border bg-white shadow">
+        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow">
           {options.map((o, i) => (
             <button
               key={(o.name || "") + i}
               onClick={() => choose(o)}
-              className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-neutral-50"
+              className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800"
             >
               <span className="flex flex-col">
                 <span className="font-medium">
                   {o._isNew ? `${o.name} (new)` : o.name}
                 </span>
                 {!o._isNew && (
-                  <span className="text-xs text-neutral-600">
+                  <span className="text-xs text-neutral-600 dark:text-neutral-300">
                     {o.type || "—"} • {o.equipment || "—"} •{" "}
                     {o.mainMuscle || "—"}
                   </span>

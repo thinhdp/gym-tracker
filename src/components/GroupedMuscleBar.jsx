@@ -13,7 +13,7 @@ export default function GroupedMuscleBar({ current, previous }) {
 
   if (!muscles.size) {
     return (
-      <div className="text-sm text-neutral-500">
+      <div className="text-sm text-neutral-500 dark:text-neutral-400">
         No data logged this period.
       </div>
     );
@@ -87,7 +87,7 @@ export default function GroupedMuscleBar({ current, previous }) {
           );
         })}
       {/* Legend */}
-      <div className="flex items-center gap-4 text-xs text-neutral-600">
+      <div className="flex items-center gap-4 text-xs text-neutral-600 dark:text-neutral-300">
         <div className="flex items-center gap-1">
           <span className="inline-block h-2 w-3 bg-green-500" /> Sets Now
         </div>

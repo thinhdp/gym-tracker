@@ -52,11 +52,13 @@ export default function WorkoutHistory() {
 
   return (
     <div className="mt-4 space-y-3">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-600">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-300">
         History
       </h3>
       {workouts.length === 0 && (
-        <p className="text-sm text-neutral-500">No workouts logged yet.</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          No workouts logged yet.
+        </p>
       )}
       {workouts.map((w) => (
         <WorkoutHistoryItem

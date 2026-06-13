@@ -44,7 +44,7 @@ export default function BottomNav({ active, onSelect }) {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white/95 backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95"
     >
       <div className="mx-auto flex max-w-3xl">
         {TABS.map(([key, label]) => {
@@ -58,8 +58,8 @@ export default function BottomNav({ active, onSelect }) {
               className={[
                 "flex flex-1 flex-col items-center gap-0.5 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-[11px] transition",
                 isActive
-                  ? "text-blue-600"
-                  : "text-neutral-500 hover:text-neutral-800",
+                  ? "text-blue-600 dark:text-blue-400"
+                  : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200",
               ].join(" ")}
             >
               <NavIcon name={key} />

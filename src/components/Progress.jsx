@@ -14,7 +14,9 @@ export default function Progress() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-neutral-900">Progress</h1>
+        <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+          Progress
+        </h1>
         <Segmented
           options={[
             ["bodyweight", "Bodyweight"],

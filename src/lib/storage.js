@@ -11,6 +11,8 @@ export const K_WO = "mgym.workouts.v1";
 export const K_UNIT = "mgym.unit";
 /** localStorage key for the last active tab. */
 export const K_TAB = "mgym.tab";
+/** localStorage key for the theme preference ("system" | "light" | "dark"). */
+export const K_THEME = "mgym.theme";
 /** localStorage key for body-weight logs ({ "YYYY-MM-DD": number }). Predates the "mgym" prefix. */
 export const K_WEIGHT_LOGS = "weightLogs";
 

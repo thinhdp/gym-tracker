@@ -163,11 +163,13 @@ export default function WeeklyNotes({ periodKey }) {
       </div>
 
       {!editing ? (
-        <div className="text-sm whitespace-pre-wrap text-neutral-800">
+        <div className="text-sm whitespace-pre-wrap text-neutral-800 dark:text-neutral-200">
           {saved ? (
             saved
           ) : (
-            <span className="text-neutral-500">No notes yet.</span>
+            <span className="text-neutral-500 dark:text-neutral-400">
+              No notes yet.
+            </span>
           )}
         </div>
       ) : (
@@ -175,7 +177,7 @@ export default function WeeklyNotes({ periodKey }) {
           <textarea
             ref={textareaRef}
             id={`weekly-note-ta-${periodKey}`}
-            className="w-full min-h-[96px] resize-none rounded-lg border border-neutral-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full min-h-[96px] resize-none rounded-lg border dark:border-neutral-800 border-neutral-300 dark:border-neutral-700 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="How did you feel this week? Sleep, stress, pumps, soreness…"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}

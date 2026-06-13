@@ -70,7 +70,7 @@ export default function ExerciseManager() {
           />
           <div className="grid gap-3 mt-4">
             {filtered.length === 0 && (
-              <p className="text-sm text-neutral-500">
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 No exercises yet. Add one to get started.
               </p>
             )}

@@ -62,7 +62,7 @@ export default function NewExerciseInline({ existing, options, onCreate }) {
   };
 
   return (
-    <div className="mt-3 space-y-2 p-3 rounded-xl border bg-neutral-50">
+    <div className="mt-3 space-y-2 p-3 rounded-xl border dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800">
       <div className="grid sm:grid-cols-2 gap-2">
         <Input
           placeholder="Exercise name"

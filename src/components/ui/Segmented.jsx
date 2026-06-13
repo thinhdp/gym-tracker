@@ -11,7 +11,9 @@ export default function Segmented({
   className = "",
 }) {
   return (
-    <div className={`inline-flex rounded-xl bg-neutral-100 p-1 ${className}`}>
+    <div
+      className={`inline-flex rounded-xl bg-neutral-100 p-1 dark:bg-neutral-800 ${className}`}
+    >
       {options.map(([val, label]) => {
         const active = val === value;
         return (
@@ -23,8 +25,8 @@ export default function Segmented({
             className={[
               "rounded-lg px-3 py-1.5 text-sm transition",
               active
-                ? "bg-white font-medium text-neutral-900 shadow-sm"
-                : "text-neutral-500 hover:text-neutral-800",
+                ? "bg-white font-medium text-neutral-900 shadow-sm dark:bg-neutral-700 dark:text-neutral-100"
+                : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200",
             ].join(" ")}
           >
             {label}
