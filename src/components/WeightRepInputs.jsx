@@ -24,7 +24,7 @@ export default function WeightRepInputs({
         <NumberInputAutoClear
           step="0.5"
           min="0"
-          className="border dark:border-neutral-800 rounded-xl px-3 py-1.5 text-sm w-16"
+          className="border rounded-xl px-3 py-1.5 text-sm w-16 bg-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
           valueNumber={weight}
           onNumberChange={onWeightChange}
         />
@@ -33,7 +33,7 @@ export default function WeightRepInputs({
         <NumberInputAutoClear
           step="1"
           min="0"
-          className="border dark:border-neutral-800 rounded-xl px-3 py-1.5 text-sm w-16"
+          className="border rounded-xl px-3 py-1.5 text-sm w-16 bg-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
           valueNumber={reps}
           onNumberChange={onRepsChange}
         />

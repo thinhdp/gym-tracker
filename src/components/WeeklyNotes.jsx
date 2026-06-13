@@ -177,7 +177,7 @@ export default function WeeklyNotes({ periodKey }) {
           <textarea
             ref={textareaRef}
             id={`weekly-note-ta-${periodKey}`}
-            className="w-full min-h-[96px] resize-none rounded-lg border dark:border-neutral-800 border-neutral-300 dark:border-neutral-700 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full min-h-[96px] resize-none rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder-neutral-500 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="How did you feel this week? Sleep, stress, pumps, soreness…"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}

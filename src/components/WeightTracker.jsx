@@ -175,7 +175,7 @@ export default function WeightTracker() {
                     autoFocus
                     type="number"
                     step="0.1"
-                    className="w-full text-center border dark:border-neutral-800 rounded px-2 py-1 text-sm"
+                    className="w-full text-center border rounded px-2 py-1 text-sm bg-white dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     onBlur={commitEdit}
@@ -277,7 +277,7 @@ export default function WeightTracker() {
               </span>
               <input
                 type="date"
-                className="border dark:border-neutral-800 rounded px-2 py-1"
+                className="border rounded px-2 py-1 bg-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:[color-scheme:dark]"
                 value={customFrom}
                 max={customTo || todayYmd}
                 onChange={(e) => setCustomFrom(e.target.value)}
@@ -287,7 +287,7 @@ export default function WeightTracker() {
               <span className="text-neutral-500 dark:text-neutral-400">To</span>
               <input
                 type="date"
-                className="border dark:border-neutral-800 rounded px-2 py-1"
+                className="border rounded px-2 py-1 bg-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:[color-scheme:dark]"
                 value={customTo}
                 min={customFrom || undefined}
                 onChange={(e) => setCustomTo(e.target.value)}
