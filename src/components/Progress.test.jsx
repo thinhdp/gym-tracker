@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import Progress from "./Progress";
 
 vi.mock("./WeightTracker", () => ({ default: () => <div>WEIGHT</div> }));
-vi.mock("./DashboardSummary", () => ({ default: () => <div>SUMMARY</div> }));
+vi.mock("./StrengthAnalysis", () => ({ default: () => <div>SUMMARY</div> }));
 
 describe("Progress", () => {
   it("shows bodyweight by default", () => {

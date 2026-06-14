@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import Segmented from "./ui/Segmented";
 import WeightTracker from "./WeightTracker";
-import DashboardSummary from "./DashboardSummary";
+import StrengthAnalysis from "./StrengthAnalysis";
 
 /**
  * Progress destination. Merges the former Weight and Summary tabs:
  * "Bodyweight" shows the bodyweight calendar + trend, "Strength" shows the
- * per-period workout analytics.
+ * strength-analysis dashboard (progression, PRs, volume-by-muscle).
  */
 export default function Progress() {
   const [view, setView] = useState("bodyweight");
@@ -27,7 +27,7 @@ export default function Progress() {
         />
       </div>
 
-      {view === "bodyweight" ? <WeightTracker /> : <DashboardSummary />}
+      {view === "bodyweight" ? <WeightTracker /> : <StrengthAnalysis />}
     </div>
   );
 }
