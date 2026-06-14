@@ -20,8 +20,8 @@ versioned, and that is the only versioning.
 | `mgym.session.v1`          | `AppContext` (`K_SESSION`) | live-logging session object, or `null`                                               | `null`                                           |
 | `mgym.note.v1`             | `Notepad` (`K_NOTE`)       | `string` — global note                                                               | `""`                                             |
 | `weightLogs`               | `WeightTracker`            | `{ [YYYY-MM-DD]: number }` — bodyweight                                              | `{}`                                             |
-| `weekly-note:<weekKey>`    | `WeeklyNotes`              | `string` — one note per ISO week                                                     | `""`                                             |
-| `summary-open:<periodKey>` | `PeriodCard`               | `boolean` — card collapse state                                                      | card default                                     |
+| `weekly-note:<weekKey>`    | _legacy_ (no longer used)  | `string` — one note per ISO week (written by the removed `WeeklyNotes`)              | `""`                                             |
+| `summary-open:<periodKey>` | _legacy_ (no longer used)  | `boolean` — card collapse state (written by the removed `PeriodCard`)                | card default                                     |
 
 All values are stored with `JSON.stringify`. String values (the notes) are
 stored as JSON strings (e.g. the literal `""`).
@@ -170,21 +170,29 @@ A flat map used by the Weight tab:
 ### Notes
 
 - **Global notepad** (`mgym.note.v1`) — a single free-form `string`.
-- **Weekly notes** (`weekly-note:<weekKey>`) — one `string` per ISO week, shown
-  inside each weekly `PeriodCard` on the Summary tab.
+- **Weekly notes** (`weekly-note:<weekKey>`) — legacy; one `string` per ISO
+  week, written by the removed `WeeklyNotes`. No longer surfaced in the UI but
+  still round-tripped through backup/export (see below).
 
 ## Derived / computed (not stored)
 
-The Summary tab computes these on the fly from `workouts` (+ `weightLogs`); they
-are **not** persisted. See `src/lib/metrics.js` and `src/lib/dateUtils.js`.
+The Strength tab (`StrengthAnalysis`) computes these on the fly from `workouts`;
+they are **not** persisted. See `src/lib/strength.js`, `src/lib/metrics.js`, and
+`src/lib/dateUtils.js`.
 
 - **Period buckets** — `buildWeeks` / `buildMonths` group workouts into
   `{ key, label, from, to, items[] }`, sorted most-recent first.
-- **Period metrics** (`computePeriodMetrics`) — `frequency` (workout count),
-  `totalReps`, `totalSets`, `repsByMuscle`, `setsByMuscle` (keyed by the
-  exercise's `mainMuscle`, defaulting to `"Unknown"`), and `prs` (a new PR is a
-  max-weight beating the best from _before_ the period, only when a prior best
-  `> 0` existed).
+- **Estimated 1RM** (`estimate1RM`) — Epley `weight × (1 + reps / 30)`; one rep
+  or fewer is the weight itself.
+- **Per-exercise series** (`exerciseSeries`) — one ascending point per workout
+  date with that day's top-set weight, best e1RM, and volume.
+- **Personal records** (`exercisePRs`, `recentPRs`) — all-time best e1RM /
+  heaviest weight / best set volume per exercise, and a chronological feed of
+  new all-time bests across all exercises.
+- **Volume by muscle** (`volumeByMuscleSeries`) — Σ weight×reps per `mainMuscle`
+  bucketed by week or month, for the top muscles by total volume.
+- **Range windows** (`rangeWindows` / `filterByRange`) — current vs previous
+  equal-length window for `3M` / `6M` / `1Y` / `all`.
 
 ## Backup / export payload
 

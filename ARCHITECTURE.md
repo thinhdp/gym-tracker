@@ -100,11 +100,10 @@ gym-tracker/
         ├── ExerciseHistoryModal.jsx # Modal: all past workouts for one exercise
         ├── WeightTracker.jsx        # Bodyweight calendar + trend (Weight tab)
         ├── WeightChart.jsx          # Scrollable SVG line chart of bodyweight
-        ├── DashboardSummary.jsx     # Weekly/monthly analytics (Summary tab)
-        ├── PeriodCard.jsx           # One week/month summary card
-        ├── GroupedMuscleBar.jsx     # Now-vs-last reps/sets bars per muscle
+        ├── StrengthAnalysis.jsx     # Strength dashboard (Strength tab): KPIs,
+        │                            #   recent PRs, volume-by-muscle, per-exercise curve
+        ├── MultiLineChart.jsx       # Reusable multi-series SVG line chart
         ├── Delta.jsx                # Signed, colored numeric delta
-        ├── WeeklyNotes.jsx          # Per-week notes + per-week log export
         ├── Notepad.jsx              # Free-form global note (Notepad tab)
         ├── DataManagementMenu.jsx   # Export / Import (merge|replace) dropdown
         ├── AddExerciseInput.jsx     # Autocomplete "add exercise" combobox
@@ -148,10 +147,10 @@ main.jsx
                     │
                     ├── [tab="progress"]  Progress        (Segmented: Bodyweight | Strength)
                     │   ├── (bodyweight) WeightTracker → WeightChart
-                    │   └── (strength)   DashboardSummary → PeriodCard
-                    │                         ├── GroupedMuscleBar
+                    │   └── (strength)   StrengthAnalysis
+                    │                         ├── MultiLineChart  (muscle trend + exercise curve)
                     │                         ├── Delta
-                    │                         └── WeeklyNotes   (weekly periods only)
+                    │                         └── ComboInput      (exercise picker)
                     │
                     ├── [tab="exercises"] ExerciseManager (search + muscle-group chips)
                     │   ├── NewExerciseInline → ComboInput
@@ -193,7 +192,7 @@ empty workout dated today, then start it), and **`endSession()`**. See
 
 Every view that needs shared state reads it from `useApp()` directly:
 `WorkoutPlanner`, `WorkoutHistory`, `ExerciseManager`, `CalendarView`,
-`DataManagementMenu`, `WeightTracker`, `DashboardSummary`, `WeeklyNotes`.
+`DataManagementMenu`, `WeightTracker`, `StrengthAnalysis`.
 `AppContent` passes no data props. Presentational children (e.g.
 `WorkoutHistoryItem`, `ExerciseRow`, `WorkoutExerciseEditor`) receive what they
 render as props from their view.
@@ -205,9 +204,11 @@ independent of `AppContext`:
 
 - **`Notepad`** → `mgym.note.v1` (a single string).
 - **`WeightTracker`** → `weightLogs` (a `{ "YYYY-MM-DD": number }` map).
-- **`WeeklyNotes`** → `weekly-note:<weekKey>` (one string per ISO week).
-- **`PeriodCard`** → `summary-open:<periodKey>` (collapse state per card).
 - **`ConfirmProvider`** holds modal state and exposes `confirm()`; UI-only.
+
+> Legacy keys `weekly-note:<weekKey>` and `summary-open:<periodKey>` are no
+> longer written or read by the UI (the Strength tab was rebuilt as
+> `StrengthAnalysis`). Existing values are left untouched in localStorage.
 
 ### Derived state: `lastWorkout`
 
@@ -325,7 +326,7 @@ restored directly to their localStorage keys **without** going through
 
 ## Data flow: one full lifecycle
 
-Tracing a workout from the planner to History, Calendar, and Summary:
+Tracing a workout from the planner to History, Calendar, and Strength:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -352,18 +353,19 @@ Tracing a workout from the planner to History, Calendar, and Summary:
           ┌──────────────────────┼──────────────────────┬───────────────┐
           ▼                      ▼                      ▼               ▼
 ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────┐
-│ HISTORY          │  │ CALENDAR         │  │ SUMMARY          │  │ EXERCISES    │
-│ (WorkoutHistory) │  │ (CalendarView)   │  │ (DashboardSummary│  │ lastWorkout +│
-│ edit/reorder/    │  │ buckets workouts │  │ → metrics.js     │  │ usage counts │
-│ add via          │  │ by date, badges  │  │ buildWeeks/Months│  │ reflect the  │
-│ setWorkouts      │  │ per day          │  │ + PR detection)  │  │ new workout  │
+│ HISTORY          │  │ CALENDAR         │  │ STRENGTH         │  │ EXERCISES    │
+│ (WorkoutHistory) │  │ (CalendarView)   │  │ (StrengthAnalysis│  │ lastWorkout +│
+│ edit/reorder/    │  │ buckets workouts │  │ → strength.js    │  │ usage counts │
+│ add via          │  │ by date, badges  │  │ e1RM/PRs/volume  │  │ reflect the  │
+│ setWorkouts      │  │ per day          │  │ over time)       │  │ new workout  │
 └──────────────────┘  └──────────────────┘  └──────────────────┘  └──────────────┘
 ```
 
 Every view reads the **same `workouts`** via Context, so a save in the planner
 is reflected everywhere immediately. The
-Summary tab additionally runs `workouts` through `src/lib/metrics.js` to bucket
-by week/month and compute reps/sets-per-muscle, workout frequency, and PRs.
+Strength tab additionally runs `workouts` through `src/lib/strength.js` to
+compute estimated 1RM, per-exercise progression series, personal records, and
+volume-by-muscle trends over a selected time range.
 
 ## Unit handling (kg / lb)
 
