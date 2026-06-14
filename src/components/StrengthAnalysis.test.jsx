@@ -67,4 +67,18 @@ describe("StrengthAnalysis", () => {
     // Still renders the overview after re-windowing.
     expect(screen.getByText("Recent PRs")).toBeInTheDocument();
   });
+
+  it("keeps the exercise field clearable instead of refilling a default", async () => {
+    seed();
+    const user = userEvent.setup();
+    render(<StrengthAnalysis />);
+    const input = screen.getByPlaceholderText("Pick an exercise");
+    // Seeded with the most-recent lift, but the user can empty it...
+    expect(input).toHaveValue("Squat");
+    await user.clear(input);
+    expect(input).toHaveValue("");
+    // ...and type a fresh value without it snapping back.
+    await user.type(input, "Bench");
+    expect(input).toHaveValue("Bench");
+  });
 });
