@@ -6,7 +6,7 @@
 import React, { useMemo, useState } from "react";
 import { useApp } from "../context/AppContext";
 import Segmented from "./ui/Segmented";
-import ComboInput from "./ui/ComboInput";
+import Combobox from "./ui/Combobox";
 import Delta from "./Delta";
 import MultiLineChart from "./MultiLineChart";
 import { toDisplayWeight } from "../lib/units";
@@ -84,10 +84,15 @@ export default function StrengthAnalysis() {
 
   const [range, setRange] = useState("6M");
   const [metric, setMetric] = useState("e1rm");
-  const [exercise, setExercise] = useState("");
+  // Seed the drill-down with a sensible default once, but keep the input fully
+  // editable afterwards — binding the field to a fallback would repopulate it
+  // the instant the user clears it, blocking both retyping and the dropdown.
+  const [exercise, setExercise] = useState(
+    () => mostRecentExercise(wos) || loggedExerciseNames(wos)[0] || "",
+  );
 
   const names = useMemo(() => loggedExerciseNames(wos), [wos]);
-  const selected = exercise || mostRecentExercise(wos) || names[0] || "";
+  const selected = exercise;
 
   // Current vs previous equal-length window for trend deltas. Destructure the
   // memoized result so each derived useMemo depends on a stable value.
@@ -250,7 +255,7 @@ export default function StrengthAnalysis() {
           <label className="text-xs text-neutral-500 dark:text-neutral-400">
             Exercise
           </label>
-          <ComboInput
+          <Combobox
             value={selected}
             onChange={setExercise}
             options={names}
