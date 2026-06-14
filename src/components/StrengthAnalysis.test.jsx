@@ -8,6 +8,12 @@ vi.mock("../context/AppContext", () => ({
   useApp: () => mockApp,
 }));
 
+vi.mock("recharts", async (importOriginal) => {
+  const { withFixedResponsiveContainer } =
+    await import("../test/rechartsTestUtils");
+  return withFixedResponsiveContainer(await importOriginal());
+});
+
 const daysAgo = (n) => {
   const d = new Date();
   d.setDate(d.getDate() - n);
@@ -48,7 +54,9 @@ describe("StrengthAnalysis", () => {
     // The PR feed lists the squat that beat the prior best.
     expect(screen.getAllByText("Squat").length).toBeGreaterThan(0);
     // A chart line is drawn (muscle trend and/or per-exercise curve).
-    expect(container.querySelectorAll("polyline").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".recharts-line").length).toBeGreaterThan(
+      0,
+    );
   });
 
   it("switches the per-exercise chart metric without crashing", async () => {
@@ -56,7 +64,9 @@ describe("StrengthAnalysis", () => {
     const user = userEvent.setup();
     const { container } = render(<StrengthAnalysis />);
     await user.click(screen.getByRole("button", { name: "Volume" }));
-    expect(container.querySelectorAll("polyline").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".recharts-line").length).toBeGreaterThan(
+      0,
+    );
   });
 
   it("switches the time range", async () => {

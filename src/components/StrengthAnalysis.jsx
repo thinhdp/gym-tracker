@@ -234,19 +234,6 @@ export default function StrengthAnalysis() {
         <div className="rounded-lg border dark:border-neutral-800 p-3 text-neutral-700 dark:text-neutral-300">
           <MultiLineChart series={muscleSeries} labels={muscleLabels} />
         </div>
-        {muscleSeries.length > 0 && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-            {muscleSeries.map((m) => (
-              <span key={m.name} className="inline-flex items-center gap-1">
-                <span
-                  className="inline-block h-2.5 w-2.5 rounded-sm"
-                  style={{ background: m.color }}
-                />
-                {m.name}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Per-exercise drill-down */}
