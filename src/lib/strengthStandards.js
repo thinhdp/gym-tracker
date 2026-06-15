@@ -69,6 +69,17 @@ export const RADAR_AXES = [
   { key: "row", label: "Row", slugs: ["pendlay_row"] },
 ];
 
+// The standard lifts the Symmetry view scores, in display order. Derived from
+// RADAR_AXES so the keys/labels never drift. `slug` is the canonical FitnessVolt
+// slug a manual source mapping feeds; `slugs` are every slug the axis aggregates
+// (a manual mapping claims all of them so an auto match can't double up).
+export const STANDARD_LIFTS = RADAR_AXES.map((a) => ({
+  key: a.key,
+  label: a.label,
+  slug: a.slugs[0],
+  slugs: a.slugs,
+}));
+
 // Strength tiers, weakest to strongest, matching the API's `tier` values.
 export const TIERS = [
   "beginner",
@@ -84,6 +95,46 @@ export function slugForExercise(name) {
 }
 
 /**
+ * Per-lift source overrides authored in More → Profile (`profile.liftConfig`).
+ * One entry per standard lift key:
+ *   { exercise?: string, addBar?: boolean, barKg?: number }
+ * `exercise` pins which logged exercise feeds the lift (overriding the alias
+ * auto-detection); `addBar` adds `barKg` (default 20) to every set's logged
+ * weight *before* the 1RM estimate, for lifts logged without the bar.
+ *
+ * Returns fast lookups for `bestE1RMBySlug`:
+ *   - overrideByExercise: lowercased exercise name -> { slug, offset }
+ *   - claimedSlugs: slugs owned by an explicit exercise pick (auto matches skip)
+ *   - offsetBySlug: slug -> offset for "add bar" set without an explicit pick
+ */
+export const DEFAULT_BAR_KG = 20;
+
+export function buildLiftConfigIndex(config) {
+  const overrideByExercise = {};
+  const claimedSlugs = new Set();
+  const offsetBySlug = {};
+  if (!config) return { overrideByExercise, claimedSlugs, offsetBySlug };
+
+  for (const lift of STANDARD_LIFTS) {
+    const c = config[lift.key];
+    if (!c) continue;
+    const offset = c.addBar
+      ? Number.isFinite(Number(c.barKg))
+        ? Number(c.barKg)
+        : DEFAULT_BAR_KG
+      : 0;
+    const exName = (c.exercise || "").toLowerCase().trim();
+    if (exName) {
+      overrideByExercise[exName] = { slug: lift.slug, offset };
+      for (const slug of lift.slugs) claimedSlugs.add(slug);
+    } else if (offset) {
+      for (const slug of lift.slugs) offsetBySlug[slug] = offset;
+    }
+  }
+  return { overrideByExercise, claimedSlugs, offsetBySlug };
+}
+
+/**
  * Best estimated 1RM (kg) per gym slug across workouts, optionally capped at a
  * date (inclusive) so a past milestone can be reconstructed.
  *
@@ -91,24 +142,40 @@ export function slugForExercise(name) {
  * of unweighted pull-ups still counts); callers add bodyweight via `liftWeight`.
  * For loaded slugs, zero-weight sets are ignored.
  *
+ * An optional `config` (`profile.liftConfig`) pins exercise→lift mappings and
+ * adds the bar weight for lifts logged plates-only — applied per set before the
+ * 1RM estimate (see `buildLiftConfigIndex`).
+ *
  * @returns {Object<string, number>} slug -> best e1RM in kg.
  */
-export function bestE1RMBySlug(workouts, asOf = null) {
+export function bestE1RMBySlug(workouts, asOf = null, config = null) {
+  const { overrideByExercise, claimedSlugs, offsetBySlug } =
+    buildLiftConfigIndex(config);
   const out = {};
   for (const w of workouts || []) {
     const date = w?.date;
     if (!date) continue;
     if (asOf && date > asOf) continue;
     for (const ex of w.exercises || []) {
-      const slug = slugForExercise(ex.exerciseName);
-      if (!slug) continue;
+      const name = (ex.exerciseName || "").toLowerCase().trim();
+      const ov = overrideByExercise[name];
+      let slug, offset;
+      if (ov) {
+        slug = ov.slug;
+        offset = ov.offset;
+      } else {
+        slug = slugForExercise(ex.exerciseName);
+        // A slug pinned to a specific exercise is fed only by that exercise.
+        if (!slug || claimedSlugs.has(slug)) continue;
+        offset = offsetBySlug[slug] || 0;
+      }
       const bw = BODYWEIGHT_SLUGS.has(slug);
       for (const s of ex.sets || []) {
         const reps = setReps(s);
         if (reps <= 0) continue;
         const wt = Number(s.weight) || 0;
         if (!bw && wt <= 0) continue;
-        const e = estimate1RM(wt, reps);
+        const e = estimate1RM(wt + offset, reps);
         if (!(slug in out) || e > out[slug]) out[slug] = e;
       }
     }

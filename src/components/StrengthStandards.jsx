@@ -86,6 +86,7 @@ export default function StrengthStandards() {
   const weightLogs = useMemo(() => loadLS(K_WEIGHT_LOGS, {}), []);
   const sex = profile.sex;
   const age = ageFromBirthYear(profile.birthYear);
+  const liftConfig = profile.liftConfig;
 
   // Default the comparison date to ~6 months ago.
   const defaultPast = useMemo(() => {
@@ -100,11 +101,15 @@ export default function StrengthStandards() {
   const bwPast = bodyweightAsOf(weightLogs, pastDate) ?? bwNow;
 
   // Best current e1RM per slug — feeds both the radar and the lift-balance panel.
-  const e1rmNow = useMemo(() => bestE1RMBySlug(wos), [wos]);
+  // liftConfig pins exercise→lift mappings and adds bar weight where logged out.
+  const e1rmNow = useMemo(
+    () => bestE1RMBySlug(wos, null, liftConfig),
+    [wos, liftConfig],
+  );
 
   // Build the per-axis lookup requests for both snapshots.
   const { nowReqs, pastReqs, verifiedReqs } = useMemo(() => {
-    const e1rmPast = bestE1RMBySlug(wos, pastDate);
+    const e1rmPast = bestE1RMBySlug(wos, pastDate, liftConfig);
     const now = axisRequests(e1rmNow, bwNow);
     const past = axisRequests(e1rmPast, bwPast);
     // Verified bonus: only squat/bench/deadlift, scored from each axis's
@@ -122,7 +127,7 @@ export default function StrengthStandards() {
       });
     }
     return { nowReqs: now, pastReqs: past, verifiedReqs: verified };
-  }, [wos, e1rmNow, pastDate, bwNow, bwPast]);
+  }, [wos, e1rmNow, pastDate, bwNow, bwPast, liftConfig]);
 
   const [state, setState] = useState({
     loading: false,

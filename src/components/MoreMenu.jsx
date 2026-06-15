@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useApp } from "../context/AppContext";
 import Segmented from "./ui/Segmented";
 import { Input } from "./ui/Input";
 import Notepad from "./Notepad";
 import DataManagementMenu from "./DataManagementMenu";
+import LiftSourcesEditor from "./LiftSourcesEditor";
 import { loadLS, saveLS, K_PROFILE } from "../lib/storage";
 
 /**
@@ -21,8 +22,27 @@ function SectionLabel({ children }) {
 }
 
 export default function MoreMenu() {
-  const { theme, setTheme } = useApp();
+  const { theme, setTheme, workouts, exercises } = useApp();
   const [view, setView] = useState("menu");
+
+  // Every exercise name the user could map a standard lift to: those they've
+  // logged plus the rest of their exercise database, deduped case-insensitively.
+  const exerciseNames = useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    const add = (name) => {
+      const n = (name || "").trim();
+      if (!n) return;
+      const k = n.toLowerCase();
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push(n);
+    };
+    for (const w of workouts || [])
+      for (const ex of w.exercises || []) add(ex.exerciseName);
+    for (const ex of exercises || []) add(ex.name);
+    return out;
+  }, [workouts, exercises]);
 
   // Lifter profile (sex + birth year) for the Progress -> Symmetry view's
   // strength-standards lookups. Self-persisted like the Notepad/Weight logs.
@@ -46,6 +66,28 @@ export default function MoreMenu() {
           <span aria-hidden>←</span> More
         </button>
         <Notepad />
+      </div>
+    );
+  }
+
+  if (view === "liftSources") {
+    return (
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setView("menu")}
+          className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400"
+        >
+          <span aria-hidden>←</span> More
+        </button>
+        <h1 className="px-1 text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+          Lift sources
+        </h1>
+        <LiftSourcesEditor
+          value={profile.liftConfig}
+          onChange={(liftConfig) => updateProfile({ liftConfig })}
+          exerciseNames={exerciseNames}
+        />
       </div>
     );
   }
@@ -127,6 +169,24 @@ export default function MoreMenu() {
               />
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setView("liftSources")}
+            className="flex w-full items-center justify-between px-3 py-3 text-left transition hover:bg-neutral-50 dark:hover:bg-neutral-800"
+          >
+            <div>
+              <div className={rowText}>Lift sources</div>
+              <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                Map lifts to exercises · add bar weight
+              </div>
+            </div>
+            <span
+              aria-hidden
+              className="text-neutral-400 dark:text-neutral-500"
+            >
+              ›
+            </span>
+          </button>
         </div>
         <p className="mt-1 px-1 text-[11px] text-neutral-400 dark:text-neutral-500">
           Used only to compare your lifts against strength standards. Stays on
