@@ -14,6 +14,7 @@ import { moveItem } from "../lib/arrayUtils";
 import WeightRepInputs from "./WeightRepInputs";
 import AddExerciseInput from "./AddExerciseInput";
 import RpeFeedback from "./RpeFeedback";
+import ExerciseHistoryModal from "./ExerciseHistoryModal";
 import { Trash2 } from "./ui/Icons";
 import { useConfirm } from "./ConfirmDialog";
 
@@ -64,6 +65,8 @@ export default function LiveSession() {
   const suppressClickRef = useRef(false);
   // Inline "replace exercise" picker for the current exercise.
   const [swapping, setSwapping] = useState(false);
+  // Exercise whose past-workout history is shown in the modal (null = closed).
+  const [historyExercise, setHistoryExercise] = useState(null);
   const confirm = useConfirm();
 
   // If the workout vanished (e.g. deleted elsewhere), close the session.
@@ -299,9 +302,14 @@ export default function LiveSession() {
                 Exercise {currentIdx + 1} of {exs.length}
               </div>
               <div className="mb-3 flex items-center justify-between gap-2">
-                <div className="min-w-0 flex-1 truncate text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                <button
+                  type="button"
+                  onClick={() => setHistoryExercise(current.exerciseName)}
+                  title="View past logs"
+                  className="min-w-0 flex-1 truncate text-left text-lg font-semibold text-neutral-900 underline decoration-dotted underline-offset-4 transition hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400"
+                >
                   {current.exerciseName}
-                </div>
+                </button>
                 <div className="flex shrink-0 items-center gap-1">
                   {exs.length > 1 && (
                     <>
@@ -529,6 +537,14 @@ export default function LiveSession() {
           )}
         </div>
       </div>
+
+      {/* Past-logs modal — excludes the in-progress workout itself */}
+      <ExerciseHistoryModal
+        exerciseName={historyExercise}
+        workouts={workouts.filter((w) => w.id !== workout.id)}
+        unit={unit}
+        onClose={() => setHistoryExercise(null)}
+      />
     </div>
   );
 }
