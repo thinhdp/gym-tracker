@@ -157,10 +157,11 @@ main.jsx
                     ├── [tab="progress"]  Progress        (Segmented: Bodyweight | Strength | Symmetry)
                     │   ├── (bodyweight) WeightTracker → WeightChart
                     │   ├── (strength)   StrengthAnalysis
+                    │   │                     ├── MultiLineChart  (muscle trend + exercise curve)
+                    │   │                     ├── Delta
+                    │   │                     └── ComboInput      (exercise picker)
                     │   └── (symmetry)   StrengthStandards  (Recharts radar; FitnessVolt API)
-                    │                         ├── MultiLineChart  (muscle trend + exercise curve)
-                    │                         ├── Delta
-                    │                         └── ComboInput      (exercise picker)
+                    │                         └── LiftRatioBalance  (symmetry score; FitnessVolt p50 standards)
                     │
                     ├── [tab="exercises"] ExerciseManager (search + muscle-group chips)
                     │   ├── NewExerciseInline → ComboInput

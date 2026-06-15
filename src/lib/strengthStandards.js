@@ -23,10 +23,19 @@ export const EXERCISE_SLUG_MAP = {
   deadlift: "deadlift",
   "sumo deadlift": "sumo_deadlift",
   "shoulder press barbell": "overhead_press",
+  "shoulder press": "overhead_press",
+  "overhead press": "overhead_press",
   "pull-up": "pullup",
   "pull-up (wide grip)": "pullup",
+  "pull up": "pullup",
+  "pull ups": "pullup",
+  pullup: "pullup",
+  pullups: "pullup",
   "chin-ups": "chinup",
+  "chin up": "chinup",
+  "chin ups": "chinup",
   "bent-over row barbell": "pendlay_row",
+  "barbell row": "pendlay_row",
 };
 
 // Slugs scored relative to total system weight (bodyweight + any added load)

@@ -1,5 +1,12 @@
 import { beforeEach, vi } from "vitest";
-import { buildCacheKey, fetchPercentile, fetchPercentiles } from "./fvApi";
+import {
+  buildCacheKey,
+  fetchPercentile,
+  fetchPercentiles,
+  buildStandardsCacheKey,
+  fetchStandard,
+  fetchStandards,
+} from "./fvApi";
 import { K_FV_CACHE } from "./storage";
 
 beforeEach(() => {
@@ -111,6 +118,74 @@ describe("fetchPercentiles", () => {
       { fetchImpl },
     );
     expect(res.squat.gym.percentile).toBe(60);
+    expect(res.bench.error).toMatch(/network down/);
+  });
+});
+
+describe("buildStandardsCacheKey", () => {
+  it("namespaces under 'std' and includes the source", () => {
+    const k = buildStandardsCacheKey({
+      lift: "back_squat",
+      bodyweight: 70,
+      sex: "male",
+      source: "gym",
+    });
+    expect(k.startsWith("std|")).toBe(true);
+    expect(k).toContain("gym");
+  });
+});
+
+describe("fetchStandard", () => {
+  it("GETs the lift standards and surfaces p50", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(
+        ok({ percentiles: { p50: 110.5 }, p50_bw_multiple: 1.49 }),
+      );
+    const res = await fetchStandard(
+      { lift: "back_squat", bodyweight: 70, sex: "male", source: "gym" },
+      { fetchImpl },
+    );
+    expect(res.p50).toBe(110.5);
+    expect(res.bwMultiple).toBe(1.49);
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toMatch(/\/standards\/back_squat\?/);
+    expect(url).toContain("source=gym");
+    // standards is a GET — no method/body.
+    expect(init).toBeUndefined();
+  });
+
+  it("caches under the std namespace and serves the second call from cache", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(ok({ percentiles: { p50: 82.3 } }));
+    const args = {
+      lift: "bench_press",
+      bodyweight: 70,
+      sex: "male",
+      source: "gym",
+    };
+    await fetchStandard(args, { fetchImpl });
+    await fetchStandard(args, { fetchImpl });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(loadCache()["std|bench_press|male|gym|all|kg|70"]).toBeTruthy();
+  });
+});
+
+describe("fetchStandards", () => {
+  it("resolves a batch keyed by request key and isolates failures", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(ok({ percentiles: { p50: 110 } }))
+      .mockRejectedValueOnce(new Error("network down"));
+    const res = await fetchStandards(
+      [
+        { key: "squat", lift: "back_squat", bodyweight: 70, sex: "male" },
+        { key: "bench", lift: "bench_press", bodyweight: 70, sex: "male" },
+      ],
+      { fetchImpl },
+    );
+    expect(res.squat.p50).toBe(110);
     expect(res.bench.error).toMatch(/network down/);
   });
 });

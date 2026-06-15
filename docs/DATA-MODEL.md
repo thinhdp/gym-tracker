@@ -21,7 +21,7 @@ versioned, and that is the only versioning.
 | `mgym.note.v1`             | `Notepad` (`K_NOTE`)       | `string` — global note                                                                   | `""`                                             |
 | `weightLogs`               | `WeightTracker`            | `{ [YYYY-MM-DD]: number }` — bodyweight                                                  | `{}`                                             |
 | `mgym.profile.v1`          | `MoreMenu`                 | `{ sex?: "male"\|"female", birthYear?: number }` — lifter profile for strength standards | `{}`                                             |
-| `mgym.fvCache.v1`          | `fvApi`                    | cache of FitnessVolt percentile responses, keyed by lift/sex/age/unit/weight/bodyweight  | `{}`                                             |
+| `mgym.fvCache.v1`          | `fvApi`                    | cache of FitnessVolt percentile + standards responses (see below)                        | `{}`                                             |
 | `weekly-note:<weekKey>`    | _legacy_ (no longer used)  | `string` — one note per ISO week (written by the removed `WeeklyNotes`)                  | `""`                                             |
 | `summary-open:<periodKey>` | _legacy_ (no longer used)  | `boolean` — card collapse state (written by the removed `PeriodCard`)                    | card default                                     |
 
@@ -182,10 +182,17 @@ Profile**, self-persisted (not part of the backup payload, not in `AppContext`).
 
 ### Strength-standards cache (`mgym.fvCache.v1`)
 
-A response cache for the only external API the app calls (FitnessVolt). Keys are
-`lift|sex|age|unit|weight|bodyweight` with weight/bodyweight rounded to 0.5 kg;
-values are `{ verified, gym }` percentile objects. Purely a network cache — safe
-to clear, rebuilt on demand. Not in the backup payload. See `src/lib/fvApi.js`.
+A response cache for the only external API the app calls (FitnessVolt). It holds
+two kinds of entry, both rounded to 0.5 kg:
+
+- **Percentile lookups** — key `lift|sex|age|unit|weight|bodyweight`, value
+  `{ verified, gym }` percentile objects (the radar + per-axis breakdown).
+- **Standards lookups** — key `std|lift|sex|source|age|unit|bodyweight`, value
+  `{ percentiles, p50, bwMultiple }`. The `p50` (median lift) feeds the Lift
+  Balance panel's empirical ratio benchmarks.
+
+Purely a network cache — safe to clear, rebuilt on demand. Not in the backup
+payload. See `src/lib/fvApi.js`.
 
 ### Notes
 

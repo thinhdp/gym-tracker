@@ -14,8 +14,10 @@ vi.mock("recharts", async (importOriginal) => {
 });
 
 const fetchPercentiles = vi.fn();
+const fetchStandards = vi.fn();
 vi.mock("../lib/fvApi", () => ({
   fetchPercentiles: (...args) => fetchPercentiles(...args),
+  fetchStandards: (...args) => fetchStandards(...args),
   FV_ATTRIBUTION_URL: "https://fitnessvolt.com/strength-standards/",
 }));
 
@@ -40,6 +42,14 @@ beforeEach(() => {
         ? { verified: { percentile: 80, tier: "advanced" }, gym: null }
         : { gym: { percentile: 60, tier: "intermediate" }, verified: null };
     }
+    return out;
+  });
+  // LiftRatioBalance (rendered below the radar) pulls p50 standards.
+  fetchStandards.mockReset();
+  fetchStandards.mockImplementation(async (reqs) => {
+    const p50 = { squat: 110, bench: 82, deadlift: 132, ohp: 53, row: 73 };
+    const out = {};
+    for (const r of reqs) out[r.key] = { p50: p50[r.key] ?? null };
     return out;
   });
 });

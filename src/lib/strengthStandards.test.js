@@ -26,6 +26,15 @@ describe("slugForExercise", () => {
     expect(slugForExercise("Chin-ups")).toBe("chinup");
   });
 
+  it("maps spelling/spacing variants of common lifts", () => {
+    // "Pull up" (space) must map the same as "Pull-up" (hyphen).
+    expect(slugForExercise("Pull up")).toBe("pullup");
+    expect(slugForExercise("Pull-up")).toBe("pullup");
+    expect(slugForExercise("Pullups")).toBe("pullup");
+    expect(slugForExercise("Shoulder press")).toBe("overhead_press");
+    expect(slugForExercise("Barbell Row")).toBe("pendlay_row");
+  });
+
   it("returns undefined for unsupported or empty names", () => {
     expect(slugForExercise("Leg Press")).toBeUndefined();
     expect(slugForExercise("")).toBeUndefined();

@@ -92,3 +92,94 @@ export async function fetchPercentiles(requests, opts = {}) {
   }
   return out;
 }
+
+/** Stable cache key for one standards (percentile-table) lookup. */
+export function buildStandardsCacheKey({
+  lift,
+  bodyweight,
+  sex,
+  age,
+  source,
+  unit,
+}) {
+  return [
+    "std",
+    lift,
+    sex,
+    source || "gym",
+    age || "all",
+    unit || "kg",
+    round(bodyweight),
+  ].join("|");
+}
+
+/**
+ * Look up the percentile *table* for one lift at a bodyweight — notably `p50`,
+ * the median lift, which we use to derive empirical "average" strength ratios.
+ * Cached alongside percentile lookups (distinct `std|…` key namespace).
+ *
+ * @returns {Promise<{ percentiles: object, p50: number|null, bwMultiple: number|null }>}
+ */
+export async function fetchStandard(
+  { lift, bodyweight, sex, age, source = "gym", unit = "kg" },
+  { fetchImpl = fetch, cache = true } = {},
+) {
+  const key = buildStandardsCacheKey({
+    lift,
+    bodyweight,
+    sex,
+    age,
+    source,
+    unit,
+  });
+  if (cache) {
+    const hit = readCache()[key];
+    if (hit) return hit;
+  }
+
+  const params = new URLSearchParams({
+    bodyweight: String(bodyweight),
+    sex,
+    unit,
+    source,
+  });
+  if (age) params.set("age", String(age));
+
+  const res = await fetchImpl(`${FV_BASE}/standards/${lift}?${params}`);
+  if (!res.ok) {
+    throw new Error(`FitnessVolt API ${res.status}`);
+  }
+  const json = await res.json();
+  const percentiles = json.percentiles || {};
+  const result = {
+    percentiles,
+    p50: percentiles.p50 ?? null,
+    bwMultiple: json.p50_bw_multiple ?? null,
+  };
+
+  const all = readCache();
+  all[key] = result;
+  saveLS(K_FV_CACHE, all);
+  return result;
+}
+
+/**
+ * Resolve several standards lookups sequentially, isolating failures the same
+ * way `fetchPercentiles` does.
+ *
+ * @param {Array} requests - each `{ key, ...fetchStandard args }`.
+ * @returns {Promise<Object>} map of request key -> result or `{ error: string }`.
+ */
+export async function fetchStandards(requests, opts = {}) {
+  const out = {};
+  for (const req of requests || []) {
+    const { key, ...args } = req;
+    const id = key ?? args.lift;
+    try {
+      out[id] = await fetchStandard(args, opts);
+    } catch (e) {
+      out[id] = { error: e?.message || "request failed" };
+    }
+  }
+  return out;
+}

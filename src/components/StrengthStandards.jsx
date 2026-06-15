@@ -30,6 +30,7 @@ import {
   starsFromPercentile,
 } from "../lib/strengthStandards";
 import { fetchPercentiles, FV_ATTRIBUTION_URL } from "../lib/fvApi";
+import LiftRatioBalance from "./LiftRatioBalance";
 
 const NOW_COLOR = "#378ADD";
 const PAST_COLOR = "#D4537E";
@@ -98,9 +99,11 @@ export default function StrengthStandards() {
   const bwNow = bodyweightAsOf(weightLogs);
   const bwPast = bodyweightAsOf(weightLogs, pastDate) ?? bwNow;
 
+  // Best current e1RM per slug — feeds both the radar and the lift-balance panel.
+  const e1rmNow = useMemo(() => bestE1RMBySlug(wos), [wos]);
+
   // Build the per-axis lookup requests for both snapshots.
   const { nowReqs, pastReqs, verifiedReqs } = useMemo(() => {
-    const e1rmNow = bestE1RMBySlug(wos);
     const e1rmPast = bestE1RMBySlug(wos, pastDate);
     const now = axisRequests(e1rmNow, bwNow);
     const past = axisRequests(e1rmPast, bwPast);
@@ -119,7 +122,7 @@ export default function StrengthStandards() {
       });
     }
     return { nowReqs: now, pastReqs: past, verifiedReqs: verified };
-  }, [wos, pastDate, bwNow, bwPast]);
+  }, [wos, e1rmNow, pastDate, bwNow, bwPast]);
 
   const [state, setState] = useState({
     loading: false,
@@ -327,12 +330,18 @@ export default function StrengthStandards() {
                 isAnimationActive={false}
               />
               <Tooltip
-                formatter={(v) => (v == null ? "—" : `${Math.round(v)}%ile`)}
+                formatter={(v) => (v == null ? "—" : `${Math.round(v)}%`)}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
             </RadarChart>
           </ResponsiveContainer>
         )}
+        <p className="px-2 pb-1 pt-2 text-center text-[11px] leading-snug text-neutral-500 dark:text-neutral-400">
+          Each axis is your percentile against other{" "}
+          {sex === "female" ? "women" : "men"} at ~{Math.round(bwNow)} kg
+          bodyweight{age ? `, age ${age}` : ""} in the FitnessVolt gym dataset.
+          A higher value means you out-lift more people; 50% is the median.
+        </p>
       </div>
 
       {/* Per-axis breakdown */}
@@ -394,6 +403,15 @@ export default function StrengthStandards() {
           })}
         </div>
       </div>
+
+      {/* Lift-ratio balance (Symmetry Analyzer) */}
+      <LiftRatioBalance
+        e1rmBySlug={e1rmNow}
+        bodyweight={bwNow}
+        sex={sex}
+        age={age}
+        refreshNonce={refreshNonce}
+      />
 
       <p className="px-1 text-center text-[11px] text-neutral-400 dark:text-neutral-500">
         <a
