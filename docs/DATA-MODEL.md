@@ -10,18 +10,20 @@ versioned, and that is the only versioning.
 
 ## localStorage keys
 
-| Key                        | Written by                 | Holds                                                                                | Default when absent                              |
-| -------------------------- | -------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| `mgym.exercises.v1`        | `AppContext` (`K_EX`)      | `Exercise[]`                                                                         | the 76-entry seed `src/data/exercises_seed.json` |
-| `mgym.workouts.v1`         | `AppContext` (`K_WO`)      | `Workout[]`                                                                          | `[]`                                             |
-| `mgym.unit`                | `AppContext` (`K_UNIT`)    | `"kg"` \| `"lb"` (toggle UI hidden; effectively `"kg"`)                              | `"kg"`                                           |
-| `mgym.tab`                 | `AppContext` (`K_TAB`)     | active tab: `home`/`workouts`/`progress`/`exercises`/`more` (legacy values remapped) | `"workouts"`                                     |
-| `mgym.theme`               | `AppContext` (`K_THEME`)   | `"system"` \| `"light"` \| `"dark"`                                                  | `"system"`                                       |
-| `mgym.session.v1`          | `AppContext` (`K_SESSION`) | live-logging session object, or `null`                                               | `null`                                           |
-| `mgym.note.v1`             | `Notepad` (`K_NOTE`)       | `string` — global note                                                               | `""`                                             |
-| `weightLogs`               | `WeightTracker`            | `{ [YYYY-MM-DD]: number }` — bodyweight                                              | `{}`                                             |
-| `weekly-note:<weekKey>`    | _legacy_ (no longer used)  | `string` — one note per ISO week (written by the removed `WeeklyNotes`)              | `""`                                             |
-| `summary-open:<periodKey>` | _legacy_ (no longer used)  | `boolean` — card collapse state (written by the removed `PeriodCard`)                | card default                                     |
+| Key                        | Written by                 | Holds                                                                                    | Default when absent                              |
+| -------------------------- | -------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `mgym.exercises.v1`        | `AppContext` (`K_EX`)      | `Exercise[]`                                                                             | the 76-entry seed `src/data/exercises_seed.json` |
+| `mgym.workouts.v1`         | `AppContext` (`K_WO`)      | `Workout[]`                                                                              | `[]`                                             |
+| `mgym.unit`                | `AppContext` (`K_UNIT`)    | `"kg"` \| `"lb"` (toggle UI hidden; effectively `"kg"`)                                  | `"kg"`                                           |
+| `mgym.tab`                 | `AppContext` (`K_TAB`)     | active tab: `home`/`workouts`/`progress`/`exercises`/`more` (legacy values remapped)     | `"workouts"`                                     |
+| `mgym.theme`               | `AppContext` (`K_THEME`)   | `"system"` \| `"light"` \| `"dark"`                                                      | `"system"`                                       |
+| `mgym.session.v1`          | `AppContext` (`K_SESSION`) | live-logging session object, or `null`                                                   | `null`                                           |
+| `mgym.note.v1`             | `Notepad` (`K_NOTE`)       | `string` — global note                                                                   | `""`                                             |
+| `weightLogs`               | `WeightTracker`            | `{ [YYYY-MM-DD]: number }` — bodyweight                                                  | `{}`                                             |
+| `mgym.profile.v1`          | `MoreMenu`                 | `{ sex?: "male"\|"female", birthYear?: number }` — lifter profile for strength standards | `{}`                                             |
+| `mgym.fvCache.v1`          | `fvApi`                    | cache of FitnessVolt percentile responses, keyed by lift/sex/age/unit/weight/bodyweight  | `{}`                                             |
+| `weekly-note:<weekKey>`    | _legacy_ (no longer used)  | `string` — one note per ISO week (written by the removed `WeeklyNotes`)                  | `""`                                             |
+| `summary-open:<periodKey>` | _legacy_ (no longer used)  | `boolean` — card collapse state (written by the removed `PeriodCard`)                    | card default                                     |
 
 All values are stored with `JSON.stringify`. String values (the notes) are
 stored as JSON strings (e.g. the literal `""`).
@@ -166,6 +168,24 @@ A flat map used by the Weight tab:
 > bodyweight in lb, the **toggle UI is currently hidden** and the app shows kg
 > only. Weekly averages and the Progress "Avg Weight" KPI are computed directly
 > from these numbers.
+
+### Lifter profile (`mgym.profile.v1`)
+
+Optional self-reported data the **Progress → Symmetry** view needs to score
+lifts against the FitnessVolt Strength Standards API. Authored in **More →
+Profile**, self-persisted (not part of the backup payload, not in `AppContext`).
+
+| Field       | Type                   | Purpose                                          |
+| ----------- | ---------------------- | ------------------------------------------------ |
+| `sex`       | `"male"` \| `"female"` | Required by the standards API; absent until set. |
+| `birthYear` | `number` (optional)    | Sharpens the gym age cohort; omitted when blank. |
+
+### Strength-standards cache (`mgym.fvCache.v1`)
+
+A response cache for the only external API the app calls (FitnessVolt). Keys are
+`lift|sex|age|unit|weight|bodyweight` with weight/bodyweight rounded to 0.5 kg;
+values are `{ verified, gym }` percentile objects. Purely a network cache — safe
+to clear, rebuilt on demand. Not in the backup payload. See `src/lib/fvApi.js`.
 
 ### Notes
 

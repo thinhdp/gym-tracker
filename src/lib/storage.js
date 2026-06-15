@@ -17,6 +17,10 @@ export const K_THEME = "mgym.theme";
 export const K_SESSION = "mgym.session.v1";
 /** localStorage key for body-weight logs ({ "YYYY-MM-DD": number }). Predates the "mgym" prefix. */
 export const K_WEIGHT_LOGS = "weightLogs";
+/** localStorage key for the lifter profile ({ sex, birthYear }) used by strength standards. */
+export const K_PROFILE = "mgym.profile.v1";
+/** localStorage key for the FitnessVolt strength-standards response cache. */
+export const K_FV_CACHE = "mgym.fvCache.v1";
 
 /** Today's date as a `YYYY-MM-DD` string (UTC-sliced). */
 export const todayStr = () => new Date().toISOString().slice(0, 10);

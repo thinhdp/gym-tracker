@@ -9,10 +9,19 @@ workflow see [CONTRIBUTING.md](CONTRIBUTING.md).
 ## System overview
 
 Gym Tracker is a **single-page application that runs entirely in the browser**.
-There is no server, no API, and no account system. Everything is kept in the
+There is no server of our own and no account system. Everything is kept in the
 browser's `localStorage`, so the app is local-first and works offline after the
 initial load. Data never leaves the device unless you explicitly use the Data
 menu to export a JSON backup.
+
+The one exception is **Progress → Symmetry**, which calls the public, read-only
+[FitnessVolt Strength Standards API](https://fitnessvolt.com/strength-standards/developers/)
+to score your lifts against population data. It sends only a lift slug, an
+estimated 1RM, bodyweight, sex, and (optionally) age — no identifying data — and
+caches every response in `localStorage` (`mgym.fvCache.v1`) so repeat views work
+offline. The call is on-demand (only when that view is open) and degrades
+gracefully when offline; the rest of the app never touches the network. Client
+in `src/lib/fvApi.js`.
 
 The UI is a single centered column navigated by a **fixed five-tab bottom bar** —
 **Home**, **Workouts**, **Progress**, **Exercises**, **More**. There is no
@@ -145,9 +154,10 @@ main.jsx
                     │   ├── (list) WorkoutHistory → WorkoutHistoryItem  (▶ Start → live session)
                     │   └── (calendar) CalendarView → AddExerciseInput
                     │
-                    ├── [tab="progress"]  Progress        (Segmented: Bodyweight | Strength)
+                    ├── [tab="progress"]  Progress        (Segmented: Bodyweight | Strength | Symmetry)
                     │   ├── (bodyweight) WeightTracker → WeightChart
-                    │   └── (strength)   StrengthAnalysis
+                    │   ├── (strength)   StrengthAnalysis
+                    │   └── (symmetry)   StrengthStandards  (Recharts radar; FitnessVolt API)
                     │                         ├── MultiLineChart  (muscle trend + exercise curve)
                     │                         ├── Delta
                     │                         └── ComboInput      (exercise picker)

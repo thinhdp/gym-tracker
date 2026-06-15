@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
 import Segmented from "./ui/Segmented";
+import { Input } from "./ui/Input";
 import Notepad from "./Notepad";
 import DataManagementMenu from "./DataManagementMenu";
+import { loadLS, saveLS, K_PROFILE } from "../lib/storage";
 
 /**
  * "More" destination — a settings hub for everything that doesn't warrant its
@@ -21,6 +23,17 @@ function SectionLabel({ children }) {
 export default function MoreMenu() {
   const { theme, setTheme } = useApp();
   const [view, setView] = useState("menu");
+
+  // Lifter profile (sex + birth year) for the Progress -> Symmetry view's
+  // strength-standards lookups. Self-persisted like the Notepad/Weight logs.
+  const [profile, setProfile] = useState(() => loadLS(K_PROFILE, {}));
+  const updateProfile = (patch) => {
+    setProfile((prev) => {
+      const next = { ...prev, ...patch };
+      saveLS(K_PROFILE, next);
+      return next;
+    });
+  };
 
   if (view === "notepad") {
     return (
@@ -73,6 +86,52 @@ export default function MoreMenu() {
             />
           </div>
         </div>
+      </div>
+
+      {/* Profile — feeds the Progress → Symmetry strength standards */}
+      <div>
+        <SectionLabel>Profile</SectionLabel>
+        <div className={`${card} divide-y dark:divide-neutral-800`}>
+          <div className="flex items-center justify-between px-3 py-3">
+            <span className={rowText}>Sex</span>
+            <Segmented
+              options={[
+                ["male", "Male"],
+                ["female", "Female"],
+              ]}
+              value={profile.sex || ""}
+              onChange={(sex) => updateProfile({ sex })}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3 px-3 py-3">
+            <div>
+              <div className={rowText}>Birth year</div>
+              <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                Optional — sharpens your age cohort
+              </div>
+            </div>
+            <div className="w-24">
+              <Input
+                type="number"
+                inputMode="numeric"
+                placeholder="1996"
+                min="1900"
+                max="2020"
+                value={profile.birthYear ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value.trim();
+                  updateProfile({
+                    birthYear: v === "" ? undefined : Number(v),
+                  });
+                }}
+              />
+            </div>
+          </div>
+        </div>
+        <p className="mt-1 px-1 text-[11px] text-neutral-400 dark:text-neutral-500">
+          Used only to compare your lifts against strength standards. Stays on
+          this device.
+        </p>
       </div>
 
       {/* Content */}
