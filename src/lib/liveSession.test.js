@@ -4,6 +4,7 @@ import {
   completedSets,
   remapIndexAfterMove,
   formatClock,
+  restRemaining,
 } from "./liveSession";
 
 describe("isLogged / completedSets", () => {
@@ -62,6 +63,29 @@ describe("remapIndexAfterMove", () => {
   it("handles an adjacent swap", () => {
     expect(remapIndexAfterMove(1, 1, 2)).toBe(2);
     expect(remapIndexAfterMove(2, 1, 2)).toBe(1);
+  });
+});
+
+describe("restRemaining", () => {
+  it("is null when idle", () => {
+    expect(restRemaining(null, 1000)).toBe(null);
+  });
+
+  it("derives whole seconds left from the target instant", () => {
+    expect(restRemaining(120_000, 0)).toBe(120);
+    expect(restRemaining(120_000, 30_500)).toBe(89); // floors partial seconds
+  });
+
+  it("reflects real elapsed time after a frozen-timer gap, not tick count", () => {
+    // Tab hidden ~91s with no ticks: the next `now` reading alone yields the
+    // correct remaining time — no per-second decrements needed in between.
+    const endsAt = 120_000; // started at now=0 with a 2-min rest
+    expect(restRemaining(endsAt, 91_000)).toBe(29);
+  });
+
+  it("clamps to zero once elapsed", () => {
+    expect(restRemaining(120_000, 120_000)).toBe(0);
+    expect(restRemaining(120_000, 200_000)).toBe(0);
   });
 });
 
