@@ -1,6 +1,7 @@
 import {
   slugForExercise,
   bestE1RMBySlug,
+  buildLiftConfigIndex,
   liftWeight,
   ageFromBirthYear,
   percentileToTier,
@@ -8,6 +9,7 @@ import {
   starsFromPercentile,
   axisRequests,
   BODYWEIGHT_SLUGS,
+  STANDARD_LIFTS,
 } from "./strengthStandards";
 
 const workout = (date, exercises) => ({
@@ -88,6 +90,92 @@ describe("bestE1RMBySlug", () => {
       ]),
     ];
     expect(bestE1RMBySlug(wos)).toEqual({});
+  });
+});
+
+describe("STANDARD_LIFTS", () => {
+  it("exposes the six axes with a single canonical slug each", () => {
+    expect(STANDARD_LIFTS.map((l) => l.key)).toEqual([
+      "squat",
+      "bench",
+      "deadlift",
+      "ohp",
+      "pull",
+      "row",
+    ]);
+    const squat = STANDARD_LIFTS.find((l) => l.key === "squat");
+    expect(squat.slug).toBe("back_squat");
+    expect(squat.slugs).toContain("front_squat");
+  });
+});
+
+describe("buildLiftConfigIndex", () => {
+  it("returns empty lookups for no config", () => {
+    const idx = buildLiftConfigIndex(null);
+    expect(idx.overrideByExercise).toEqual({});
+    expect(idx.claimedSlugs.size).toBe(0);
+    expect(idx.offsetBySlug).toEqual({});
+  });
+
+  it("pins an exercise to a slug and claims all of the axis's slugs", () => {
+    const idx = buildLiftConfigIndex({
+      squat: { exercise: "My Squat", addBar: true, barKg: 20 },
+    });
+    expect(idx.overrideByExercise["my squat"]).toEqual({
+      slug: "back_squat",
+      offset: 20,
+    });
+    expect(idx.claimedSlugs.has("back_squat")).toBe(true);
+    expect(idx.claimedSlugs.has("front_squat")).toBe(true);
+  });
+
+  it("applies an offset to the axis slugs when no exercise is pinned", () => {
+    const idx = buildLiftConfigIndex({ bench: { addBar: true, barKg: 15 } });
+    expect(idx.offsetBySlug.bench_press).toBe(15);
+    expect(idx.overrideByExercise).toEqual({});
+  });
+
+  it("defaults a checked bar with no kg to 20 and ignores an unchecked bar", () => {
+    const idx = buildLiftConfigIndex({
+      bench: { addBar: true },
+      deadlift: { exercise: "DL", addBar: false, barKg: 20 },
+    });
+    expect(idx.offsetBySlug.bench_press).toBe(20);
+    expect(idx.overrideByExercise.dl.offset).toBe(0);
+  });
+});
+
+describe("bestE1RMBySlug with liftConfig", () => {
+  it("adds the bar weight to every set before the 1RM estimate", () => {
+    const wos = [workout("2026-01-01", [ex("Bench", [set(60, 5)])])];
+    // Pinned to "Bench" + add 20kg bar -> (60+20) * (1 + 5/30) = 93.33
+    const cfg = { bench: { exercise: "Bench", addBar: true, barKg: 20 } };
+    expect(bestE1RMBySlug(wos, null, cfg).bench_press).toBeCloseTo(93.33, 1);
+  });
+
+  it("pins a slug to its chosen exercise, dropping auto matches for it", () => {
+    const wos = [
+      workout("2026-01-01", [
+        ex("My Bench", [set(100, 1)]),
+        ex("Bench Press Barbell", [set(80, 1)]), // would auto-map to bench_press
+      ]),
+    ];
+    const cfg = { bench: { exercise: "My Bench" } };
+    // Only the pinned exercise feeds bench_press; the auto match is suppressed.
+    expect(bestE1RMBySlug(wos, null, cfg).bench_press).toBeCloseTo(100, 5);
+  });
+
+  it("leaves untouched lifts on auto-detection", () => {
+    const wos = [
+      workout("2026-01-01", [
+        ex("Deadlift", [set(100, 1)]),
+        ex("Bench", [set(60, 5)]),
+      ]),
+    ];
+    const cfg = { bench: { exercise: "Bench", addBar: true, barKg: 20 } };
+    const m = bestE1RMBySlug(wos, null, cfg);
+    expect(m.deadlift).toBeCloseTo(100, 5); // auto, no offset
+    expect(m.bench_press).toBeCloseTo(93.33, 1); // configured
   });
 });
 

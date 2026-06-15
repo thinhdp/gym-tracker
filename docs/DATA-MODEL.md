@@ -175,10 +175,29 @@ Optional self-reported data the **Progress → Symmetry** view needs to score
 lifts against the FitnessVolt Strength Standards API. Authored in **More →
 Profile**, self-persisted (not part of the backup payload, not in `AppContext`).
 
-| Field       | Type                   | Purpose                                          |
-| ----------- | ---------------------- | ------------------------------------------------ |
-| `sex`       | `"male"` \| `"female"` | Required by the standards API; absent until set. |
-| `birthYear` | `number` (optional)    | Sharpens the gym age cohort; omitted when blank. |
+| Field        | Type                   | Purpose                                          |
+| ------------ | ---------------------- | ------------------------------------------------ |
+| `sex`        | `"male"` \| `"female"` | Required by the standards API; absent until set. |
+| `birthYear`  | `number` (optional)    | Sharpens the gym age cohort; omitted when blank. |
+| `liftConfig` | `LiftConfig` (opt.)    | Per-lift source mapping + bar-weight adjustment. |
+
+#### LiftConfig
+
+Optional overrides authored in **More → Profile → Lift sources**, keyed by
+standard-lift key (`squat`, `bench`, `deadlift`, `ohp`, `pull`, `row` — the
+`RADAR_AXES` keys). Each value tunes how that lift's data is pulled for the
+Symmetry view; absent keys fall back to automatic detection from the exercise
+name.
+
+| Field      | Type      | Purpose                                                               |
+| ---------- | --------- | --------------------------------------------------------------------- |
+| `exercise` | `string`  | Pins which logged exercise feeds the lift (overrides the alias map).  |
+| `addBar`   | `boolean` | When true, adds `barKg` to every set's weight **before** the 1RM est. |
+| `barKg`    | `number`  | Bar weight to add when `addBar`; defaults to 20 kg.                   |
+
+The offset is applied per set inside `bestE1RMBySlug` (so it flows into both the
+radar and the Lift Balance panel). See `src/lib/strengthStandards.js`
+(`buildLiftConfigIndex`).
 
 ### Strength-standards cache (`mgym.fvCache.v1`)
 
