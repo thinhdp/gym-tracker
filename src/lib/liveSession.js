@@ -23,6 +23,13 @@ export function completedSets(workout) {
   return n;
 }
 
+/** Total reps logged across a single exercise's sets. */
+export function exerciseReps(exercise) {
+  let n = 0;
+  for (const s of exercise?.sets || []) n += Number(s?.reps) || 0;
+  return n;
+}
+
 /**
  * New index of an exercise originally at `index` after moving the exercise at
  * `from` to `to` (matching arrayUtils.moveItem semantics). Used to keep the

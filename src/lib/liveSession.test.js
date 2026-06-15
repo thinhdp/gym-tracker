@@ -2,6 +2,7 @@ import {
   isLogged,
   totalSets,
   completedSets,
+  exerciseReps,
   remapIndexAfterMove,
   formatClock,
   restRemaining,
@@ -23,6 +24,21 @@ describe("isLogged / completedSets", () => {
       ],
     };
     expect(completedSets(workout)).toBe(2);
+  });
+});
+
+describe("exerciseReps", () => {
+  it("sums reps across an exercise's sets", () => {
+    expect(exerciseReps({ sets: [{ reps: 8 }, { reps: 6 }] })).toBe(14);
+  });
+
+  it("treats unlogged (reps: 0) sets as contributing nothing", () => {
+    expect(exerciseReps({ sets: [{ reps: 8 }, { reps: 0 }] })).toBe(8);
+  });
+
+  it("is zero for an empty/absent exercise", () => {
+    expect(exerciseReps({ sets: [] })).toBe(0);
+    expect(exerciseReps(null)).toBe(0);
   });
 });
 
