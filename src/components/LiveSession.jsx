@@ -7,6 +7,7 @@ import {
   isLogged,
   completedSets,
   totalSets,
+  exerciseReps,
   formatClock,
   remapIndexAfterMove,
   restRemaining,
@@ -90,6 +91,7 @@ export default function LiveSession() {
     Math.max(0, exs.length - 1),
   );
   const current = exs[currentIdx] || null;
+  const currentReps = exerciseReps(current);
   const elapsed = Math.floor((nowTs - (session.startedAt || nowTs)) / 1000);
 
   // --- mutations (write through to the persisted workout) ---
@@ -319,6 +321,11 @@ export default function LiveSession() {
                 >
                   {current.exerciseName}
                 </button>
+              </div>
+              <div className="mb-3 -mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+                {currentReps} {currentReps === 1 ? "rep" : "reps"} so far
+              </div>
+              <div className="mb-3 flex items-center justify-end gap-1">
                 <div className="flex shrink-0 items-center gap-1">
                   {exs.length > 1 && (
                     <>

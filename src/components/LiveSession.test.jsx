@@ -56,6 +56,22 @@ describe("LiveSession", () => {
     expect(screen.getByText(/1\/1 sets/)).toBeInTheDocument();
   });
 
+  it("shows the running rep total for the current exercise", async () => {
+    const user = userEvent.setup();
+    seedAndRender();
+    // The seeded set already has 8 reps logged.
+    expect(screen.getByText("8 reps so far")).toBeInTheDocument();
+
+    // Add a set and log it; the total should grow.
+    await user.click(screen.getByRole("button", { name: /Add set/i }));
+    const repsInputs = screen.getAllByRole("spinbutton");
+    const newRepsInput = repsInputs[repsInputs.length - 1];
+    await user.clear(newRepsInput);
+    await user.type(newRepsInput, "5");
+
+    expect(screen.getByText("13 reps so far")).toBeInTheDocument();
+  });
+
   it("an added set starts unlogged until reps are entered", async () => {
     const user = userEvent.setup();
     seedAndRender();
