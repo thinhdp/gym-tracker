@@ -9,6 +9,7 @@ import {
   totalSets,
   formatClock,
   remapIndexAfterMove,
+  restRemaining,
 } from "../lib/liveSession";
 import { moveItem } from "../lib/arrayUtils";
 import WeightRepInputs from "./WeightRepInputs";
@@ -39,25 +40,33 @@ export default function LiveSession() {
 
   const workout = workouts.find((w) => w.id === session?.workoutId) || null;
 
-  // Tick the elapsed clock once a second.
+  // A single 1-second tick drives both the elapsed clock and the rest timer.
+  // Both derive their displayed value from timestamps (not a decremented
+  // counter), so a backgrounded mobile tab that freezes the interval still
+  // shows the right time the instant it returns to the foreground.
   const [nowTs, setNowTs] = useState(() => Date.now());
   useEffect(() => {
-    const id = setInterval(() => setNowTs(Date.now()), 1000);
-    return () => clearInterval(id);
+    const tick = () => setNowTs(Date.now());
+    const id = setInterval(tick, 1000);
+    // Resync immediately on return — while hidden the interval may not have
+    // fired, so the clock would otherwise show a stale value for up to a second.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
-  // Manual rest timer: null when idle, else seconds remaining. The countdown
-  // ticks inside the timeout callback and clears itself at zero, so the effect
-  // body never sets state synchronously.
-  const [restLeft, setRestLeft] = useState(null);
-  useEffect(() => {
-    if (restLeft == null || restLeft <= 0) return undefined;
-    const id = setTimeout(
-      () => setRestLeft((s) => (s != null && s <= 1 ? null : s - 1)),
-      1000,
-    );
-    return () => clearTimeout(id);
-  }, [restLeft]);
+  // Manual rest timer: null when idle, else the wall-clock instant it ends at.
+  // Remaining seconds are derived from `nowTs`, so the countdown stays accurate
+  // across tab/app switches instead of pausing when the timer interval freezes.
+  const [restEndsAt, setRestEndsAt] = useState(null);
+  // null while idle; once it reaches 0 the bar reverts to the presets below, so
+  // `restLeft > 0` is treated as "timer running" and no clear-at-zero is needed.
+  const restLeft = restRemaining(restEndsAt, nowTs);
 
   // Drag-to-reorder the exercise chips. Pointer-based so it works on touch and
   // mouse alike (HTML5 drag-and-drop doesn't fire on touch).
@@ -466,8 +475,8 @@ export default function LiveSession() {
       {/* Bottom bar: rest timer + prev/next */}
       <div className="border-t bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="mx-auto max-w-3xl space-y-3">
-          {/* Rest timer (manual) */}
-          {restLeft == null ? (
+          {/* Rest timer (manual) — reverts to presets at zero */}
+          {!restLeft ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-neutral-500 dark:text-neutral-400">
                 Rest
@@ -476,7 +485,7 @@ export default function LiveSession() {
                 <button
                   key={secs}
                   type="button"
-                  onClick={() => setRestLeft(secs)}
+                  onClick={() => setRestEndsAt(Date.now() + secs * 1000)}
                   className="flex-1 rounded-xl bg-neutral-100 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
                 >
                   {label}
@@ -491,21 +500,23 @@ export default function LiveSession() {
               <span className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setRestLeft((s) => Math.max(0, s - 15))}
+                  onClick={() =>
+                    setRestEndsAt((t) => Math.max(Date.now(), t - 15000))
+                  }
                   className="rounded-lg px-2 py-1 text-xs text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-neutral-700"
                 >
                   −15s
                 </button>
                 <button
                   type="button"
-                  onClick={() => setRestLeft((s) => s + 15)}
+                  onClick={() => setRestEndsAt((t) => t + 15000)}
                   className="rounded-lg px-2 py-1 text-xs text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-neutral-700"
                 >
                   +15s
                 </button>
                 <button
                   type="button"
-                  onClick={() => setRestLeft(null)}
+                  onClick={() => setRestEndsAt(null)}
                   className="rounded-lg px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-neutral-700"
                 >
                   Skip

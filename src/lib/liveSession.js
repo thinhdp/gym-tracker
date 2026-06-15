@@ -36,6 +36,19 @@ export function remapIndexAfterMove(index, from, to) {
 }
 
 /**
+ * Whole seconds left on a timer that ends at the wall-clock instant `endsAt`
+ * (ms epoch), given the current time `now` (ms epoch). Deriving the countdown
+ * from a target timestamp — rather than decrementing a per-tick counter — keeps
+ * it accurate when a mobile browser freezes timers on a backgrounded tab: the
+ * value self-corrects the moment the clock next advances. Returns 0 once the
+ * timer has elapsed; `null` endsAt (idle) returns null.
+ */
+export function restRemaining(endsAt, now) {
+  if (endsAt == null) return null;
+  return Math.max(0, Math.floor((endsAt - now) / 1000));
+}
+
+/**
  * Format a duration in seconds as `M:SS` (or `H:MM:SS` past an hour). Negative
  * inputs clamp to zero.
  */
