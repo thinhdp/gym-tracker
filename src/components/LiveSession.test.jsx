@@ -140,6 +140,42 @@ describe("LiveSession", () => {
     expect(screen.getByText("Squat")).toBeInTheDocument();
   });
 
+  it("opens past logs for the current exercise, excluding the live workout", async () => {
+    const user = userEvent.setup();
+    saveLS(K_WO, [
+      {
+        id: "past",
+        date: "2026-06-06",
+        name: "Last week",
+        exercises: [
+          { exerciseName: "Bench", sets: [{ set: 1, weight: 75, reps: 10 }] },
+        ],
+      },
+      {
+        id: "live",
+        date: "2026-06-13",
+        name: "Push Day",
+        exercises: [
+          { exerciseName: "Bench", sets: [{ set: 1, weight: 80, reps: 8 }] },
+        ],
+      },
+    ]);
+    saveLS(K_SESSION, {
+      workoutId: "live",
+      startedAt: Date.now(),
+      currentIdx: 0,
+    });
+    renderLive();
+
+    await user.click(screen.getByRole("button", { name: "Bench" }));
+
+    // Modal shows the prior workout's set, not the in-progress one.
+    expect(screen.getByText(/Past workouts/i)).toBeInTheDocument();
+    expect(screen.getByText("Last week")).toBeInTheDocument();
+    expect(screen.getByText(/Set 1: 75 kg × 10/)).toBeInTheDocument();
+    expect(screen.queryByText(/Set 1: 80 kg × 8/)).not.toBeInTheDocument();
+  });
+
   it("closes the session when finished", async () => {
     const user = userEvent.setup();
     seedAndRender();
