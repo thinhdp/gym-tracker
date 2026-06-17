@@ -54,6 +54,9 @@ export default function WorkoutHistoryItem({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={onToggle}>
+            Details <ChevronDown open={expanded} />
+          </Button>
           <Button variant="primary" onClick={() => startSession(w.id)}>
             ▶ Start
           </Button>
@@ -72,9 +75,6 @@ export default function WorkoutHistoryItem({
             }}
           >
             📋
-          </Button>
-          <Button variant="secondary" onClick={onToggle}>
-            Details <ChevronDown open={expanded} />
           </Button>
           <Button
             variant="ghost"
