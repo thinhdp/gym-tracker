@@ -58,7 +58,9 @@ export default function WorkoutHistoryItem({
             ▶ Start
           </Button>
           <Button
-            variant="secondary"
+            variant="ghost"
+            aria-label="Save as routine"
+            title="Save as routine"
             onClick={() => {
               saveRoutineFromWorkout(w);
               confirm({
@@ -69,7 +71,7 @@ export default function WorkoutHistoryItem({
               });
             }}
           >
-            Save as routine
+            📋
           </Button>
           <Button variant="secondary" onClick={onToggle}>
             Details <ChevronDown open={expanded} />
