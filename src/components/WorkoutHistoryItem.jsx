@@ -42,7 +42,7 @@ export default function WorkoutHistoryItem({
   onShowHistory,
 }) {
   const confirm = useConfirm();
-  const { startSession } = useApp();
+  const { startSession, saveRoutineFromWorkout } = useApp();
 
   return (
     <div className="rounded-2xl border dark:border-neutral-800">
@@ -56,6 +56,20 @@ export default function WorkoutHistoryItem({
         <div className="flex items-center gap-2">
           <Button variant="primary" onClick={() => startSession(w.id)}>
             ▶ Start
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              saveRoutineFromWorkout(w);
+              confirm({
+                title: "Saved as routine",
+                message: `"${w.name}" added to your routines. Edit it any time from the Routines tab.`,
+                confirmText: "OK",
+                tone: "neutral",
+              });
+            }}
+          >
+            Save as routine
           </Button>
           <Button variant="secondary" onClick={onToggle}>
             Details <ChevronDown open={expanded} />

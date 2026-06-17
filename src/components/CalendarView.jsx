@@ -10,9 +10,17 @@ import { Plus, Trash2 } from "./ui/Icons";
 import { useConfirm } from "./ConfirmDialog";
 import { createExerciseEntry } from "../lib/exerciseUtils";
 import { useApp } from "../context/AppContext";
+import RoutinePicker from "./RoutinePicker";
 
 export default function CalendarView() {
-  const { workouts, setWorkouts, exercises, setExercises, unit } = useApp();
+  const {
+    workouts,
+    setWorkouts,
+    exercises,
+    setExercises,
+    unit,
+    addWorkoutFromRoutine,
+  } = useApp();
   const [viewDate, setViewDate] = useState(
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
@@ -114,9 +122,13 @@ export default function CalendarView() {
           <div className="flex items-center justify-between mb-2">
             <div className="font-semibold">Plans for {selected}</div>
             <Button variant="primary" onClick={createWorkoutForSelected}>
-              <Plus /> New workout
+              <Plus /> New
             </Button>
           </div>
+          <RoutinePicker
+            label="From routine"
+            onPick={(routine) => addWorkoutFromRoutine(routine.id, selected)}
+          />
           {selectedWorkouts.length === 0 && (
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
               No workouts on this day.

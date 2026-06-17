@@ -21,6 +21,8 @@ export const K_WEIGHT_LOGS = "weightLogs";
 export const K_PROFILE = "mgym.profile.v1";
 /** localStorage key for the FitnessVolt strength-standards response cache. */
 export const K_FV_CACHE = "mgym.fvCache.v1";
+/** localStorage key for saved reusable routines (Routine[]). */
+export const K_ROUTINES = "mgym.routines.v1";
 
 /** Today's date as a `YYYY-MM-DD` string (UTC-sliced). */
 export const todayStr = () => new Date().toISOString().slice(0, 10);

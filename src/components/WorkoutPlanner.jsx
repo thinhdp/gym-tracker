@@ -13,17 +13,26 @@ import { useApp } from "../context/AppContext";
 import { moveItem } from "../lib/arrayUtils";
 import { MAX_SETS } from "../lib/constants";
 import { normalizeRpe, normalizeFeedback } from "../lib/rpe";
+import { instantiateRoutine } from "../lib/routines";
+import RoutinePicker from "./RoutinePicker";
 
 /**
  * Planner component for creating a new workout.  Uses AppContext
  * for exercises, workouts and unit; onCreated callback remains optional.
  */
-export default function WorkoutPlanner({ onCreated }) {
+export default function WorkoutPlanner({ onCreated, prefillRoutine = null }) {
   const { exercises, setExercises, workouts, setWorkouts, unit } = useApp();
 
   const [dates, setDates] = useState([todayStr()]);
-  const [name, setName] = useState("");
-  const [items, setItems] = useState([]);
+  const [name, setName] = useState(prefillRoutine?.name ?? "");
+  const [items, setItems] = useState(() => {
+    if (!prefillRoutine) return [];
+    const w = instantiateRoutine(prefillRoutine, {
+      date: todayStr(),
+      exercises,
+    });
+    return w.exercises;
+  });
   const confirm = useConfirm();
   const [historyExercise, setHistoryExercise] = useState(null);
 
@@ -86,6 +95,18 @@ export default function WorkoutPlanner({ onCreated }) {
         </div>
 
         <div className="grid gap-3">
+          {/* Load routine picker */}
+          <RoutinePicker
+            onPick={(routine) => {
+              const w = instantiateRoutine(routine, {
+                date: dates[0] || todayStr(),
+                exercises,
+              });
+              setName(routine.name);
+              setItems(w.exercises);
+            }}
+          />
+
           {/* Date inputs */}
           <div className="space-y-2">
             <label className="text-xs text-neutral-600 dark:text-neutral-300">
