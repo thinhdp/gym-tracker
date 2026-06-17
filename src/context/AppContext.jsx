@@ -10,7 +10,9 @@ import {
   K_TAB,
   K_THEME,
   K_SESSION,
+  K_ROUTINES,
 } from "../lib/storage";
+import { routineFromWorkout, instantiateRoutine } from "../lib/routines";
 import { applyTheme } from "../lib/theme";
 import { ymdFromDate } from "../lib/date";
 
@@ -32,6 +34,7 @@ export function AppProvider({ children }) {
   // In-progress live-logging session (or null). Persisted so a refresh mid-set
   // resumes where you left off.
   const [session, setSession] = useState(() => loadLS(K_SESSION, null));
+  const [routines, setRoutines] = useState(() => loadLS(K_ROUTINES, []));
 
   // Persist tab and unit when they change
   useEffect(() => saveLS(K_TAB, tab), [tab]);
@@ -56,6 +59,7 @@ export function AppProvider({ children }) {
   useEffect(() => saveLS(K_EX, exercises), [exercises]);
   useEffect(() => saveLS(K_WO, workouts), [workouts]);
   useEffect(() => saveLS(K_SESSION, session), [session]);
+  useEffect(() => saveLS(K_ROUTINES, routines), [routines]);
 
   // Start a live-logging session for an existing workout.
   const startSession = (workoutId) =>
@@ -72,6 +76,44 @@ export function AppProvider({ children }) {
     startSession(w.id);
   };
   const endSession = () => setSession(null);
+
+  const saveRoutine = (routine) => setRoutines((prev) => [routine, ...prev]);
+
+  const updateRoutine = (id, patch) =>
+    setRoutines((prev) =>
+      prev.map((r) =>
+        r.id === id ? { ...r, ...patch, updatedAt: Date.now() } : r,
+      ),
+    );
+
+  const deleteRoutine = (id) =>
+    setRoutines((prev) => prev.filter((r) => r.id !== id));
+
+  const startRoutine = (id) => {
+    const routine = routines.find((r) => r.id === id);
+    if (!routine) return;
+    const w = instantiateRoutine(routine, {
+      date: ymdFromDate(new Date()),
+      exercises,
+    });
+    setWorkouts((prev) =>
+      [w, ...prev].sort((a, b) => (a.date < b.date ? 1 : -1)),
+    );
+    startSession(w.id);
+  };
+
+  const addWorkoutFromRoutine = (id, date) => {
+    const routine = routines.find((r) => r.id === id);
+    if (!routine) return null;
+    const w = instantiateRoutine(routine, { date, exercises });
+    setWorkouts((prev) =>
+      [w, ...prev].sort((a, b) => (a.date < b.date ? 1 : -1)),
+    );
+    return w;
+  };
+
+  const saveRoutineFromWorkout = (workout) =>
+    saveRoutine(routineFromWorkout(workout));
 
   // Update each exercise’s lastWorkout property whenever workouts change
   useEffect(() => {
@@ -123,6 +165,14 @@ export function AppProvider({ children }) {
         startSession,
         startEmptyWorkout,
         endSession,
+        routines,
+        setRoutines,
+        saveRoutine,
+        updateRoutine,
+        deleteRoutine,
+        startRoutine,
+        addWorkoutFromRoutine,
+        saveRoutineFromWorkout,
       }}
     >
       {children}

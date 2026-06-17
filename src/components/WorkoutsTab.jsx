@@ -4,6 +4,7 @@ import { useApp } from "../context/AppContext";
 import WorkoutPlanner from "./WorkoutPlanner";
 import WorkoutHistory from "./WorkoutHistory";
 import CalendarView from "./CalendarView";
+import RoutineList from "./RoutineList";
 
 /**
  * Workouts destination. Holds the planner + history list ("List"), with the
@@ -22,6 +23,7 @@ export default function WorkoutsTab() {
         <Segmented
           options={[
             ["list", "List"],
+            ["routines", "Routines"],
             ["calendar", "Calendar"],
           ]}
           value={view}
@@ -29,7 +31,7 @@ export default function WorkoutsTab() {
         />
       </div>
 
-      {view === "list" ? (
+      {view === "list" && (
         <>
           <button
             type="button"
@@ -41,9 +43,9 @@ export default function WorkoutsTab() {
           <WorkoutPlanner />
           <WorkoutHistory />
         </>
-      ) : (
-        <CalendarView />
       )}
+      {view === "routines" && <RoutineList />}
+      {view === "calendar" && <CalendarView />}
     </div>
   );
 }

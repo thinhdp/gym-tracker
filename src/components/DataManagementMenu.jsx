@@ -14,6 +14,7 @@ import {
   normalizeData,
   mergeExercises,
   mergeWorkouts,
+  mergeRoutines,
 } from "../lib/backup";
 import { useApp } from "../context/AppContext";
 
@@ -24,7 +25,14 @@ import { useApp } from "../context/AppContext";
  * or import data in either merge or replace mode.
  */
 export default function DataManagementMenu() {
-  const { exercises, workouts, setExercises, setWorkouts } = useApp();
+  const {
+    exercises,
+    workouts,
+    routines,
+    setExercises,
+    setWorkouts,
+    setRoutines,
+  } = useApp();
   const [open, setOpen] = useState(false);
   const fileRef = useRef(null);
   const modeRef = useRef("merge");
@@ -51,6 +59,7 @@ export default function DataManagementMenu() {
       exportedAt: new Date().toISOString(),
       exercises,
       workouts,
+      routines,
       unit: unitPref,
       tab: tabPref,
       note,
@@ -76,14 +85,20 @@ export default function DataManagementMenu() {
     reader.onload = () => {
       try {
         const raw = JSON.parse(reader.result);
-        // sanitize exercises and workouts using normalizeData
-        const { exercises: inEx, workouts: inWo } = normalizeData(raw);
+        // sanitize exercises, workouts, and routines using normalizeData
+        const {
+          exercises: inEx,
+          workouts: inWo,
+          routines: inRo,
+        } = normalizeData(raw);
         if (modeRef.current === "replace") {
           setExercises(inEx);
           setWorkouts(inWo);
+          setRoutines(inRo);
         } else {
           setExercises((prev) => mergeExercises(prev, inEx));
           setWorkouts((prev) => mergeWorkouts(prev, inWo));
+          setRoutines((prev) => mergeRoutines(prev, inRo));
         }
         // restore additional fields if present
         if (raw.unit != null) saveLS(K_UNIT, raw.unit);

@@ -130,10 +130,15 @@ describe("normalizeWorkout", () => {
 
 describe("normalizeData", () => {
   it("returns empty arrays for garbage input", () => {
-    expect(normalizeData(null)).toEqual({ exercises: [], workouts: [] });
+    expect(normalizeData(null)).toEqual({
+      exercises: [],
+      workouts: [],
+      routines: [],
+    });
     expect(normalizeData({ exercises: "nope", workouts: 42 })).toEqual({
       exercises: [],
       workouts: [],
+      routines: [],
     });
   });
 

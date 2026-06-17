@@ -37,6 +37,7 @@ export default function LiveSession() {
     setExercises,
     unit,
     endSession,
+    saveRoutineFromWorkout,
   } = useApp();
 
   const workout = workouts.find((w) => w.id === session?.workoutId) || null;
@@ -262,6 +263,22 @@ export default function LiveSession() {
               {formatClock(elapsed)} elapsed · {completed}/{total} sets
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (exs.length > 0) saveRoutineFromWorkout(workout);
+              confirm({
+                title: "Saved as routine",
+                message: `"${workout.name || "Workout"}" added to your routines.`,
+                confirmText: "OK",
+                tone: "neutral",
+              });
+            }}
+            disabled={exs.length === 0}
+            className="rounded-xl border px-3 py-2 text-sm font-medium text-neutral-600 transition hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+          >
+            Save as routine
+          </button>
           <button
             type="button"
             onClick={finish}

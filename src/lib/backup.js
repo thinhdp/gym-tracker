@@ -1,6 +1,8 @@
 import { todayStr, uuid } from "./storage";
 import { MAX_SETS } from "./constants";
 import { normalizeRpe, normalizeFeedback } from "./rpe";
+import { normalizeRoutine, mergeRoutines } from "./routines";
+export { mergeRoutines };
 
 export function downloadJSON(filename, data) {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -64,7 +66,10 @@ export function normalizeData(obj) {
   const workouts = (Array.isArray(obj?.workouts) ? obj.workouts : [])
     .map(normalizeWorkout)
     .filter(Boolean);
-  return { exercises, workouts };
+  const routines = (Array.isArray(obj?.routines) ? obj.routines : [])
+    .map(normalizeRoutine)
+    .filter(Boolean);
+  return { exercises, workouts, routines };
 }
 
 export function mergeExercises(current, incoming) {
