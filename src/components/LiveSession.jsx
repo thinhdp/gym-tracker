@@ -13,6 +13,7 @@ import {
   restRemaining,
 } from "../lib/liveSession";
 import { moveItem } from "../lib/arrayUtils";
+import { unlockAudio, playDing } from "../lib/sound";
 import WeightRepInputs from "./WeightRepInputs";
 import AddExerciseInput from "./AddExerciseInput";
 import RpeFeedback from "./RpeFeedback";
@@ -69,6 +70,12 @@ export default function LiveSession() {
   // null while idle; once it reaches 0 the bar reverts to the presets below, so
   // `restLeft > 0` is treated as "timer running" and no clear-at-zero is needed.
   const restLeft = restRemaining(restEndsAt, nowTs);
+
+  const prevRestLeftRef = useRef(restLeft);
+  useEffect(() => {
+    if (prevRestLeftRef.current > 0 && restLeft === 0) playDing();
+    prevRestLeftRef.current = restLeft;
+  }, [restLeft]);
 
   // Drag-to-reorder the exercise chips. Pointer-based so it works on touch and
   // mouse alike (HTML5 drag-and-drop doesn't fire on touch).
@@ -509,7 +516,10 @@ export default function LiveSession() {
                 <button
                   key={secs}
                   type="button"
-                  onClick={() => setRestEndsAt(Date.now() + secs * 1000)}
+                  onClick={() => {
+                    unlockAudio();
+                    setRestEndsAt(Date.now() + secs * 1000);
+                  }}
                   className="flex-1 rounded-xl bg-neutral-100 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
                 >
                   {label}
