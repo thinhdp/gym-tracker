@@ -80,6 +80,11 @@ export default function ExerciseHistoryModal({
                     </Badge>
                   ))}
                 </div>
+                {/* Total reps */}
+                <div className="ml-4 text-xs text-neutral-500 dark:text-neutral-400">
+                  Total: {item.sets.reduce((sum, s) => sum + (s.reps || 0), 0)}{" "}
+                  reps
+                </div>
                 {/* RPE + feedback, when logged */}
                 <div className="ml-4">
                   <RpeFeedback
