@@ -19,23 +19,23 @@ export function evaluate(config, phaseId, deltaPct) {
   if (deltaPct == null) return "";
   const ph = (config.phases || []).find((p) => p.id === phaseId);
   if (!ph || !ph.bodyweight) return "";
-  const { minPct, maxPct } = ph.bodyweight;
+  const { minPct, maxPct, tooFastPct, tooSlowPct } = ph.bodyweight;
   const d = deltaPct;
 
   if (phaseId === "cut") {
     if (d >= minPct && d <= maxPct) return "ON TARGET (cut band)";
-    if (d < -1.0) return "TOO FAST (>1%/cycle — strength risk)";
-    if (d > -0.2) return "TOO SLOW (deficit may not be real)";
+    if (tooFastPct != null && d < tooFastPct) return "TOO FAST (loss too rapid — strength risk)";
+    if (tooSlowPct != null && d > tooSlowPct) return "TOO SLOW (deficit may not be real)";
     return "ACCEPTABLE (within reasonable cut range)";
   }
   if (phaseId === "lean-bulk") {
     if (d >= minPct && d <= maxPct) return "ON TARGET (lean bulk band)";
-    if (d > 0.7) return "TOO FAST (excess fat-gain risk)";
+    if (tooFastPct != null && d > tooFastPct) return "TOO FAST (excess fat-gain risk)";
     if (d < 0) return "BELOW TARGET (no gain)";
     return "ACCEPTABLE";
   }
   if (phaseId === "maintenance") {
-    if (Math.abs(d) <= maxPct) return "ON TARGET (maintenance band)";
+    if (d >= minPct && d <= maxPct) return "ON TARGET (maintenance band)";
     return "OFF TARGET (travel-diet effect — no action)";
   }
   return "";

@@ -22,7 +22,7 @@ export const max753 = {
       from: "2026-04-27",
       to: "2026-05-23",
       bias: "conservative",
-      bodyweight: { minPct: -0.7, maxPct: -0.4 },
+      bodyweight: { minPct: -0.7, maxPct: -0.4, tooFastPct: -1.0, tooSlowPct: -0.2 },
     },
     {
       id: "maintenance",
@@ -37,7 +37,7 @@ export const max753 = {
       from: "2026-06-01",
       to: "2026-07-26",
       bias: "normal",
-      bodyweight: { minPct: 0.25, maxPct: 0.5 },
+      bodyweight: { minPct: 0.25, maxPct: 0.5, tooFastPct: 0.7 },
     },
   ],
 
