@@ -7,6 +7,7 @@ import {
   bucketFor,
   isDeadlift,
   isAbs,
+  movementPatternFor,
 } from "./patterns";
 
 describe("cleanReps", () => {
@@ -81,5 +82,27 @@ describe("closestTarget / bucketFor", () => {
     expect(isAbs(max753, "Bench Press Barbell", "Chest")).toBe(false);
     const b = bucketFor(max753, "Crunch", 54, "Abs");
     expect(b.kind).toBe("abs");
+  });
+});
+
+describe("movementPatternFor", () => {
+  it("uses the curated map when the name is known", () => {
+    expect(movementPatternFor(max753, "Leg press")).toBe("quad");
+    expect(movementPatternFor(max753, "Pull up", "Back")).toBe("vertical_pull");
+  });
+  it("falls back to the exercise's primary mainMuscle when uncatalogued", () => {
+    expect(
+      movementPatternFor(max753, "Hip Abduction Machine", "Abductors"),
+    ).toBe("abductors");
+    expect(movementPatternFor(max753, "Seated Row Cable", "Back (Lats)")).toBe(
+      "back (lats)",
+    );
+    expect(movementPatternFor(max753, "Crunch", "Abs, Obliques")).toBe("abs");
+  });
+  it("returns uncategorized when neither map nor muscle is available", () => {
+    expect(movementPatternFor(max753, "Mystery Move")).toBe("uncategorized");
+    expect(movementPatternFor(max753, "Mystery Move", "")).toBe(
+      "uncategorized",
+    );
   });
 });

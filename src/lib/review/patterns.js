@@ -3,7 +3,20 @@
 // status, and select the rep-total bucket for an exercise. Ports the logic from
 // the weekly-workout-review skill's parser, parameterized by the program config.
 
-import { matchesAny } from "./match";
+import { matchesAny, normalizeName } from "./match";
+
+// Movement-pattern label for an exercise: the curated map first, then the
+// exercise database's own mainMuscle (primary muscle) as a fallback so
+// uncatalogued exercises still group sensibly instead of "uncategorized".
+export function movementPatternFor(config, name, mainMuscle) {
+  const mapped = config.movementPatterns?.[normalizeName(name)];
+  if (mapped) return mapped;
+  if (mainMuscle) {
+    const primary = String(mainMuscle).split(",")[0].trim().toLowerCase();
+    if (primary) return primary;
+  }
+  return "uncategorized";
+}
 
 export function cleanReps(reps) {
   const list = reps || [];

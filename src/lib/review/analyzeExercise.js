@@ -10,6 +10,7 @@ import {
   classifyPattern,
   classifyStatus,
   bucketFor,
+  movementPatternFor,
 } from "./patterns";
 
 export function buildExerciseHistory(workouts) {
@@ -123,8 +124,7 @@ export function analyzeExercise(
     priorComparison,
     sessionsToDate,
     isBaseline,
-    movementPattern:
-      config.movementPatterns[normalizeName(name)] || "uncategorized",
+    movementPattern: movementPatternFor(config, name, mainMuscle),
     rpe: ex.rpe ?? null,
     feedback: ex.feedback || "",
   };

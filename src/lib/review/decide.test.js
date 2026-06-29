@@ -167,6 +167,21 @@ describe("front-delt caution", () => {
     expect(d.action).toBe("PROGRESS");
     expect(d.increment).toBe(2.5);
   });
+  it("applies strict caution to the dumbbell shoulder press variant too", () => {
+    const d = decide(
+      max753,
+      A({
+        name: "Shoulder Press Dumbbell",
+        status: "OVER+3",
+        pattern: "linear",
+        target: 50,
+        setFloor: 7,
+        increment: 2.5,
+      }),
+      { phase: "lean-bulk" },
+    );
+    expect(d.action).toBe("HOLD"); // needs OVER+5, same as the barbell variant
+  });
 });
 
 describe("RPE modifier", () => {

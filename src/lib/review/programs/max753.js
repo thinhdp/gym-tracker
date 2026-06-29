@@ -150,6 +150,8 @@ export const max753 = {
   baselineExercises: {
     names: [
       "romanian deadlift",
+      "romanian deadlift dumbbell",
+      "romanian deadlift barbell",
       "rdl",
       "hammer curl",
       "incline dumbbell bench press",
@@ -160,7 +162,7 @@ export const max753 = {
   // Front-delt caution tiers. discomfort = what an injury-keyword feedback does.
   cautionExercises: {
     strict: {
-      names: ["shoulder press", "overhead press"],
+      names: ["shoulder press", "shoulder press dumbbell", "overhead press"],
       overshootMin: 5,
       maxIncrement: 2.5,
       discomfort: "deload",

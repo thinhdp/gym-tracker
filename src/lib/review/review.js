@@ -227,13 +227,14 @@ export function buildCycleReview(config, data, cycleNumber) {
     };
   }
 
-  const thisTn = tonnageByPattern(config, cycleWorkouts);
+  const thisTn = tonnageByPattern(config, cycleWorkouts, mainMuscleByName);
   const priorTn = priorDates
     ? tonnageByPattern(
         config,
         workouts.filter(
           (w) => w.date >= priorDates.start && w.date <= priorDates.end,
         ),
+        mainMuscleByName,
       )
     : {};
   const byPattern = [

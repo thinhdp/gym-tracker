@@ -4,7 +4,13 @@
 // bad-form effort, not a clean rep). Pattern quality = % of complete exercises
 // with a linear or flat drop-off.
 
-import { cleanReps, classifyPattern, isDeadlift, isAbs } from "./patterns";
+import {
+  cleanReps,
+  classifyPattern,
+  isDeadlift,
+  isAbs,
+  movementPatternFor,
+} from "./patterns";
 import { normalizeName } from "./match";
 import { cycleDates, parseYMD, ymd } from "./cycles";
 
@@ -58,13 +64,12 @@ export function weeklySummary(config, workouts) {
   };
 }
 
-export function tonnageByPattern(config, workouts) {
+export function tonnageByPattern(config, workouts, muscleByName) {
   const out = {};
   for (const w of workouts || []) {
     for (const exr of w.exercises || []) {
-      const mp =
-        config.movementPatterns[normalizeName(exr.exerciseName)] ||
-        "uncategorized";
+      const muscle = muscleByName?.get?.(normalizeName(exr.exerciseName));
+      const mp = movementPatternFor(config, exr.exerciseName, muscle);
       for (const s of exr.sets || []) {
         out[mp] =
           (out[mp] || 0) +

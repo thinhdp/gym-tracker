@@ -63,6 +63,17 @@ describe("analyzeExercise", () => {
     const a = analyzeExercise(max753, ex, null, h2, "2026-06-10");
     expect(a.isBaseline).toBe(true);
   });
+  it("flags Romanian Deadlift equipment variants as baseline", () => {
+    const ex = {
+      exerciseName: "Romanian Deadlift Barbell",
+      sets: sets(8, 7, 6, 5, 4),
+    };
+    const h2 = buildExerciseHistory([
+      { id: "x", date: "2026-06-10", name: "Hamstrings", exercises: [ex] },
+    ]);
+    const a = analyzeExercise(max753, ex, null, h2, "2026-06-10");
+    expect(a.isBaseline).toBe(true);
+  });
   it("marks abs as the rep-range bucket with no pattern/status", () => {
     const ex = { exerciseName: "Cable Crunch", sets: sets(20, 18, 16) };
     const h2 = buildExerciseHistory([

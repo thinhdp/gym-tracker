@@ -39,6 +39,16 @@ describe("tonnageByPattern", () => {
     ]);
     expect(t.quad).toBe(100 * 50);
   });
+  it("falls back to the exercise mainMuscle for uncatalogued names", () => {
+    const muscles = new Map([["hip abduction machine", "Abductors"]]);
+    const t = tonnageByPattern(
+      max753,
+      [wo("2026-06-09", ex("Hip Abduction Machine", 12, 12, 12))],
+      muscles,
+    );
+    expect(t.abductors).toBe(100 * 36);
+    expect(t.uncategorized).toBeUndefined();
+  });
 });
 
 describe("collectHistory", () => {
