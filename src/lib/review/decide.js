@@ -58,7 +58,9 @@ function feedbackHit(config, feedback) {
   const fb = String(feedback || "").toLowerCase();
   if (!fb) return null;
   for (const [kind, rule] of Object.entries(config.feedbackRules || {})) {
-    if ((rule.keywords || []).some((k) => fb.includes(String(k).toLowerCase()))) {
+    if (
+      (rule.keywords || []).some((k) => fb.includes(String(k).toLowerCase()))
+    ) {
       return { kind, action: rule.action };
     }
   }
@@ -77,40 +79,108 @@ function matrixAction(a) {
 
   if (isOver) {
     if (p === "linear" || p === "flat")
-      return { action: "PROGRESS", increment: inc, reason: `overshot ${a.target} by ${num}, ${p} drop` };
+      return {
+        action: "PROGRESS",
+        increment: inc,
+        reason: `overshot ${a.target} by ${num}, ${p} drop`,
+      };
     if (p === "steep")
-      return { action: "HOLD", increment: inc, reason: "overshot but steep — investigate pacing" };
-    return { action: "HOLD", increment: inc, reason: "overshot but irregular — check setup" };
+      return {
+        action: "HOLD",
+        increment: inc,
+        reason: "overshot but steep — investigate pacing",
+      };
+    return {
+      action: "HOLD",
+      increment: inc,
+      reason: "overshot but irregular — check setup",
+    };
   }
   if (isHit) {
     if (p === "linear")
       return a.weakFinal
-        ? { action: "HOLD", increment: inc, reason: "hit target, weak final set — push +1 rep" }
-        : { action: "PROGRESS", increment: inc, reason: `hit ${a.target}, strong final set` };
+        ? {
+            action: "HOLD",
+            increment: inc,
+            reason: "hit target, weak final set — push +1 rep",
+          }
+        : {
+            action: "PROGRESS",
+            increment: inc,
+            reason: `hit ${a.target}, strong final set`,
+          };
     if (p === "flat")
-      return { action: "PROGRESS", increment: inc * 2, reason: `hit ${a.target} easily, flat — bigger step` };
+      return {
+        action: "PROGRESS",
+        increment: inc * 2,
+        reason: `hit ${a.target} easily, flat — bigger step`,
+      };
     if (p === "steep")
-      return { action: "HOLD", increment: inc, reason: "at ceiling for this bucket" };
-    return { action: "HOLD", increment: inc, reason: "irregular pattern — flag" };
+      return {
+        action: "HOLD",
+        increment: inc,
+        reason: "at ceiling for this bucket",
+      };
+    return {
+      action: "HOLD",
+      increment: inc,
+      reason: "irregular pattern — flag",
+    };
   }
   if (isUnder) {
     if (severeUnder)
-      return { action: "DELOAD", increment: inc, deloadPct: -0.1, reason: `undershot ${a.target} by ${num} — rebuild` };
+      return {
+        action: "DELOAD",
+        increment: inc,
+        deloadPct: -0.1,
+        reason: `undershot ${a.target} by ${num} — rebuild`,
+      };
     if (p === "linear")
-      return { action: "HOLD", increment: inc, reason: `undershot ${a.target} by ${num} — one more try` };
-    return { action: "DELOAD", increment: inc, deloadPct: -0.075, reason: `undershot with ${p} pattern` };
+      return {
+        action: "HOLD",
+        increment: inc,
+        reason: `undershot ${a.target} by ${num} — one more try`,
+      };
+    return {
+      action: "DELOAD",
+      increment: inc,
+      deloadPct: -0.075,
+      reason: `undershot with ${p} pattern`,
+    };
   }
   return { action: "HOLD", increment: inc, reason: "hold" };
 }
 
 function decideAbs(config, a) {
-  const allTop = a.reps.length >= a.expectedNSets && a.reps.every((r) => r >= a.repRangeMax);
+  const allTop =
+    a.reps.length >= a.expectedNSets && a.reps.every((r) => r >= a.repRangeMax);
   const anyBelow = a.reps.some((r) => r < a.repRangeMin);
   if (allTop)
-    return finalize("PROGRESS", a.weight, a.increment, 0, `all sets at ${a.repRangeMax} — +${a.increment}kg`, ["abs"]);
+    return finalize(
+      "PROGRESS",
+      a.weight,
+      a.increment,
+      0,
+      `all sets at ${a.repRangeMax} — +${a.increment}kg`,
+      ["abs"],
+    );
   if (anyBelow)
-    return finalize("DELOAD", a.weight, a.increment, -0.1, `below ${a.repRangeMin}-rep range — drop load`, ["abs"]);
-  return finalize("HOLD", a.weight, a.increment, 0, `in ${a.repRangeMin}-${a.repRangeMax} range — push reps`, ["abs"]);
+    return finalize(
+      "DELOAD",
+      a.weight,
+      a.increment,
+      -0.1,
+      `below ${a.repRangeMin}-rep range — drop load`,
+      ["abs"],
+    );
+  return finalize(
+    "HOLD",
+    a.weight,
+    a.increment,
+    0,
+    `in ${a.repRangeMin}-${a.repRangeMax} range — push reps`,
+    ["abs"],
+  );
 }
 
 export function decide(config, a, context = {}) {
@@ -119,10 +189,24 @@ export function decide(config, a, context = {}) {
   // --- Short-circuits ---
   if (a.isBaseline) {
     const need = config.baselineExercises.sessionsRequired;
-    return finalize("BASELINE", a.weight, a.increment, 0, `establish baseline (session ${a.sessionsToDate} of ${need})`, ["BASELINE"]);
+    return finalize(
+      "BASELINE",
+      a.weight,
+      a.increment,
+      0,
+      `establish baseline (session ${a.sessionsToDate} of ${need})`,
+      ["BASELINE"],
+    );
   }
   if (a.pattern === "incomplete") {
-    return finalize("HOLD", a.weight, a.increment, 0, "incomplete — fewer sets than expected", ["incomplete"]);
+    return finalize(
+      "HOLD",
+      a.weight,
+      a.increment,
+      0,
+      "incomplete — fewer sets than expected",
+      ["incomplete"],
+    );
   }
   if (a.bucketKind === "abs") {
     return decideAbs(config, a);
@@ -134,6 +218,7 @@ export function decide(config, a, context = {}) {
   let increment = base.increment;
   let deloadPct = base.deloadPct ?? -0.075;
   let reason = base.reason;
+  let conservativeHold = false;
 
   // --- Phase modifier ---
   const phase = config.phases.find((ph) => ph.id === context.phase);
@@ -141,10 +226,16 @@ export function decide(config, a, context = {}) {
     if (action !== "DELOAD") {
       action = "HOLD";
       reason = "first bulk session — hold to recalibrate";
+      conservativeHold = true;
     }
-  } else if (phase?.bias === "conservative" && action === "PROGRESS" && a.status === "HIT") {
+  } else if (
+    phase?.bias === "conservative" &&
+    action === "PROGRESS" &&
+    a.status === "HIT"
+  ) {
     action = "HOLD";
     reason = "cut — hold borderline progress";
+    conservativeHold = true;
   }
 
   // --- Front-delt caution ---
@@ -160,17 +251,20 @@ export function decide(config, a, context = {}) {
       if (action === "PROGRESS" && !eligible) {
         action = "HOLD";
         reason = `caution: needs OVER+${caution.overshootMin} clean linear`;
+        conservativeHold = true;
       }
       if (a.pattern === "steep" || a.pattern === "irregular") {
         if (action !== "DELOAD") {
           action = "HOLD";
           reason = "caution: non-linear on shoulder lift";
+          conservativeHold = true;
         }
       }
     } else if (caution.tier === "moderate" && a.pattern === "irregular") {
       if (action !== "DELOAD") {
         action = "HOLD";
         reason = "caution: irregular on incline";
+        conservativeHold = true;
       }
     }
     if (action === "PROGRESS" && caution.maxIncrement != null) {
@@ -184,11 +278,13 @@ export function decide(config, a, context = {}) {
     if (rpe >= 10 && action === "PROGRESS") {
       action = "HOLD";
       reason = "RPE 10 last set — at ceiling";
-    } else if (rpe <= 7 && action === "HOLD") {
+    } else if (rpe <= 7 && action === "HOLD" && !conservativeHold) {
       // Only upgrade when the pattern is load-ambiguous (linear/flat).
       if (a.pattern === "linear" || a.pattern === "flat") {
         action = "PROGRESS";
-        increment = caution ? Math.min(a.increment, caution.maxIncrement ?? a.increment) : a.increment;
+        increment = caution
+          ? Math.min(a.increment, caution.maxIncrement ?? a.increment)
+          : a.increment;
         reason = `RPE ${rpe} — room to add load`;
       }
     }

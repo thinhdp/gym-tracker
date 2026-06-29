@@ -22,7 +22,12 @@ export const max753 = {
       from: "2026-04-27",
       to: "2026-05-23",
       bias: "conservative",
-      bodyweight: { minPct: -0.7, maxPct: -0.4, tooFastPct: -1.0, tooSlowPct: -0.2 },
+      bodyweight: {
+        minPct: -0.7,
+        maxPct: -0.4,
+        tooFastPct: -1.0,
+        tooSlowPct: -0.2,
+      },
     },
     {
       id: "maintenance",
@@ -177,6 +182,7 @@ export const max753 = {
   },
 
   // Session-name -> block, for the "By block" plan grouping.
+  // Block `sessions` names must be lowercase (the engine matches them case-insensitively against normalized workout names).
   blocks: [
     { id: "A", label: "Block A", sessions: ["quads", "push", "pull"] },
     { id: "B", label: "Block B", sessions: ["hamstrings", "push", "pull"] },
