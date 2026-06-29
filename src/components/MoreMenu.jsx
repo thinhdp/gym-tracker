@@ -3,6 +3,7 @@ import { useApp } from "../context/AppContext";
 import Segmented from "./ui/Segmented";
 import { Input } from "./ui/Input";
 import Notepad from "./Notepad";
+import CycleReview from "./CycleReview";
 import DataManagementMenu from "./DataManagementMenu";
 import LiftSourcesEditor from "./LiftSourcesEditor";
 import { loadLS, saveLS, K_PROFILE } from "../lib/storage";
@@ -66,6 +67,21 @@ export default function MoreMenu() {
           <span aria-hidden>←</span> More
         </button>
         <Notepad />
+      </div>
+    );
+  }
+
+  if (view === "cycleReview") {
+    return (
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setView("menu")}
+          className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400"
+        >
+          <span aria-hidden>←</span> More
+        </button>
+        <CycleReview />
       </div>
     );
   }
@@ -197,19 +213,27 @@ export default function MoreMenu() {
       {/* Content */}
       <div>
         <SectionLabel>Content</SectionLabel>
-        <div className={card}>
+        <div className={`${card} divide-y dark:divide-neutral-800`}>
           <button
             type="button"
             onClick={() => setView("notepad")}
             className="flex w-full items-center justify-between px-3 py-3 text-left transition hover:bg-neutral-50 dark:hover:bg-neutral-800"
           >
             <span className={rowText}>Notepad</span>
-            <span
-              aria-hidden
-              className="text-neutral-400 dark:text-neutral-500"
-            >
-              ›
-            </span>
+            <span aria-hidden className="text-neutral-400 dark:text-neutral-500">›</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("cycleReview")}
+            className="flex w-full items-center justify-between px-3 py-3 text-left transition hover:bg-neutral-50 dark:hover:bg-neutral-800"
+          >
+            <div>
+              <div className={rowText}>Cycle Review</div>
+              <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                Max 7/5/3 review + next-cycle plan
+              </div>
+            </div>
+            <span aria-hidden className="text-neutral-400 dark:text-neutral-500">›</span>
           </button>
         </div>
       </div>
