@@ -82,6 +82,10 @@ export const max753 = {
         "ab crunch machine",
         "decline crunch",
       ],
+      // Any exercise whose database mainMuscle is one of these uses the abs
+      // rep-range model, so ab movements not in `names` (e.g. "Crunch") still
+      // resolve correctly. Matched case-insensitively against exercise.mainMuscle.
+      mainMuscles: ["abs"],
       nSets: 3,
       repRangeMin: 15,
       repRangeMax: 20,
@@ -136,6 +140,11 @@ export const max753 = {
     "cable crunch": "abs",
     "ab crunch machine": "abs",
     "decline crunch": "abs",
+    // App exercise-database ab movements (exercises_seed.json).
+    crunch: "abs",
+    "sit-ups": "abs",
+    "bicycle crunch": "abs",
+    "leg raises (lying, hanging)": "abs",
   },
 
   baselineExercises: {

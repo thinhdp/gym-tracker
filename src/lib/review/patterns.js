@@ -61,11 +61,24 @@ export function isDeadlift(config, name) {
   return matchesAny(name, config.special?.deadlift?.names);
 }
 
-export function isAbs(config, name) {
-  return matchesAny(name, config.special?.abs?.names);
+export function isAbs(config, name, mainMuscle) {
+  if (matchesAny(name, config.special?.abs?.names)) return true;
+  // Fall back to the exercise database's own categorization so any exercise the
+  // app tags as an abs muscle uses the rep-range model, not just listed names.
+  const muscles = config.special?.abs?.mainMuscles;
+  if (muscles && mainMuscle) {
+    // mainMuscle may be comma-separated (e.g. "Abs, Obliques").
+    const tokens = String(mainMuscle)
+      .toLowerCase()
+      .split(",")
+      .map((s) => s.trim());
+    const wanted = muscles.map((x) => String(x).trim().toLowerCase());
+    return tokens.some((t) => wanted.includes(t));
+  }
+  return false;
 }
 
-export function bucketFor(config, name, total) {
+export function bucketFor(config, name, total, mainMuscle) {
   if (isDeadlift(config, name)) {
     const d = config.special.deadlift;
     return {
@@ -76,7 +89,7 @@ export function bucketFor(config, name, total) {
       increment: d.increment,
     };
   }
-  if (isAbs(config, name)) {
+  if (isAbs(config, name, mainMuscle)) {
     const a = config.special.abs;
     return {
       kind: "abs",

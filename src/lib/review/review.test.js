@@ -62,4 +62,26 @@ describe("buildCycleReview", () => {
     const r = buildCycleReview(max753, data, 1);
     expect(r.warnings.some((w) => /no sessions/i.test(w))).toBe(true);
   });
+
+  it("treats a 3-set abs exercise (by mainMuscle) as abs, not incomplete", () => {
+    // Regression: "Crunch" is tagged Abs in the DB but is not in special.abs.names.
+    const absData = {
+      exercises: [{ name: "Crunch", mainMuscle: "Abs" }],
+      weightLogs: {},
+      workouts: [
+        {
+          id: "ab1",
+          date: "2026-06-09",
+          name: "Push",
+          exercises: [{ exerciseName: "Crunch", sets: sets(0, 20, 20, 20) }],
+        },
+      ],
+    };
+    const r = buildCycleReview(max753, absData);
+    const crunch = r.exercises.find((e) => e.name === "Crunch");
+    expect(crunch.bucketKind).toBe("abs");
+    expect(crunch.pattern).toBe("n/a");
+    expect(crunch.decision.action).toBe("PROGRESS"); // all sets at top of range
+    expect(crunch.decision.reason).not.toMatch(/incomplete/i);
+  });
 });

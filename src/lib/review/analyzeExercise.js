@@ -39,7 +39,14 @@ export function findPriorSession(history, name, beforeDate) {
   return prior.length ? prior[prior.length - 1] : null;
 }
 
-export function analyzeExercise(config, ex, prior, history, dateStr) {
+export function analyzeExercise(
+  config,
+  ex,
+  prior,
+  history,
+  dateStr,
+  mainMuscle,
+) {
   const name = ex.exerciseName;
   const sets = ex.sets || [];
   const rawReps = sets.map((s) => Number(s.reps) || 0);
@@ -49,7 +56,7 @@ export function analyzeExercise(config, ex, prior, history, dateStr) {
   const weightConsistent = weights.every((w) => w === weight);
   const totalReps = reps.reduce((a, b) => a + b, 0);
 
-  const bucket = bucketFor(config, name, totalReps);
+  const bucket = bucketFor(config, name, totalReps, mainMuscle);
   const isAbsKind = bucket.kind === "abs";
   const status = isAbsKind
     ? null

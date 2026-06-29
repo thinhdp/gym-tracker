@@ -71,6 +71,14 @@ export function buildCycleReview(config, data, cycleNumber) {
   const weightLogs = data.weightLogs || {};
   const warnings = [];
 
+  // Normalized exercise name -> mainMuscle, so the engine can use the app's own
+  // categorization (e.g. abs detection) instead of relying only on name lists.
+  const mainMuscleByName = new Map();
+  for (const e of data.exercises || []) {
+    if (e && e.name)
+      mainMuscleByName.set(normalizeName(e.name), e.mainMuscle || "");
+  }
+
   const number = cycleNumber ?? mostRecentCompletedCycle(config, workouts);
   if (number == null) {
     return emptyResult(
@@ -136,7 +144,14 @@ export function buildCycleReview(config, data, cycleNumber) {
     for (const ex of w.exercises || []) {
       if (!ex.exerciseName) continue;
       const prior = findPriorSession(history, ex.exerciseName, w.date);
-      const a = analyzeExercise(config, ex, prior, history, w.date);
+      const a = analyzeExercise(
+        config,
+        ex,
+        prior,
+        history,
+        w.date,
+        mainMuscleByName.get(normalizeName(ex.exerciseName)),
+      );
       const stallCount = consecutiveSameWeight(
         history,
         ex.exerciseName,

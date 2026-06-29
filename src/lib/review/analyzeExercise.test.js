@@ -73,4 +73,15 @@ describe("analyzeExercise", () => {
     expect(a.status).toBeNull();
     expect(a.pattern).toBe("n/a");
   });
+  it("detects abs by mainMuscle even when the name is not in the abs list", () => {
+    // "Crunch" is not in special.abs.names, but the exercise DB tags it Abs.
+    const ex = { exerciseName: "Crunch", sets: sets(20, 18, 15) };
+    const h2 = buildExerciseHistory([
+      { id: "x", date: "2026-06-10", name: "Push", exercises: [ex] },
+    ]);
+    const a = analyzeExercise(max753, ex, null, h2, "2026-06-10", "Abs");
+    expect(a.bucketKind).toBe("abs");
+    expect(a.status).toBeNull();
+    expect(a.pattern).toBe("n/a");
+  });
 });

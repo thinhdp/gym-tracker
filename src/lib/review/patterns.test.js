@@ -74,4 +74,12 @@ describe("closestTarget / bucketFor", () => {
     expect(b.repRangeMin).toBe(15);
     expect(b.repRangeMax).toBe(20);
   });
+  it("detects abs by mainMuscle for names not in the abs list", () => {
+    expect(isAbs(max753, "Crunch")).toBe(false); // name alone: not listed
+    expect(isAbs(max753, "Crunch", "Abs")).toBe(true);
+    expect(isAbs(max753, "Crunch", "Abs, Obliques")).toBe(true); // comma list
+    expect(isAbs(max753, "Bench Press Barbell", "Chest")).toBe(false);
+    const b = bucketFor(max753, "Crunch", 54, "Abs");
+    expect(b.kind).toBe("abs");
+  });
 });
