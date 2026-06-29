@@ -29,21 +29,21 @@ downloadable one-pager.
 
 ## Decisions
 
-| Topic | Decision |
-| --- | --- |
-| LLM-driven parts | Fully offline; prose generated from templates over structured results. |
-| Program config | One documented JS module (`programs/max753.js`) behind a defined `ProgramConfig` shape. |
-| Placement | A **More → Cycle Review** sub-screen (reuses MoreMenu's `view` sub-screen pattern). |
-| Scope | Tonnage + bodyweight trends, templated wins/concerns, downloadable one-pager, cycle picker. |
-| Download | In-app view **plus** a "Download" button that emits a self-contained HTML one-pager (Blob download). `window.print()` (Save as PDF) also available. |
-| Plan grouping | Toggle: **By session** (workout name) or **By block** (from config `blocks`). |
+| Topic            | Decision                                                                                                                                            |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LLM-driven parts | Fully offline; prose generated from templates over structured results.                                                                              |
+| Program config   | One documented JS module (`programs/max753.js`) behind a defined `ProgramConfig` shape.                                                             |
+| Placement        | A **More → Cycle Review** sub-screen (reuses MoreMenu's `view` sub-screen pattern).                                                                 |
+| Scope            | Tonnage + bodyweight trends, templated wins/concerns, downloadable one-pager, cycle picker.                                                         |
+| Download         | In-app view **plus** a "Download" button that emits a self-contained HTML one-pager (Blob download). `window.print()` (Save as PDF) also available. |
+| Plan grouping    | Toggle: **By session** (workout name) or **By block** (from config `blocks`).                                                                       |
 
 ## Architecture — three layers
 
 ### Layer 1 — Program definition (swappable)
 
 `src/lib/review/programs/max753.js` exports a `ProgramConfig` object. This is the
-*only* file that changes when the program changes. Shape (documented as the
+_only_ file that changes when the program changes. Shape (documented as the
 engine's input contract):
 
 ```js
@@ -110,7 +110,7 @@ engine's input contract):
 ```
 
 Helper predicates that need the config (e.g. `isDeadlift(name)`, `bucketFor`,
-`cautionTierFor`) are pure functions in the engine that *take* the config — the
+`cautionTierFor`) are pure functions in the engine that _take_ the config — the
 config stays plain data.
 
 ### Layer 2 — Pure analysis engine (`src/lib/review/`)
@@ -131,7 +131,7 @@ All deterministic, framework-free, each with a co-located `*.test.js`.
   flags, session count + baseline state, movement pattern, and **RPE read from
   the structured `ex.rpe` field** (last-set proxy).
 - **`decide.js`** — `decide(config, analysis, context) -> { action, newWeight,
-  reason, flags }` where `action ∈ {PROGRESS, HOLD, DELOAD, BASELINE, REP_BUMP}`.
+reason, flags }` where `action ∈ {PROGRESS, HOLD, DELOAD, BASELINE, REP_BUMP}`.
   Implements: the rep-status × pattern matrix; the 3-strike stall counter
   (consecutive HOLDs per exercise across cycles → escalate to DELOAD); the phase
   modifier (cut = conservative, bulk = normal, first-bulk re-calibration HOLD);
@@ -145,6 +145,7 @@ All deterministic, framework-free, each with a co-located `*.test.js`.
   pattern: PROGRESS when all 3 sets reach the top of range (≥20), HOLD while in
   range, DELOAD/HOLD-back if sets fall below the bottom (<15). Increment per
   `special.abs.increment`.
+
 - **`tonnage.js`** — `weeklySummary(workouts)` (tonnage, reps, pattern counts,
   pattern-quality %), `tonnageByPattern(workouts, config)`,
   `collectHistory(config, workouts, cycleN, nWindows)` (in-program 8-day cycles;
@@ -155,7 +156,7 @@ All deterministic, framework-free, each with a co-located `*.test.js`.
   `buildCycleReview(config, { workouts, weightLogs, exercises }, cycleNumber?)`
   → a single structured **`ReviewResult`** (below).
 - **`narrative.js`** — `buildNarrative(result) -> { headline, wins[], concerns[],
-  volumeVerdict }`, derived entirely from `ReviewResult`. Replaces the LLM.
+volumeVerdict }`, derived entirely from `ReviewResult`. Replaces the LLM.
   Concerns are ranked (injury-risk → plateau → execution) and capped at 3.
 
 ### `ReviewResult` shape (engine ↔ UI/narrative contract)
@@ -258,6 +259,7 @@ docs provide ready-made fixtures, e.g.:
 ## File inventory
 
 New:
+
 - `src/lib/review/programs/max753.js`
 - `src/lib/review/cycles.js` (+ test)
 - `src/lib/review/patterns.js` (+ test)
@@ -271,7 +273,11 @@ New:
 - `src/components/CycleReview.jsx` (+ test)
 
 Changed:
+
 - `src/components/MoreMenu.jsx` — add the Cycle Review sub-screen entry.
 - Docs: `ARCHITECTURE.md` / `docs/DATA-MODEL.md` note the new feature (no new
   persisted keys — the review is computed on the fly).
+
+```
+
 ```

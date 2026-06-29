@@ -24,13 +24,16 @@ export function evaluate(config, phaseId, deltaPct) {
 
   if (phaseId === "cut") {
     if (d >= minPct && d <= maxPct) return "ON TARGET (cut band)";
-    if (tooFastPct != null && d < tooFastPct) return "TOO FAST (loss too rapid — strength risk)";
-    if (tooSlowPct != null && d > tooSlowPct) return "TOO SLOW (deficit may not be real)";
+    if (tooFastPct != null && d < tooFastPct)
+      return "TOO FAST (loss too rapid — strength risk)";
+    if (tooSlowPct != null && d > tooSlowPct)
+      return "TOO SLOW (deficit may not be real)";
     return "ACCEPTABLE (within reasonable cut range)";
   }
   if (phaseId === "lean-bulk") {
     if (d >= minPct && d <= maxPct) return "ON TARGET (lean bulk band)";
-    if (tooFastPct != null && d > tooFastPct) return "TOO FAST (excess fat-gain risk)";
+    if (tooFastPct != null && d > tooFastPct)
+      return "TOO FAST (excess fat-gain risk)";
     if (d < 0) return "BELOW TARGET (no gain)";
     return "ACCEPTABLE";
   }

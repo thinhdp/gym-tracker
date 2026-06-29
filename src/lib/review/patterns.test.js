@@ -11,7 +11,10 @@ import {
 
 describe("cleanReps", () => {
   it("floors partials and counts them", () => {
-    expect(cleanReps([8.5, 7, 6])).toEqual({ cleaned: [8, 7, 6], nPartials: 1 });
+    expect(cleanReps([8.5, 7, 6])).toEqual({
+      cleaned: [8, 7, 6],
+      nPartials: 1,
+    });
     expect(cleanReps([10, 10])).toEqual({ cleaned: [10, 10], nPartials: 0 });
   });
 });

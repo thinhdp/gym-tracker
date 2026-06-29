@@ -16,8 +16,14 @@ describe("cycleForDate / cycleDates", () => {
     expect(cycleForDate(max753, "2026-04-27")).toBe(1);
     expect(cycleForDate(max753, "2026-05-04")).toBe(1);
     expect(cycleForDate(max753, "2026-05-05")).toBe(2);
-    expect(cycleDates(max753, 1)).toEqual({ start: "2026-04-27", end: "2026-05-04" });
-    expect(cycleDates(max753, 2)).toEqual({ start: "2026-05-05", end: "2026-05-12" });
+    expect(cycleDates(max753, 1)).toEqual({
+      start: "2026-04-27",
+      end: "2026-05-04",
+    });
+    expect(cycleDates(max753, 2)).toEqual({
+      start: "2026-05-05",
+      end: "2026-05-12",
+    });
   });
   it("returns null before program start", () => {
     expect(cycleForDate(max753, "2026-04-20")).toBeNull();

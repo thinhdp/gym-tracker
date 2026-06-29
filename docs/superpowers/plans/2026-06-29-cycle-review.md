@@ -24,6 +24,7 @@
 ## File Structure
 
 New (all under `src/lib/review/` unless noted):
+
 - `programs/max753.js` — the swappable `ProgramConfig` (data only).
 - `match.js` — `normalizeName`, `matchesAny` (name matching helpers).
 - `cycles.js` — cycle/phase date math.
@@ -38,6 +39,7 @@ New (all under `src/lib/review/` unless noted):
 - `src/components/CycleReview.jsx` — the More sub-screen.
 
 Modified:
+
 - `src/components/MoreMenu.jsx` — add the Cycle Review sub-screen entry.
 - `ARCHITECTURE.md`, `docs/DATA-MODEL.md` — document the feature (no new persisted keys).
 
@@ -48,17 +50,20 @@ Each engine module is a separate task because a reviewer could reject one classi
 ## Task 1: Program config module + name matchers
 
 **Files:**
+
 - Create: `src/lib/review/programs/max753.js`
 - Create: `src/lib/review/match.js`
 - Test: `src/lib/review/match.test.js`, `src/lib/review/programs/max753.test.js`
 
 **Interfaces:**
+
 - Produces: `max753` (default + named export) — the `ProgramConfig` object (shape per spec).
 - Produces: `normalizeName(name) -> string`, `matchesAny(name, list) -> boolean` (exact, case-insensitive, trimmed equality against any list entry).
 
 - [ ] **Step 1: Write the failing tests**
 
 `src/lib/review/match.test.js`:
+
 ```js
 import { normalizeName, matchesAny } from "./match";
 
@@ -88,6 +93,7 @@ describe("matchesAny", () => {
 ```
 
 `src/lib/review/programs/max753.test.js`:
+
 ```js
 import max753 from "./max753";
 
@@ -350,10 +356,12 @@ git commit -m "feat(review): add Max 7/5/3 program config + name matchers"
 ## Task 2: Cycle/phase date math (`cycles.js`)
 
 **Files:**
+
 - Create: `src/lib/review/cycles.js`
 - Test: `src/lib/review/cycles.test.js`
 
 **Interfaces:**
+
 - Consumes: a `config` with `cycle.{startDate,lengthDays}` and `phases[]`.
 - Produces:
   - `parseYMD(str) -> Date|null`, `ymd(date) -> "YYYY-MM-DD"`
@@ -368,6 +376,7 @@ git commit -m "feat(review): add Max 7/5/3 program config + name matchers"
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/review/cycles.test.js`:
+
 ```js
 import max753 from "./programs/max753";
 import {
@@ -387,8 +396,14 @@ describe("cycleForDate / cycleDates", () => {
     expect(cycleForDate(max753, "2026-04-27")).toBe(1);
     expect(cycleForDate(max753, "2026-05-04")).toBe(1);
     expect(cycleForDate(max753, "2026-05-05")).toBe(2);
-    expect(cycleDates(max753, 1)).toEqual({ start: "2026-04-27", end: "2026-05-04" });
-    expect(cycleDates(max753, 2)).toEqual({ start: "2026-05-05", end: "2026-05-12" });
+    expect(cycleDates(max753, 1)).toEqual({
+      start: "2026-04-27",
+      end: "2026-05-04",
+    });
+    expect(cycleDates(max753, 2)).toEqual({
+      start: "2026-05-05",
+      end: "2026-05-12",
+    });
   });
   it("returns null before program start", () => {
     expect(cycleForDate(max753, "2026-04-20")).toBeNull();
@@ -533,7 +548,8 @@ export function mostRecentCompletedCycle(config, workouts, today = null) {
   if (n == null) return null;
   while (n >= 1) {
     const { start, end } = cycleDates(config, n);
-    if ((workouts || []).some((w) => w.date >= start && w.date <= end)) return n;
+    if ((workouts || []).some((w) => w.date >= start && w.date <= end))
+      return n;
     n -= 1;
   }
   return null;
@@ -566,10 +582,12 @@ git commit -m "feat(review): add cycle and phase date math"
 ## Task 3: Rep cleaning, pattern/status classification, bucket selection (`patterns.js`)
 
 **Files:**
+
 - Create: `src/lib/review/patterns.js`
 - Test: `src/lib/review/patterns.test.js`
 
 **Interfaces:**
+
 - Consumes: `config` (buckets/tolerance/overshoot/deloadUndershoot/special), `matchesAny` from `./match`.
 - Produces:
   - `cleanReps(reps) -> { cleaned: number[], nPartials: number }` (floors partials; counts non-integers)
@@ -582,6 +600,7 @@ git commit -m "feat(review): add cycle and phase date math"
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/review/patterns.test.js`:
+
 ```js
 import max753 from "./programs/max753";
 import {
@@ -596,7 +615,10 @@ import {
 
 describe("cleanReps", () => {
   it("floors partials and counts them", () => {
-    expect(cleanReps([8.5, 7, 6])).toEqual({ cleaned: [8, 7, 6], nPartials: 1 });
+    expect(cleanReps([8.5, 7, 6])).toEqual({
+      cleaned: [8, 7, 6],
+      nPartials: 1,
+    });
     expect(cleanReps([10, 10])).toEqual({ cleaned: [10, 10], nPartials: 0 });
   });
 });
@@ -779,10 +801,12 @@ git commit -m "feat(review): add rep pattern/status classification and bucketing
 ## Task 4: Per-exercise analysis + history (`analyzeExercise.js`)
 
 **Files:**
+
 - Create: `src/lib/review/analyzeExercise.js`
 - Test: `src/lib/review/analyzeExercise.test.js`
 
 **Interfaces:**
+
 - Consumes: `config`; `cleanReps`/`classifyPattern`/`classifyStatus`/`bucketFor` from `./patterns`; `normalizeName`/`matchesAny` from `./match`.
 - Produces:
   - `buildExerciseHistory(workouts) -> Map<normName, {date, sets, rpe, feedback}[]>` (each list sorted by date asc)
@@ -794,6 +818,7 @@ git commit -m "feat(review): add rep pattern/status classification and bucketing
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/review/analyzeExercise.test.js`:
+
 ```js
 import max753 from "./programs/max753";
 import {
@@ -802,21 +827,29 @@ import {
   analyzeExercise,
 } from "./analyzeExercise";
 
-const sets = (...reps) => reps.map((r, i) => ({ set: i + 1, weight: 40, reps: r }));
+const sets = (...reps) =>
+  reps.map((r, i) => ({ set: i + 1, weight: 40, reps: r }));
 
 const workouts = [
   {
     id: "a",
     date: "2026-06-02",
     name: "Push",
-    exercises: [{ exerciseName: "Bench Press Barbell", sets: sets(8, 7, 6, 5, 4) }],
+    exercises: [
+      { exerciseName: "Bench Press Barbell", sets: sets(8, 7, 6, 5, 4) },
+    ],
   },
   {
     id: "b",
     date: "2026-06-10",
     name: "Push",
     exercises: [
-      { exerciseName: "Bench Press Barbell", sets: sets(9, 8, 7, 6, 5), rpe: 8, feedback: "felt good" },
+      {
+        exerciseName: "Bench Press Barbell",
+        sets: sets(9, 8, 7, 6, 5),
+        rpe: 8,
+        feedback: "felt good",
+      },
     ],
   },
 ];
@@ -846,13 +879,17 @@ describe("analyzeExercise", () => {
   });
   it("flags baseline exercises below the session threshold", () => {
     const ex = { exerciseName: "Hammer Curl", sets: sets(20, 18, 16, 14, 12) };
-    const h2 = buildExerciseHistory([{ id: "x", date: "2026-06-10", name: "Pull", exercises: [ex] }]);
+    const h2 = buildExerciseHistory([
+      { id: "x", date: "2026-06-10", name: "Pull", exercises: [ex] },
+    ]);
     const a = analyzeExercise(max753, ex, null, h2, "2026-06-10");
     expect(a.isBaseline).toBe(true);
   });
   it("marks abs as the rep-range bucket with no pattern/status", () => {
     const ex = { exerciseName: "Cable Crunch", sets: sets(20, 18, 16) };
-    const h2 = buildExerciseHistory([{ id: "x", date: "2026-06-10", name: "Push", exercises: [ex] }]);
+    const h2 = buildExerciseHistory([
+      { id: "x", date: "2026-06-10", name: "Push", exercises: [ex] },
+    ]);
     const a = analyzeExercise(max753, ex, null, h2, "2026-06-10");
     expect(a.bucketKind).toBe("abs");
     expect(a.status).toBeNull();
@@ -935,7 +972,9 @@ export function analyzeExercise(config, ex, prior, history, dateStr) {
 
   let priorComparison = null;
   if (prior) {
-    const priorWeight = prior.sets.length ? Number(prior.sets[0].weight) || 0 : 0;
+    const priorWeight = prior.sets.length
+      ? Number(prior.sets[0].weight) || 0
+      : 0;
     const priorTotal = prior.sets.reduce(
       (acc, s) => acc + (Number(s.reps) || 0),
       0,
@@ -1010,15 +1049,17 @@ git commit -m "feat(review): add per-exercise analysis and history indexing"
 ## Task 5: Progression decision matrix + modifiers (`decide.js`)
 
 **Files:**
+
 - Create: `src/lib/review/decide.js`
 - Test: `src/lib/review/decide.test.js`
 
 **Interfaces:**
+
 - Consumes: `config`; an `Analysis` from Task 4; a `context = { phase, stallCount, isFirstBulkSession }`. `matchesAny` from `./match`.
 - Produces: `decide(config, analysis, context={}) -> Decision` where
   `Decision = { action, newWeight, increment, reason, badgeLabel, flags: string[] }`
   and `action ∈ {"PROGRESS","HOLD","DELOAD","BASELINE","REP_BUMP"}`.
-  - `newWeight` is in kg, rounded to 0.5. PROGRESS = weight+increment; DELOAD = round(weight*(1+pct)); HOLD/BASELINE/REP_BUMP = weight.
+  - `newWeight` is in kg, rounded to 0.5. PROGRESS = weight+increment; DELOAD = round(weight\*(1+pct)); HOLD/BASELINE/REP_BUMP = weight.
   - `badgeLabel`: PROGRESS → `+Xkg`; HOLD → `HOLD`; DELOAD → `DELOAD`; BASELINE → `BASELINE`; REP_BUMP → `+1 REP`.
 
 **Decision precedence** (later steps override earlier): base matrix → phase modifier → caution override → RPE modifier → feedback rule → stall counter. BASELINE and INCOMPLETE and ABS short-circuit before the matrix. Conflicts resolve to the more conservative action (per spec).
@@ -1026,6 +1067,7 @@ git commit -m "feat(review): add per-exercise analysis and history indexing"
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/review/decide.test.js`:
+
 ```js
 import max753 from "./programs/max753";
 import { decide } from "./decide";
@@ -1054,29 +1096,51 @@ const A = (over) => ({
 
 describe("base matrix", () => {
   it("OVER + linear -> PROGRESS", () => {
-    const d = decide(max753, A({ status: "OVER+4", pattern: "linear" }), { phase: "lean-bulk" });
+    const d = decide(max753, A({ status: "OVER+4", pattern: "linear" }), {
+      phase: "lean-bulk",
+    });
     expect(d.action).toBe("PROGRESS");
     expect(d.newWeight).toBe(42.5);
   });
   it("HIT + linear + strong final -> PROGRESS", () => {
-    const d = decide(max753, A({ status: "HIT", pattern: "linear", weakFinal: false }), { phase: "lean-bulk" });
+    const d = decide(
+      max753,
+      A({ status: "HIT", pattern: "linear", weakFinal: false }),
+      { phase: "lean-bulk" },
+    );
     expect(d.action).toBe("PROGRESS");
   });
   it("HIT + linear + weak final -> HOLD", () => {
-    const d = decide(max753, A({ status: "HIT", pattern: "linear", weakFinal: true }), { phase: "lean-bulk" });
+    const d = decide(
+      max753,
+      A({ status: "HIT", pattern: "linear", weakFinal: true }),
+      { phase: "lean-bulk" },
+    );
     expect(d.action).toBe("HOLD");
   });
   it("HIT + steep -> HOLD", () => {
-    expect(decide(max753, A({ pattern: "steep" }), { phase: "lean-bulk" }).action).toBe("HOLD");
+    expect(
+      decide(max753, A({ pattern: "steep" }), { phase: "lean-bulk" }).action,
+    ).toBe("HOLD");
   });
   it("severe UNDER -> DELOAD", () => {
-    const d = decide(max753, A({ status: "UNDER-10", pattern: "linear" }), { phase: "lean-bulk" });
+    const d = decide(max753, A({ status: "UNDER-10", pattern: "linear" }), {
+      phase: "lean-bulk",
+    });
     expect(d.action).toBe("DELOAD");
     expect(d.newWeight).toBe(36); // 40 * 0.90
   });
   it("UNDER -4 + linear -> HOLD; + steep -> DELOAD", () => {
-    expect(decide(max753, A({ status: "UNDER-4", pattern: "linear" }), { phase: "lean-bulk" }).action).toBe("HOLD");
-    expect(decide(max753, A({ status: "UNDER-4", pattern: "steep" }), { phase: "lean-bulk" }).action).toBe("DELOAD");
+    expect(
+      decide(max753, A({ status: "UNDER-4", pattern: "linear" }), {
+        phase: "lean-bulk",
+      }).action,
+    ).toBe("HOLD");
+    expect(
+      decide(max753, A({ status: "UNDER-4", pattern: "steep" }), {
+        phase: "lean-bulk",
+      }).action,
+    ).toBe("DELOAD");
   });
 });
 
@@ -1087,41 +1151,90 @@ describe("short-circuits", () => {
     expect(d.newWeight).toBe(40);
   });
   it("incomplete -> HOLD", () => {
-    expect(decide(max753, A({ pattern: "incomplete" }), { phase: "lean-bulk" }).action).toBe("HOLD");
+    expect(
+      decide(max753, A({ pattern: "incomplete" }), { phase: "lean-bulk" })
+        .action,
+    ).toBe("HOLD");
   });
 });
 
 describe("abs rep-range model", () => {
-  const abs = (reps) => A({ name: "Cable Crunch", bucketKind: "abs", status: null, pattern: "n/a", reps, expectedNSets: 3, repRangeMin: 15, repRangeMax: 20, increment: 2.5 });
+  const abs = (reps) =>
+    A({
+      name: "Cable Crunch",
+      bucketKind: "abs",
+      status: null,
+      pattern: "n/a",
+      reps,
+      expectedNSets: 3,
+      repRangeMin: 15,
+      repRangeMax: 20,
+      increment: 2.5,
+    });
   it("all sets at top of range -> PROGRESS", () => {
-    expect(decide(max753, abs([20, 20, 20]), { phase: "lean-bulk" }).action).toBe("PROGRESS");
+    expect(
+      decide(max753, abs([20, 20, 20]), { phase: "lean-bulk" }).action,
+    ).toBe("PROGRESS");
   });
   it("in range -> HOLD", () => {
-    expect(decide(max753, abs([18, 16, 15]), { phase: "lean-bulk" }).action).toBe("HOLD");
+    expect(
+      decide(max753, abs([18, 16, 15]), { phase: "lean-bulk" }).action,
+    ).toBe("HOLD");
   });
   it("below range -> DELOAD", () => {
-    expect(decide(max753, abs([14, 12, 10]), { phase: "lean-bulk" }).action).toBe("DELOAD");
+    expect(
+      decide(max753, abs([14, 12, 10]), { phase: "lean-bulk" }).action,
+    ).toBe("DELOAD");
   });
 });
 
 describe("phase modifier", () => {
   it("cut downgrades a HIT-based PROGRESS to HOLD", () => {
-    const d = decide(max753, A({ status: "HIT", pattern: "linear", weakFinal: false }), { phase: "cut" });
+    const d = decide(
+      max753,
+      A({ status: "HIT", pattern: "linear", weakFinal: false }),
+      { phase: "cut" },
+    );
     expect(d.action).toBe("HOLD");
   });
   it("cut keeps a clear OVER PROGRESS", () => {
-    const d = decide(max753, A({ status: "OVER+4", pattern: "linear" }), { phase: "cut" });
+    const d = decide(max753, A({ status: "OVER+4", pattern: "linear" }), {
+      phase: "cut",
+    });
     expect(d.action).toBe("PROGRESS");
   });
 });
 
 describe("front-delt caution", () => {
   it("shoulder press OVER+3 linear -> HOLD (needs OVER+5)", () => {
-    const d = decide(max753, A({ name: "Shoulder Press", status: "OVER+3", pattern: "linear", target: 50, setFloor: 7, increment: 2.5 }), { phase: "lean-bulk" });
+    const d = decide(
+      max753,
+      A({
+        name: "Shoulder Press",
+        status: "OVER+3",
+        pattern: "linear",
+        target: 50,
+        setFloor: 7,
+        increment: 2.5,
+      }),
+      { phase: "lean-bulk" },
+    );
     expect(d.action).toBe("HOLD");
   });
   it("shoulder press OVER+5 linear strong final -> PROGRESS capped at 2.5", () => {
-    const d = decide(max753, A({ name: "Shoulder Press", status: "OVER+5", pattern: "linear", weakFinal: false, target: 50, setFloor: 7, increment: 2.5 }), { phase: "lean-bulk" });
+    const d = decide(
+      max753,
+      A({
+        name: "Shoulder Press",
+        status: "OVER+5",
+        pattern: "linear",
+        weakFinal: false,
+        target: 50,
+        setFloor: 7,
+        increment: 2.5,
+      }),
+      { phase: "lean-bulk" },
+    );
     expect(d.action).toBe("PROGRESS");
     expect(d.increment).toBe(2.5);
   });
@@ -1129,33 +1242,61 @@ describe("front-delt caution", () => {
 
 describe("RPE modifier", () => {
   it("last-set RPE 10 caps PROGRESS at HOLD", () => {
-    const d = decide(max753, A({ status: "OVER+4", pattern: "linear", rpe: 10 }), { phase: "lean-bulk" });
+    const d = decide(
+      max753,
+      A({ status: "OVER+4", pattern: "linear", rpe: 10 }),
+      { phase: "lean-bulk" },
+    );
     expect(d.action).toBe("HOLD");
   });
   it("RPE 6 upgrades a HOLD to PROGRESS on an ambiguous (linear) hit", () => {
-    const d = decide(max753, A({ status: "HIT", pattern: "linear", weakFinal: true, rpe: 6 }), { phase: "lean-bulk" });
+    const d = decide(
+      max753,
+      A({ status: "HIT", pattern: "linear", weakFinal: true, rpe: 6 }),
+      { phase: "lean-bulk" },
+    );
     expect(d.action).toBe("PROGRESS");
   });
   it("RPE 6 does NOT upgrade a steep HOLD", () => {
-    const d = decide(max753, A({ status: "HIT", pattern: "steep", rpe: 6 }), { phase: "lean-bulk" });
+    const d = decide(max753, A({ status: "HIT", pattern: "steep", rpe: 6 }), {
+      phase: "lean-bulk",
+    });
     expect(d.action).toBe("HOLD");
   });
 });
 
 describe("feedback rules", () => {
   it("'felt heavy' caps action at HOLD", () => {
-    const d = decide(max753, A({ status: "OVER+4", pattern: "linear", feedback: "felt heavy today" }), { phase: "lean-bulk" });
+    const d = decide(
+      max753,
+      A({ status: "OVER+4", pattern: "linear", feedback: "felt heavy today" }),
+      { phase: "lean-bulk" },
+    );
     expect(d.action).toBe("HOLD");
   });
   it("'shoulder pain' on a strict-caution lift -> DELOAD", () => {
-    const d = decide(max753, A({ name: "Shoulder Press", status: "HIT", pattern: "linear", feedback: "shoulder pain", target: 50, setFloor: 7 }), { phase: "lean-bulk" });
+    const d = decide(
+      max753,
+      A({
+        name: "Shoulder Press",
+        status: "HIT",
+        pattern: "linear",
+        feedback: "shoulder pain",
+        target: 50,
+        setFloor: 7,
+      }),
+      { phase: "lean-bulk" },
+    );
     expect(d.action).toBe("DELOAD");
   });
 });
 
 describe("stall counter", () => {
   it("3rd consecutive hold escalates to DELOAD", () => {
-    const d = decide(max753, A({ status: "UNDER-4", pattern: "linear" }), { phase: "lean-bulk", stallCount: 2 });
+    const d = decide(max753, A({ status: "UNDER-4", pattern: "linear" }), {
+      phase: "lean-bulk",
+      stallCount: 2,
+    });
     expect(d.action).toBe("DELOAD");
   });
 });
@@ -1229,7 +1370,9 @@ function feedbackHit(config, feedback) {
   const fb = String(feedback || "").toLowerCase();
   if (!fb) return null;
   for (const [kind, rule] of Object.entries(config.feedbackRules || {})) {
-    if ((rule.keywords || []).some((k) => fb.includes(String(k).toLowerCase()))) {
+    if (
+      (rule.keywords || []).some((k) => fb.includes(String(k).toLowerCase()))
+    ) {
       return { kind, action: rule.action };
     }
   }
@@ -1248,40 +1391,108 @@ function matrixAction(a) {
 
   if (isOver) {
     if (p === "linear" || p === "flat")
-      return { action: "PROGRESS", increment: inc, reason: `overshot ${a.target} by ${num}, ${p} drop` };
+      return {
+        action: "PROGRESS",
+        increment: inc,
+        reason: `overshot ${a.target} by ${num}, ${p} drop`,
+      };
     if (p === "steep")
-      return { action: "HOLD", increment: inc, reason: "overshot but steep — investigate pacing" };
-    return { action: "HOLD", increment: inc, reason: "overshot but irregular — check setup" };
+      return {
+        action: "HOLD",
+        increment: inc,
+        reason: "overshot but steep — investigate pacing",
+      };
+    return {
+      action: "HOLD",
+      increment: inc,
+      reason: "overshot but irregular — check setup",
+    };
   }
   if (isHit) {
     if (p === "linear")
       return a.weakFinal
-        ? { action: "HOLD", increment: inc, reason: "hit target, weak final set — push +1 rep" }
-        : { action: "PROGRESS", increment: inc, reason: `hit ${a.target}, strong final set` };
+        ? {
+            action: "HOLD",
+            increment: inc,
+            reason: "hit target, weak final set — push +1 rep",
+          }
+        : {
+            action: "PROGRESS",
+            increment: inc,
+            reason: `hit ${a.target}, strong final set`,
+          };
     if (p === "flat")
-      return { action: "PROGRESS", increment: inc * 2, reason: `hit ${a.target} easily, flat — bigger step` };
+      return {
+        action: "PROGRESS",
+        increment: inc * 2,
+        reason: `hit ${a.target} easily, flat — bigger step`,
+      };
     if (p === "steep")
-      return { action: "HOLD", increment: inc, reason: "at ceiling for this bucket" };
-    return { action: "HOLD", increment: inc, reason: "irregular pattern — flag" };
+      return {
+        action: "HOLD",
+        increment: inc,
+        reason: "at ceiling for this bucket",
+      };
+    return {
+      action: "HOLD",
+      increment: inc,
+      reason: "irregular pattern — flag",
+    };
   }
   if (isUnder) {
     if (severeUnder)
-      return { action: "DELOAD", increment: inc, deloadPct: -0.1, reason: `undershot ${a.target} by ${num} — rebuild` };
+      return {
+        action: "DELOAD",
+        increment: inc,
+        deloadPct: -0.1,
+        reason: `undershot ${a.target} by ${num} — rebuild`,
+      };
     if (p === "linear")
-      return { action: "HOLD", increment: inc, reason: `undershot ${a.target} by ${num} — one more try` };
-    return { action: "DELOAD", increment: inc, deloadPct: -0.075, reason: `undershot with ${p} pattern` };
+      return {
+        action: "HOLD",
+        increment: inc,
+        reason: `undershot ${a.target} by ${num} — one more try`,
+      };
+    return {
+      action: "DELOAD",
+      increment: inc,
+      deloadPct: -0.075,
+      reason: `undershot with ${p} pattern`,
+    };
   }
   return { action: "HOLD", increment: inc, reason: "hold" };
 }
 
 function decideAbs(config, a) {
-  const allTop = a.reps.length >= a.expectedNSets && a.reps.every((r) => r >= a.repRangeMax);
+  const allTop =
+    a.reps.length >= a.expectedNSets && a.reps.every((r) => r >= a.repRangeMax);
   const anyBelow = a.reps.some((r) => r < a.repRangeMin);
   if (allTop)
-    return finalize("PROGRESS", a.weight, a.increment, 0, `all sets at ${a.repRangeMax} — +${a.increment}kg`, ["abs"]);
+    return finalize(
+      "PROGRESS",
+      a.weight,
+      a.increment,
+      0,
+      `all sets at ${a.repRangeMax} — +${a.increment}kg`,
+      ["abs"],
+    );
   if (anyBelow)
-    return finalize("DELOAD", a.weight, a.increment, -0.1, `below ${a.repRangeMin}-rep range — drop load`, ["abs"]);
-  return finalize("HOLD", a.weight, a.increment, 0, `in ${a.repRangeMin}-${a.repRangeMax} range — push reps`, ["abs"]);
+    return finalize(
+      "DELOAD",
+      a.weight,
+      a.increment,
+      -0.1,
+      `below ${a.repRangeMin}-rep range — drop load`,
+      ["abs"],
+    );
+  return finalize(
+    "HOLD",
+    a.weight,
+    a.increment,
+    0,
+    `in ${a.repRangeMin}-${a.repRangeMax} range — push reps`,
+    ["abs"],
+  );
 }
 
 export function decide(config, a, context = {}) {
@@ -1290,10 +1501,24 @@ export function decide(config, a, context = {}) {
   // --- Short-circuits ---
   if (a.isBaseline) {
     const need = config.baselineExercises.sessionsRequired;
-    return finalize("BASELINE", a.weight, a.increment, 0, `establish baseline (session ${a.sessionsToDate} of ${need})`, ["BASELINE"]);
+    return finalize(
+      "BASELINE",
+      a.weight,
+      a.increment,
+      0,
+      `establish baseline (session ${a.sessionsToDate} of ${need})`,
+      ["BASELINE"],
+    );
   }
   if (a.pattern === "incomplete") {
-    return finalize("HOLD", a.weight, a.increment, 0, "incomplete — fewer sets than expected", ["incomplete"]);
+    return finalize(
+      "HOLD",
+      a.weight,
+      a.increment,
+      0,
+      "incomplete — fewer sets than expected",
+      ["incomplete"],
+    );
   }
   if (a.bucketKind === "abs") {
     return decideAbs(config, a);
@@ -1311,7 +1536,11 @@ export function decide(config, a, context = {}) {
   if (context.isFirstBulkSession) {
     action = "HOLD";
     reason = "first bulk session — hold to recalibrate";
-  } else if (phase?.bias === "conservative" && action === "PROGRESS" && a.status === "HIT") {
+  } else if (
+    phase?.bias === "conservative" &&
+    action === "PROGRESS" &&
+    a.status === "HIT"
+  ) {
     action = "HOLD";
     reason = "cut — hold borderline progress";
   }
@@ -1353,7 +1582,9 @@ export function decide(config, a, context = {}) {
       // Only upgrade when the pattern is load-ambiguous (linear/flat).
       if (a.pattern === "linear" || a.pattern === "flat") {
         action = "PROGRESS";
-        increment = caution ? Math.min(a.increment, caution.maxIncrement ?? a.increment) : a.increment;
+        increment = caution
+          ? Math.min(a.increment, caution.maxIncrement ?? a.increment)
+          : a.increment;
         reason = `RPE ${rpe} — room to add load`;
       }
     }
@@ -1410,10 +1641,12 @@ git commit -m "feat(review): add progression decision matrix and modifiers"
 ## Task 6: Tonnage summaries + multi-cycle history (`tonnage.js`)
 
 **Files:**
+
 - Create: `src/lib/review/tonnage.js`
 - Test: `src/lib/review/tonnage.test.js`
 
 **Interfaces:**
+
 - Consumes: `config`; `cleanReps`/`classifyPattern`/`isDeadlift`/`isAbs` from `./patterns`; `normalizeName` from `./match`; `cycleDates`/`parseYMD`/`ymd` from `./cycles`.
 - Produces:
   - `weeklySummary(config, workouts) -> { tonnage, totalReps, nSessions, patternCounts, patternQualityPct, nPartialReps }`
@@ -1423,16 +1656,22 @@ git commit -m "feat(review): add progression decision matrix and modifiers"
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/review/tonnage.test.js`:
+
 ```js
 import max753 from "./programs/max753";
 import { weeklySummary, tonnageByPattern, collectHistory } from "./tonnage";
 
-const ex = (name, ...reps) => ({ exerciseName: name, sets: reps.map((r, i) => ({ set: i + 1, weight: 100, reps: r })) });
+const ex = (name, ...reps) => ({
+  exerciseName: name,
+  sets: reps.map((r, i) => ({ set: i + 1, weight: 100, reps: r })),
+});
 const wo = (date, ...exercises) => ({ id: date, date, name: "S", exercises });
 
 describe("weeklySummary", () => {
   it("sums tonnage and reps (flooring partials) and rates pattern quality", () => {
-    const s = weeklySummary(max753, [wo("2026-06-09", ex("Leg Press", 13, 11, 10, 9, 7))]);
+    const s = weeklySummary(max753, [
+      wo("2026-06-09", ex("Leg Press", 13, 11, 10, 9, 7)),
+    ]);
     expect(s.tonnage).toBe(100 * (13 + 11 + 10 + 9 + 7));
     expect(s.totalReps).toBe(50);
     expect(s.nSessions).toBe(1);
@@ -1442,7 +1681,9 @@ describe("weeklySummary", () => {
 
 describe("tonnageByPattern", () => {
   it("buckets tonnage by movement pattern", () => {
-    const t = tonnageByPattern(max753, [wo("2026-06-09", ex("Leg Press", 10, 10, 10, 10, 10))]);
+    const t = tonnageByPattern(max753, [
+      wo("2026-06-09", ex("Leg Press", 10, 10, 10, 10, 10)),
+    ]);
     expect(t.quad).toBe(100 * 50);
   });
 });
@@ -1491,7 +1732,14 @@ export function weeklySummary(config, workouts) {
   let totalReps = 0;
   let nPartialReps = 0;
   let nComplete = 0;
-  const patternCounts = { linear: 0, flat: 0, steep: 0, irregular: 0, incomplete: 0, "n/a": 0 };
+  const patternCounts = {
+    linear: 0,
+    flat: 0,
+    steep: 0,
+    irregular: 0,
+    incomplete: 0,
+    "n/a": 0,
+  };
 
   for (const w of workouts || []) {
     for (const exr of w.exercises || []) {
@@ -1527,9 +1775,13 @@ export function tonnageByPattern(config, workouts) {
   const out = {};
   for (const w of workouts || []) {
     for (const exr of w.exercises || []) {
-      const mp = config.movementPatterns[normalizeName(exr.exerciseName)] || "uncategorized";
+      const mp =
+        config.movementPatterns[normalizeName(exr.exerciseName)] ||
+        "uncategorized";
       for (const s of exr.sets || []) {
-        out[mp] = (out[mp] || 0) + (Number(s.weight) || 0) * Math.floor(Number(s.reps) || 0);
+        out[mp] =
+          (out[mp] || 0) +
+          (Number(s.weight) || 0) * Math.floor(Number(s.reps) || 0);
       }
     }
   }
@@ -1566,7 +1818,10 @@ export function collectHistory(config, workouts, cycleN, nWindows) {
       s.setDate(s.getDate() - 7 * isoOffset);
       const e = new Date(s);
       e.setDate(s.getDate() + 6);
-      summary = weeklySummary(config, workoutsInRange(workouts, ymd(s), ymd(e)));
+      summary = weeklySummary(
+        config,
+        workoutsInRange(workouts, ymd(s), ymd(e)),
+      );
       win = {
         label: `${ymd(s)} (pre)`,
         cycle: null,
@@ -1610,10 +1865,12 @@ git commit -m "feat(review): add tonnage summaries and multi-cycle trend"
 ## Task 7: Bodyweight average + phase evaluation (`bodyweight.js`)
 
 **Files:**
+
 - Create: `src/lib/review/bodyweight.js`
 - Test: `src/lib/review/bodyweight.test.js`
 
 **Interfaces:**
+
 - Consumes: `config`.
 - Produces:
   - `cycleAverage(weightLogs, startStr, endStr) -> { avg: number|null, n: number }`
@@ -1622,6 +1879,7 @@ git commit -m "feat(review): add tonnage summaries and multi-cycle trend"
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/review/bodyweight.test.js`:
+
 ```js
 import max753 from "./programs/max753";
 import { cycleAverage, evaluate } from "./bodyweight";
@@ -1634,7 +1892,10 @@ describe("cycleAverage", () => {
     expect(r.avg).toBeCloseTo(70.2, 5);
   });
   it("returns null when no weigh-ins fall in range", () => {
-    expect(cycleAverage(logs, "2026-07-01", "2026-07-08")).toEqual({ avg: null, n: 0 });
+    expect(cycleAverage(logs, "2026-07-01", "2026-07-08")).toEqual({
+      avg: null,
+      n: 0,
+    });
   });
 });
 
@@ -1724,10 +1985,12 @@ git commit -m "feat(review): add bodyweight average and phase evaluation"
 ## Task 8: Review orchestrator (`review.js`)
 
 **Files:**
+
 - Create: `src/lib/review/review.js`
 - Test: `src/lib/review/review.test.js`
 
 **Interfaces:**
+
 - Consumes: all prior engine modules + `narrative.js` (Task 9 — see note).
 - Produces: `buildCycleReview(config, { workouts, weightLogs, exercises }, cycleNumber?) -> ReviewResult` (shape per spec). Default `cycleNumber` = `mostRecentCompletedCycle`.
 - `stallCount` for an exercise = number of consecutive prior logged sessions whose top-set weight equals the current weight (deterministic proxy for consecutive HOLDs).
@@ -1738,11 +2001,13 @@ git commit -m "feat(review): add bodyweight average and phase evaluation"
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/review/review.test.js`:
+
 ```js
 import max753 from "./programs/max753";
 import { buildCycleReview } from "./review";
 
-const sets = (w, ...reps) => reps.map((r, i) => ({ set: i + 1, weight: w, reps: r }));
+const sets = (w, ...reps) =>
+  reps.map((r, i) => ({ set: i + 1, weight: w, reps: r }));
 
 // One Push session inside a known lean-bulk cycle (2026-06-09).
 const data = {
@@ -1753,7 +2018,9 @@ const data = {
       id: "p1",
       date: "2026-06-02",
       name: "Push",
-      exercises: [{ exerciseName: "Bench Press Barbell", sets: sets(40, 8, 7, 6, 5, 4) }],
+      exercises: [
+        { exerciseName: "Bench Press Barbell", sets: sets(40, 8, 7, 6, 5, 4) },
+      ],
     },
     {
       id: "p2",
@@ -1761,7 +2028,10 @@ const data = {
       name: "Push",
       exercises: [
         { exerciseName: "Bench Press Barbell", sets: sets(40, 9, 8, 7, 6, 5) },
-        { exerciseName: "Triceps Pushdown", sets: sets(20, 18, 16, 14, 12, 10) },
+        {
+          exerciseName: "Triceps Pushdown",
+          sets: sets(20, 18, 16, 14, 12, 10),
+        },
       ],
     },
   ],
@@ -1782,8 +2052,14 @@ describe("buildCycleReview", () => {
   });
 
   it("produces a PROGRESS decision for the overshoot lift", () => {
-    const r = buildCycleReview(max753, data, /* cycle of 2026-06-09 */ undefined);
-    const bench = r.exercises.find((e) => e.name === "Bench Press Barbell" && e.date === "2026-06-09");
+    const r = buildCycleReview(
+      max753,
+      data,
+      /* cycle of 2026-06-09 */ undefined,
+    );
+    const bench = r.exercises.find(
+      (e) => e.name === "Bench Press Barbell" && e.date === "2026-06-09",
+    );
     expect(bench.decision.action).toBe("PROGRESS");
   });
 
@@ -1813,7 +2089,11 @@ import {
   dayPhases,
   mostRecentCompletedCycle,
 } from "./cycles";
-import { buildExerciseHistory, findPriorSession, analyzeExercise } from "./analyzeExercise";
+import {
+  buildExerciseHistory,
+  findPriorSession,
+  analyzeExercise,
+} from "./analyzeExercise";
 import { decide } from "./decide";
 import { weeklySummary, tonnageByPattern, collectHistory } from "./tonnage";
 import { cycleAverage, evaluate } from "./bodyweight";
@@ -1823,7 +2103,9 @@ import { buildNarrative } from "./narrative";
 const HISTORY_WINDOWS = 6;
 
 function consecutiveSameWeight(history, name, beforeDate, weight) {
-  const arr = (history.get(normalizeName(name)) || []).filter((s) => s.date < beforeDate);
+  const arr = (history.get(normalizeName(name)) || []).filter(
+    (s) => s.date < beforeDate,
+  );
   let count = 0;
   for (let i = arr.length - 1; i >= 0; i--) {
     const w = arr[i].sets.length ? Number(arr[i].sets[0].weight) || 0 : 0;
@@ -1872,7 +2154,10 @@ export function buildCycleReview(config, data, cycleNumber) {
 
   const number = cycleNumber ?? mostRecentCompletedCycle(config, workouts);
   if (number == null) {
-    return emptyResult(config, warnings.concat("No in-program workouts found."));
+    return emptyResult(
+      config,
+      warnings.concat("No in-program workouts found."),
+    );
   }
 
   const { start, end } = cycleDates(config, number);
@@ -1888,19 +2173,30 @@ export function buildCycleReview(config, data, cycleNumber) {
     warnings.push(`Cycle ${number} has no sessions logged.`);
   }
   if (phase === "maintenance") {
-    warnings.push("Maintenance/travel cycle — sessions are environmentally confounded and excluded from progression analysis.");
+    warnings.push(
+      "Maintenance/travel cycle — sessions are environmentally confounded and excluded from progression analysis.",
+    );
   }
   if (phase === "post-program") {
-    warnings.push("This cycle is past the program's end date — consider a continuation phase.");
+    warnings.push(
+      "This cycle is past the program's end date — consider a continuation phase.",
+    );
   }
-  if (cycleWorkouts.length && cycleWorkouts.length < config.cycle.expectedSessions) {
-    warnings.push(`Partial cycle: ${cycleWorkouts.length} of ${config.cycle.expectedSessions} expected sessions.`);
+  if (
+    cycleWorkouts.length &&
+    cycleWorkouts.length < config.cycle.expectedSessions
+  ) {
+    warnings.push(
+      `Partial cycle: ${cycleWorkouts.length} of ${config.cycle.expectedSessions} expected sessions.`,
+    );
   }
 
   const history = buildExerciseHistory(workouts);
   const fbCycle = firstBulkCycle(config);
   const firstSessionDate = cycleWorkouts.length ? cycleWorkouts[0].date : null;
-  const firstBulkPhaseDate = (config.phases.find((p) => p.id === "lean-bulk") || {}).from;
+  const firstBulkPhaseDate = (
+    config.phases.find((p) => p.id === "lean-bulk") || {}
+  ).from;
 
   const sessions = cycleWorkouts.map((w) => {
     const day = cycleForDate(config, w.date); // not day-in-cycle; see dayInCycle below
@@ -1909,7 +2205,10 @@ export function buildCycleReview(config, data, cycleNumber) {
       dayInCycle: dayIndex(config, number, w.date),
       name: w.name || w.date,
       nExercises: (w.exercises || []).length,
-      nSets: (w.exercises || []).reduce((acc, e) => acc + (e.sets || []).length, 0),
+      nSets: (w.exercises || []).reduce(
+        (acc, e) => acc + (e.sets || []).length,
+        0,
+      ),
     };
   });
 
@@ -1920,7 +2219,12 @@ export function buildCycleReview(config, data, cycleNumber) {
       if (!ex.exerciseName) continue;
       const prior = findPriorSession(history, ex.exerciseName, w.date);
       const a = analyzeExercise(config, ex, prior, history, w.date);
-      const stallCount = consecutiveSameWeight(history, ex.exerciseName, w.date, a.weight);
+      const stallCount = consecutiveSameWeight(
+        history,
+        ex.exerciseName,
+        w.date,
+        a.weight,
+      );
       const isFirstBulkSession =
         number === fbCycle &&
         w.date === firstSessionDate &&
@@ -1928,9 +2232,21 @@ export function buildCycleReview(config, data, cycleNumber) {
         w.date >= firstBulkPhaseDate;
       const decision =
         phase === "maintenance"
-          ? { action: "HOLD", newWeight: a.weight, increment: 0, reason: "maintenance — hold", badgeLabel: "HOLD", flags: ["maintenance"] }
+          ? {
+              action: "HOLD",
+              newWeight: a.weight,
+              increment: 0,
+              reason: "maintenance — hold",
+              badgeLabel: "HOLD",
+              flags: ["maintenance"],
+            }
           : decide(config, a, { phase, stallCount, isFirstBulkSession });
-      exercises.push({ ...a, date: w.date, session: w.name || w.date, decision });
+      exercises.push({
+        ...a,
+        date: w.date,
+        session: w.name || w.date,
+        decision,
+      });
       planLines.push({
         session: w.name || w.date,
         exercise: a.name,
@@ -1943,32 +2259,79 @@ export function buildCycleReview(config, data, cycleNumber) {
     }
   }
 
-  const tonnageTrend = collectHistory(config, workouts, number, HISTORY_WINDOWS).map((win) => ({
+  const tonnageTrend = collectHistory(
+    config,
+    workouts,
+    number,
+    HISTORY_WINDOWS,
+  ).map((win) => ({
     ...win,
     phase: win.cycle != null ? phaseForCycle(config, win.cycle) : win.phase,
   }));
 
   const priorDates = number >= 2 ? cycleDates(config, number - 1) : null;
   const thisBW = cycleAverage(weightLogs, start, end);
-  const priorBW = priorDates ? cycleAverage(weightLogs, priorDates.start, priorDates.end) : { avg: null, n: 0 };
-  let bodyweight = { thisAvg: thisBW.avg, thisN: thisBW.n, priorAvg: priorBW.avg, priorN: priorBW.n, deltaKg: null, deltaPct: null, evaluation: "" };
+  const priorBW = priorDates
+    ? cycleAverage(weightLogs, priorDates.start, priorDates.end)
+    : { avg: null, n: 0 };
+  let bodyweight = {
+    thisAvg: thisBW.avg,
+    thisN: thisBW.n,
+    priorAvg: priorBW.avg,
+    priorN: priorBW.n,
+    deltaKg: null,
+    deltaPct: null,
+    evaluation: "",
+  };
   if (thisBW.avg != null && priorBW.avg != null && priorBW.avg > 0) {
     const deltaKg = thisBW.avg - priorBW.avg;
     const deltaPct = (deltaKg / priorBW.avg) * 100;
-    bodyweight = { ...bodyweight, deltaKg, deltaPct, evaluation: evaluate(config, phase, deltaPct) };
+    bodyweight = {
+      ...bodyweight,
+      deltaKg,
+      deltaPct,
+      evaluation: evaluate(config, phase, deltaPct),
+    };
   }
 
   const thisTn = tonnageByPattern(config, cycleWorkouts);
-  const priorTn = priorDates ? tonnageByPattern(config, workouts.filter((w) => w.date >= priorDates.start && w.date <= priorDates.end)) : {};
-  const byPattern = [...new Set([...Object.keys(thisTn), ...Object.keys(priorTn)])]
+  const priorTn = priorDates
+    ? tonnageByPattern(
+        config,
+        workouts.filter(
+          (w) => w.date >= priorDates.start && w.date <= priorDates.end,
+        ),
+      )
+    : {};
+  const byPattern = [
+    ...new Set([...Object.keys(thisTn), ...Object.keys(priorTn)]),
+  ]
     .sort()
-    .map((p) => ({ pattern: p, thisTonnage: thisTn[p] || 0, priorTonnage: priorTn[p] || 0, delta: (thisTn[p] || 0) - (priorTn[p] || 0) }));
+    .map((p) => ({
+      pattern: p,
+      thisTonnage: thisTn[p] || 0,
+      priorTonnage: priorTn[p] || 0,
+      delta: (thisTn[p] || 0) - (priorTn[p] || 0),
+    }));
 
-  const plan = { bySession: groupBySession(planLines), byBlock: groupByBlock(config, planLines) };
+  const plan = {
+    bySession: groupBySession(planLines),
+    byBlock: groupByBlock(config, planLines),
+  };
 
   const result = {
     program: { id: config.id, name: config.name },
-    cycle: { number, start, end, phase, dayPhases: phases, straddles, partial: cycleWorkouts.length > 0 && cycleWorkouts.length < config.cycle.expectedSessions },
+    cycle: {
+      number,
+      start,
+      end,
+      phase,
+      dayPhases: phases,
+      straddles,
+      partial:
+        cycleWorkouts.length > 0 &&
+        cycleWorkouts.length < config.cycle.expectedSessions,
+    },
     sessions,
     exercises,
     tonnageTrend,
@@ -1995,11 +2358,24 @@ function emptyResult(config, warnings) {
     sessions: [],
     exercises: [],
     tonnageTrend: [],
-    bodyweight: { thisAvg: null, thisN: 0, priorAvg: null, priorN: 0, deltaKg: null, deltaPct: null, evaluation: "" },
+    bodyweight: {
+      thisAvg: null,
+      thisN: 0,
+      priorAvg: null,
+      priorN: 0,
+      deltaKg: null,
+      deltaPct: null,
+      evaluation: "",
+    },
     byPattern: [],
     plan: { bySession: [], byBlock: [] },
     warnings,
-    narrative: { headline: "No data to review yet.", wins: [], concerns: [], volumeVerdict: "" },
+    narrative: {
+      headline: "No data to review yet.",
+      wins: [],
+      concerns: [],
+      volumeVerdict: "",
+    },
   };
 }
 ```
@@ -2023,10 +2399,12 @@ git commit -m "feat(review): add cycle review orchestrator"
 > **Execute this task BEFORE Task 8** (Task 8 imports `buildNarrative`).
 
 **Files:**
+
 - Create: `src/lib/review/narrative.js`
 - Test: `src/lib/review/narrative.test.js`
 
 **Interfaces:**
+
 - Consumes: a partially-built `ReviewResult` (everything except `.narrative`).
 - Produces: `buildNarrative(result) -> { headline, wins: string[], concerns: Concern[], volumeVerdict: string }` where `Concern = { title, action }`.
 - Concern ranking: injury/3-strike first, then DELOADs, then irregular/incomplete. Cap 3.
@@ -2034,20 +2412,54 @@ git commit -m "feat(review): add cycle review orchestrator"
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/review/narrative.test.js`:
+
 ```js
 import { buildNarrative } from "./narrative";
 
 const base = {
-  cycle: { number: 7, start: "2026-06-09", end: "2026-06-16", phase: "lean-bulk" },
+  cycle: {
+    number: 7,
+    start: "2026-06-09",
+    end: "2026-06-16",
+    phase: "lean-bulk",
+  },
   sessions: [{ date: "2026-06-09" }, { date: "2026-06-10" }],
   exercises: [
-    { name: "Bench Press Barbell", decision: { action: "PROGRESS", badgeLabel: "+2.5kg" }, flags: [] },
-    { name: "Deadlift", decision: { action: "DELOAD", reason: "irregular" }, flags: [] },
-    { name: "Shoulder Press", decision: { action: "HOLD", reason: "feedback: discomfort — hold", flags: ["3-strike"] }, flags: ["3-strike"] },
+    {
+      name: "Bench Press Barbell",
+      decision: { action: "PROGRESS", badgeLabel: "+2.5kg" },
+      flags: [],
+    },
+    {
+      name: "Deadlift",
+      decision: { action: "DELOAD", reason: "irregular" },
+      flags: [],
+    },
+    {
+      name: "Shoulder Press",
+      decision: {
+        action: "HOLD",
+        reason: "feedback: discomfort — hold",
+        flags: ["3-strike"],
+      },
+      flags: ["3-strike"],
+    },
   ],
   tonnageTrend: [
-    { cycle: 6, tonnage: 1000, patternQualityPct: 80, deltaPct: null, isInProgram: true },
-    { cycle: 7, tonnage: 1020, patternQualityPct: 80, deltaPct: 2.0, isInProgram: true },
+    {
+      cycle: 6,
+      tonnage: 1000,
+      patternQualityPct: 80,
+      deltaPct: null,
+      isInProgram: true,
+    },
+    {
+      cycle: 7,
+      tonnage: 1020,
+      patternQualityPct: 80,
+      deltaPct: 2.0,
+      isInProgram: true,
+    },
   ],
   bodyweight: { deltaPct: 0.4, evaluation: "ON TARGET (lean bulk band)" },
 };
@@ -2089,7 +2501,20 @@ Expected: FAIL — module not found.
 
 function fmtDate(str) {
   const [y, m, d] = str.split("-").map(Number);
-  const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1];
+  const mon = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ][m - 1];
   return `${d} ${mon}`;
 }
 
@@ -2114,11 +2539,21 @@ export function buildNarrative(result) {
   for (const e of progressions.slice(0, 4)) {
     wins.push(`${e.name} — ${e.decision.badgeLabel} (${e.decision.reason}).`);
   }
-  if (result.bodyweight?.evaluation && /ON TARGET/.test(result.bodyweight.evaluation)) {
-    wins.push(`Bodyweight ${result.bodyweight.deltaPct >= 0 ? "+" : ""}${result.bodyweight.deltaPct.toFixed(1)}% — ${result.bodyweight.evaluation}.`);
+  if (
+    result.bodyweight?.evaluation &&
+    /ON TARGET/.test(result.bodyweight.evaluation)
+  ) {
+    wins.push(
+      `Bodyweight ${result.bodyweight.deltaPct >= 0 ? "+" : ""}${result.bodyweight.deltaPct.toFixed(1)}% — ${result.bodyweight.evaluation}.`,
+    );
   }
 
-  return { headline, wins, concerns, volumeVerdict: volumeVerdict(result.tonnageTrend) };
+  return {
+    headline,
+    wins,
+    concerns,
+    volumeVerdict: volumeVerdict(result.tonnageTrend),
+  };
 }
 
 function buildConcerns(ex) {
@@ -2126,21 +2561,37 @@ function buildConcerns(ex) {
   // Tier 1: injury / 3-strike
   for (const e of ex) {
     const isInjury = /discomfort|pain/.test(e.decision.reason || "");
-    const isStrike = (e.flags || []).includes("3-strike") || (e.decision.flags || []).includes("3-strike");
+    const isStrike =
+      (e.flags || []).includes("3-strike") ||
+      (e.decision.flags || []).includes("3-strike");
     if (isInjury || isStrike) {
       ranked.push({ tier: 1, title: e.name, action: e.decision.reason });
     }
   }
   // Tier 2: deloads
   for (const e of ex) {
-    if (e.decision.action === "DELOAD" && !ranked.some((r) => r.title === e.name)) {
-      ranked.push({ tier: 2, title: e.name, action: `DELOAD — ${e.decision.reason}` });
+    if (
+      e.decision.action === "DELOAD" &&
+      !ranked.some((r) => r.title === e.name)
+    ) {
+      ranked.push({
+        tier: 2,
+        title: e.name,
+        action: `DELOAD — ${e.decision.reason}`,
+      });
     }
   }
   // Tier 3: irregular / incomplete
   for (const e of ex) {
-    if ((e.pattern === "irregular" || e.pattern === "incomplete") && !ranked.some((r) => r.title === e.name)) {
-      ranked.push({ tier: 3, title: e.name, action: `${e.pattern} pattern — ${e.decision.reason}` });
+    if (
+      (e.pattern === "irregular" || e.pattern === "incomplete") &&
+      !ranked.some((r) => r.title === e.name)
+    ) {
+      ranked.push({
+        tier: 3,
+        title: e.name,
+        action: `${e.pattern} pattern — ${e.decision.reason}`,
+      });
     }
   }
   ranked.sort((a, b) => a.tier - b.tier);
@@ -2187,28 +2638,79 @@ git commit -m "feat(review): add templated narrative generation"
 ## Task 10: HTML one-pager builder (`onePager.js`)
 
 **Files:**
+
 - Create: `src/lib/review/onePager.js`
 - Test: `src/lib/review/onePager.test.js`
 
 **Interfaces:**
+
 - Consumes: a full `ReviewResult` and a `grouping` (`"bySession"|"byBlock"`, default `"bySession"`).
 - Produces: `buildOnePager(result, grouping="bySession") -> string` (a complete self-contained HTML document) and `onePagerFilename(result) -> string` (e.g. `cycle_07_plan.html`).
 
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/review/onePager.test.js`:
+
 ```js
 import { buildOnePager, onePagerFilename } from "./onePager";
 
 const result = {
   program: { name: "Max 7/5/3" },
-  cycle: { number: 7, start: "2026-06-09", end: "2026-06-16", phase: "lean-bulk" },
-  narrative: { headline: "Week 7 — steady cycle.", concerns: [{ title: "Deadlift", action: "DELOAD" }], volumeVerdict: "On point." },
-  tonnageTrend: [{ label: "W7", tonnage: 1020, totalReps: 300, deltaPct: 2.0, isInProgram: true }],
-  bodyweight: { thisAvg: 71.2, thisN: 5, deltaPct: 0.4, evaluation: "ON TARGET" },
+  cycle: {
+    number: 7,
+    start: "2026-06-09",
+    end: "2026-06-16",
+    phase: "lean-bulk",
+  },
+  narrative: {
+    headline: "Week 7 — steady cycle.",
+    concerns: [{ title: "Deadlift", action: "DELOAD" }],
+    volumeVerdict: "On point.",
+  },
+  tonnageTrend: [
+    {
+      label: "W7",
+      tonnage: 1020,
+      totalReps: 300,
+      deltaPct: 2.0,
+      isInProgram: true,
+    },
+  ],
+  bodyweight: {
+    thisAvg: 71.2,
+    thisN: 5,
+    deltaPct: 0.4,
+    evaluation: "ON TARGET",
+  },
   plan: {
-    bySession: [{ group: "Push", lines: [{ exercise: "Bench Press Barbell", weightLabel: "42.5", action: "PROGRESS", badgeLabel: "+2.5kg", reason: "overshot 30" }] }],
-    byBlock: [{ group: "Block A", lines: [{ exercise: "Bench Press Barbell", weightLabel: "42.5", action: "PROGRESS", badgeLabel: "+2.5kg", reason: "overshot 30" }] }],
+    bySession: [
+      {
+        group: "Push",
+        lines: [
+          {
+            exercise: "Bench Press Barbell",
+            weightLabel: "42.5",
+            action: "PROGRESS",
+            badgeLabel: "+2.5kg",
+            reason: "overshot 30",
+          },
+        ],
+      },
+    ],
+    byBlock: [
+      {
+        group: "Block A",
+        lines: [
+          {
+            exercise: "Bench Press Barbell",
+            weightLabel: "42.5",
+            action: "PROGRESS",
+            badgeLabel: "+2.5kg",
+            reason: "overshot 30",
+          },
+        ],
+      },
+    ],
   },
 };
 
@@ -2222,7 +2724,26 @@ describe("buildOnePager", () => {
     expect(html).not.toMatch(/<script/i); // no external/active content
   });
   it("escapes HTML in user-provided text", () => {
-    const r = { ...result, plan: { bySession: [{ group: "Push", lines: [{ exercise: "A<b>", weightLabel: "1", action: "HOLD", badgeLabel: "HOLD", reason: "x & y" }] }], byBlock: [] } };
+    const r = {
+      ...result,
+      plan: {
+        bySession: [
+          {
+            group: "Push",
+            lines: [
+              {
+                exercise: "A<b>",
+                weightLabel: "1",
+                action: "HOLD",
+                badgeLabel: "HOLD",
+                reason: "x & y",
+              },
+            ],
+          },
+        ],
+        byBlock: [],
+      },
+    };
     const html = buildOnePager(r);
     expect(html).toMatch(/A&lt;b&gt;/);
     expect(html).toMatch(/x &amp; y/);
@@ -2264,7 +2785,20 @@ function esc(s) {
 
 function fmtDate(str) {
   const [y, m, d] = str.split("-").map(Number);
-  const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1];
+  const mon = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ][m - 1];
   return `${d} ${mon}`;
 }
 
@@ -2300,7 +2834,12 @@ function trendRows(trend) {
   return (trend || [])
     .slice(-4)
     .map((w) => {
-      const delta = w.deltaPct == null ? (w.isInProgram ? "—" : "(pre)") : `${w.deltaPct >= 0 ? "+" : ""}${w.deltaPct.toFixed(1)}%`;
+      const delta =
+        w.deltaPct == null
+          ? w.isInProgram
+            ? "—"
+            : "(pre)"
+          : `${w.deltaPct >= 0 ? "+" : ""}${w.deltaPct.toFixed(1)}%`;
       return `<tr><td>${esc(w.label)}</td><td class="num">${Math.round(w.tonnage)}</td><td class="num">${w.totalReps}</td><td class="num">${esc(delta)}</td></tr>`;
     })
     .join("\n      ");
@@ -2314,7 +2853,10 @@ export function buildOnePager(result, grouping = "bySession") {
     .map((x) => `<li><strong>${esc(x.title)}.</strong> ${esc(x.action)}</li>`)
     .join("\n      ");
   const bw = result.bodyweight || {};
-  const bwNote = bw.thisAvg != null ? `${bw.thisAvg.toFixed(1)}kg (${bw.thisN} weigh-ins). ${esc(bw.evaluation || "")}` : "no weigh-ins";
+  const bwNote =
+    bw.thisAvg != null
+      ? `${bw.thisAvg.toFixed(1)}kg (${bw.thisN} weigh-ins). ${esc(bw.evaluation || "")}`
+      : "no weigh-ins";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -2392,10 +2934,12 @@ git commit -m "feat(review): add downloadable HTML one-pager builder"
 ## Task 11: CycleReview component
 
 **Files:**
+
 - Create: `src/components/CycleReview.jsx`
 - Test: `src/components/CycleReview.test.jsx`
 
 **Interfaces:**
+
 - Consumes: `useApp()` (`workouts`, `exercises`); `loadLS`/`K_WEIGHT_LOGS` from `../lib/storage`; `buildCycleReview` from `../lib/review/review`; `loggedCycles` from `../lib/review/cycles`; `buildOnePager`/`onePagerFilename` from `../lib/review/onePager`; `max753` from `../lib/review/programs/max753`; `Segmented` from `./ui/Segmented`.
 - Produces: default-exported `CycleReview` component. Internal state: `selectedCycle` (default latest logged), `grouping` (`bySession`|`byBlock`).
 - Download: builds the one-pager HTML, creates a Blob (`type: "text/html"`), and triggers an `<a download>` click.
@@ -2403,6 +2947,7 @@ git commit -m "feat(review): add downloadable HTML one-pager builder"
 - [ ] **Step 1: Write the failing test**
 
 `src/components/CycleReview.test.jsx`:
+
 ```js
 import React from "react";
 import { render, screen } from "@testing-library/react";
@@ -2411,7 +2956,8 @@ import { AppProvider } from "../context/AppContext";
 import { K_WO } from "../lib/storage";
 import CycleReview from "./CycleReview";
 
-const sets = (w, ...reps) => reps.map((r, i) => ({ set: i + 1, weight: w, reps: r }));
+const sets = (w, ...reps) =>
+  reps.map((r, i) => ({ set: i + 1, weight: w, reps: r }));
 
 beforeEach(() => {
   localStorage.clear();
@@ -2422,7 +2968,12 @@ beforeEach(() => {
         id: "p2",
         date: "2026-06-09",
         name: "Push",
-        exercises: [{ exerciseName: "Bench Press Barbell", sets: sets(40, 9, 8, 7, 6, 5) }],
+        exercises: [
+          {
+            exerciseName: "Bench Press Barbell",
+            sets: sets(40, 9, 8, 7, 6, 5),
+          },
+        ],
       },
     ]),
   );
@@ -2493,7 +3044,9 @@ const BADGE = {
 
 function Badge({ action, label }) {
   return (
-    <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white ${BADGE[action] || "bg-amber-600"}`}>
+    <span
+      className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white ${BADGE[action] || "bg-amber-600"}`}
+    >
       {label}
     </span>
   );
@@ -2508,7 +3061,8 @@ export default function CycleReview() {
 
   const cycleNum = selected ?? cycles[0];
   const review = useMemo(
-    () => buildCycleReview(program, { workouts, weightLogs, exercises }, cycleNum),
+    () =>
+      buildCycleReview(program, { workouts, weightLogs, exercises }, cycleNum),
     [workouts, weightLogs, exercises, cycleNum],
   );
 
@@ -2612,26 +3166,37 @@ export default function CycleReview() {
             {review.tonnageTrend.slice(-4).map((w, i) => (
               <tr key={i} className="border-t dark:border-neutral-800">
                 <td className="py-1">{w.label}</td>
-                <td className="py-1 text-right tabular-nums">{Math.round(w.tonnage)}</td>
+                <td className="py-1 text-right tabular-nums">
+                  {Math.round(w.tonnage)}
+                </td>
                 <td className="py-1 text-right tabular-nums">{w.totalReps}</td>
                 <td className="py-1 text-right tabular-nums">
-                  {w.deltaPct == null ? (w.isInProgram ? "—" : "(pre)") : `${w.deltaPct >= 0 ? "+" : ""}${w.deltaPct.toFixed(1)}%`}
+                  {w.deltaPct == null
+                    ? w.isInProgram
+                      ? "—"
+                      : "(pre)"
+                    : `${w.deltaPct >= 0 ? "+" : ""}${w.deltaPct.toFixed(1)}%`}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        <p className="mt-1 text-xs italic text-neutral-500">{review.narrative.volumeVerdict}</p>
+        <p className="mt-1 text-xs italic text-neutral-500">
+          {review.narrative.volumeVerdict}
+        </p>
       </Section>
 
       {review.bodyweight.thisAvg != null && (
         <Section title="Bodyweight">
           <p className="text-sm text-neutral-700 dark:text-neutral-300">
-            {review.bodyweight.thisAvg.toFixed(1)}kg ({review.bodyweight.thisN} weigh-ins)
+            {review.bodyweight.thisAvg.toFixed(1)}kg ({review.bodyweight.thisN}{" "}
+            weigh-ins)
             {review.bodyweight.deltaPct != null && (
               <>
-                {" "}· {review.bodyweight.deltaPct >= 0 ? "+" : ""}
-                {review.bodyweight.deltaPct.toFixed(1)}% — {review.bodyweight.evaluation}
+                {" "}
+                · {review.bodyweight.deltaPct >= 0 ? "+" : ""}
+                {review.bodyweight.deltaPct.toFixed(1)}% —{" "}
+                {review.bodyweight.evaluation}
               </>
             )}
           </p>
@@ -2656,12 +3221,21 @@ export default function CycleReview() {
               <table className="w-full text-sm">
                 <tbody>
                   {g.lines.map((l, i) => (
-                    <tr key={i} className="border-t align-top dark:border-neutral-800">
+                    <tr
+                      key={i}
+                      className="border-t align-top dark:border-neutral-800"
+                    >
                       <td className="py-1.5">
-                        <div className="text-neutral-900 dark:text-neutral-100">{l.exercise}</div>
-                        <div className="text-xs text-neutral-500">{l.reason}</div>
+                        <div className="text-neutral-900 dark:text-neutral-100">
+                          {l.exercise}
+                        </div>
+                        <div className="text-xs text-neutral-500">
+                          {l.reason}
+                        </div>
                       </td>
-                      <td className="py-1.5 text-right font-semibold tabular-nums">{l.weightLabel}</td>
+                      <td className="py-1.5 text-right font-semibold tabular-nums">
+                        {l.weightLabel}
+                      </td>
                       <td className="py-1.5 pl-2 text-right">
                         <Badge action={l.action} label={l.badgeLabel} />
                       </td>
@@ -2708,16 +3282,19 @@ git commit -m "feat(review): add Cycle Review screen with plan + download"
 ## Task 12: Wire Cycle Review into MoreMenu
 
 **Files:**
+
 - Modify: `src/components/MoreMenu.jsx`
 - Test: `src/components/MoreMenu.test.jsx` (extend existing)
 
 **Interfaces:**
+
 - Consumes: `CycleReview` from `./CycleReview`.
 - Produces: a new `view === "cycleReview"` sub-screen and a menu row that opens it, following the existing Notepad/Lift-sources pattern.
 
 - [ ] **Step 1: Write the failing test (extend the existing file)**
 
 Add to `src/components/MoreMenu.test.jsx`:
+
 ```js
 vi.mock("./CycleReview", () => ({ default: () => <div>CYCLE_REVIEW</div> }));
 
@@ -2741,54 +3318,62 @@ Expected: FAIL — no "Cycle Review" button.
 In `src/components/MoreMenu.jsx`:
 
 a) Add the import near the other component imports:
+
 ```js
 import CycleReview from "./CycleReview";
 ```
 
 b) Add a sub-screen branch alongside the existing `view === "notepad"` / `view === "liftSources"` blocks (place it before the `liftSources` block or after — order is cosmetic):
+
 ```jsx
-  if (view === "cycleReview") {
-    return (
-      <div className="space-y-3">
-        <button
-          type="button"
-          onClick={() => setView("menu")}
-          className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400"
-        >
-          <span aria-hidden>←</span> More
-        </button>
-        <CycleReview />
-      </div>
-    );
-  }
+if (view === "cycleReview") {
+  return (
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={() => setView("menu")}
+        className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400"
+      >
+        <span aria-hidden>←</span> More
+      </button>
+      <CycleReview />
+    </div>
+  );
+}
 ```
 
 c) Add a row inside the existing **Content** section's card (next to Notepad), so the card holds two buttons:
+
 ```jsx
-        <div className={`${card} divide-y dark:divide-neutral-800`}>
-          <button
-            type="button"
-            onClick={() => setView("notepad")}
-            className="flex w-full items-center justify-between px-3 py-3 text-left transition hover:bg-neutral-50 dark:hover:bg-neutral-800"
-          >
-            <span className={rowText}>Notepad</span>
-            <span aria-hidden className="text-neutral-400 dark:text-neutral-500">›</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("cycleReview")}
-            className="flex w-full items-center justify-between px-3 py-3 text-left transition hover:bg-neutral-50 dark:hover:bg-neutral-800"
-          >
-            <div>
-              <div className={rowText}>Cycle Review</div>
-              <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                Max 7/5/3 review + next-cycle plan
-              </div>
-            </div>
-            <span aria-hidden className="text-neutral-400 dark:text-neutral-500">›</span>
-          </button>
-        </div>
+<div className={`${card} divide-y dark:divide-neutral-800`}>
+  <button
+    type="button"
+    onClick={() => setView("notepad")}
+    className="flex w-full items-center justify-between px-3 py-3 text-left transition hover:bg-neutral-50 dark:hover:bg-neutral-800"
+  >
+    <span className={rowText}>Notepad</span>
+    <span aria-hidden className="text-neutral-400 dark:text-neutral-500">
+      ›
+    </span>
+  </button>
+  <button
+    type="button"
+    onClick={() => setView("cycleReview")}
+    className="flex w-full items-center justify-between px-3 py-3 text-left transition hover:bg-neutral-50 dark:hover:bg-neutral-800"
+  >
+    <div>
+      <div className={rowText}>Cycle Review</div>
+      <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
+        Max 7/5/3 review + next-cycle plan
+      </div>
+    </div>
+    <span aria-hidden className="text-neutral-400 dark:text-neutral-500">
+      ›
+    </span>
+  </button>
+</div>
 ```
+
 (Replace the existing single-button Content card with this two-button card; keep the surrounding `<div><SectionLabel>Content</SectionLabel>…` wrapper.)
 
 - [ ] **Step 4: Run the tests to verify they pass**
@@ -2808,6 +3393,7 @@ git commit -m "feat(review): add Cycle Review entry to the More menu"
 ## Task 13: Documentation + full gate
 
 **Files:**
+
 - Modify: `ARCHITECTURE.md`, `docs/DATA-MODEL.md`
 
 **Interfaces:** none (docs only).
@@ -2839,6 +3425,7 @@ git commit -m "docs(review): document the Cycle Review feature and engine"
 ## Self-Review (completed during planning)
 
 **Spec coverage:**
+
 - Offline/templated prose → Task 9 (`narrative.js`). ✓
 - Swappable program config → Task 1 (`programs/max753.js`), consumed by all engine tasks. ✓
 - More sub-screen → Tasks 11–12. ✓

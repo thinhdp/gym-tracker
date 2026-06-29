@@ -9,7 +9,10 @@ describe("cycleAverage", () => {
     expect(r.avg).toBeCloseTo(70.2, 5);
   });
   it("returns null when no weigh-ins fall in range", () => {
-    expect(cycleAverage(logs, "2026-07-01", "2026-07-08")).toEqual({ avg: null, n: 0 });
+    expect(cycleAverage(logs, "2026-07-01", "2026-07-08")).toEqual({
+      avg: null,
+      n: 0,
+    });
   });
 });
 
@@ -35,7 +38,11 @@ describe("evaluate", () => {
     expect(evaluate(max753, "lean-bulk", -0.1)).toMatch(/BELOW TARGET/);
   });
   it("ignores non-finite weigh-ins in the average", () => {
-    const r = cycleAverage({ "2026-06-02": NaN, "2026-06-03": 70 }, "2026-06-01", "2026-06-05");
+    const r = cycleAverage(
+      { "2026-06-02": NaN, "2026-06-03": 70 },
+      "2026-06-01",
+      "2026-06-05",
+    );
     expect(r).toEqual({ avg: 70, n: 1 });
   });
   it("returns empty for unknown/missing data", () => {

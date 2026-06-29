@@ -6,7 +6,20 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 function fmtDate(str) {
   const [, m, d] = str.split("-").map(Number);
-  const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1];
+  const mon = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ][m - 1];
   return `${d} ${mon}`;
 }
 
@@ -33,11 +46,21 @@ export function buildNarrative(result) {
       `${e.name} — ${e.decision.badgeLabel}${e.decision.reason ? ` (${e.decision.reason})` : ""}.`,
     );
   }
-  if (result.bodyweight?.evaluation && /ON TARGET/.test(result.bodyweight.evaluation)) {
-    wins.push(`Bodyweight ${result.bodyweight.deltaPct >= 0 ? "+" : ""}${result.bodyweight.deltaPct.toFixed(1)}% — ${result.bodyweight.evaluation}.`);
+  if (
+    result.bodyweight?.evaluation &&
+    /ON TARGET/.test(result.bodyweight.evaluation)
+  ) {
+    wins.push(
+      `Bodyweight ${result.bodyweight.deltaPct >= 0 ? "+" : ""}${result.bodyweight.deltaPct.toFixed(1)}% — ${result.bodyweight.evaluation}.`,
+    );
   }
 
-  return { headline, wins, concerns, volumeVerdict: volumeVerdict(result.tonnageTrend) };
+  return {
+    headline,
+    wins,
+    concerns,
+    volumeVerdict: volumeVerdict(result.tonnageTrend),
+  };
 }
 
 function buildConcerns(ex) {
@@ -45,21 +68,37 @@ function buildConcerns(ex) {
   // Tier 1: injury / 3-strike
   for (const e of ex) {
     const isInjury = /discomfort|pain/.test(e.decision.reason || "");
-    const isStrike = (e.flags || []).includes("3-strike") || (e.decision.flags || []).includes("3-strike");
+    const isStrike =
+      (e.flags || []).includes("3-strike") ||
+      (e.decision.flags || []).includes("3-strike");
     if (isInjury || isStrike) {
       ranked.push({ tier: 1, title: e.name, action: e.decision.reason });
     }
   }
   // Tier 2: deloads
   for (const e of ex) {
-    if (e.decision.action === "DELOAD" && !ranked.some((r) => r.title === e.name)) {
-      ranked.push({ tier: 2, title: e.name, action: `DELOAD — ${e.decision.reason}` });
+    if (
+      e.decision.action === "DELOAD" &&
+      !ranked.some((r) => r.title === e.name)
+    ) {
+      ranked.push({
+        tier: 2,
+        title: e.name,
+        action: `DELOAD — ${e.decision.reason}`,
+      });
     }
   }
   // Tier 3: irregular / incomplete
   for (const e of ex) {
-    if ((e.pattern === "irregular" || e.pattern === "incomplete") && !ranked.some((r) => r.title === e.name)) {
-      ranked.push({ tier: 3, title: e.name, action: `${e.pattern} pattern — ${e.decision.reason}` });
+    if (
+      (e.pattern === "irregular" || e.pattern === "incomplete") &&
+      !ranked.some((r) => r.title === e.name)
+    ) {
+      ranked.push({
+        tier: 3,
+        title: e.name,
+        action: `${e.pattern} pattern — ${e.decision.reason}`,
+      });
     }
   }
   ranked.sort((a, b) => a.tier - b.tier);

@@ -5,21 +5,29 @@ import {
   analyzeExercise,
 } from "./analyzeExercise";
 
-const sets = (...reps) => reps.map((r, i) => ({ set: i + 1, weight: 40, reps: r }));
+const sets = (...reps) =>
+  reps.map((r, i) => ({ set: i + 1, weight: 40, reps: r }));
 
 const workouts = [
   {
     id: "a",
     date: "2026-06-02",
     name: "Push",
-    exercises: [{ exerciseName: "Bench Press Barbell", sets: sets(8, 7, 6, 5, 4) }],
+    exercises: [
+      { exerciseName: "Bench Press Barbell", sets: sets(8, 7, 6, 5, 4) },
+    ],
   },
   {
     id: "b",
     date: "2026-06-10",
     name: "Push",
     exercises: [
-      { exerciseName: "Bench Press Barbell", sets: sets(9, 8, 7, 6, 5), rpe: 8, feedback: "felt good" },
+      {
+        exerciseName: "Bench Press Barbell",
+        sets: sets(9, 8, 7, 6, 5),
+        rpe: 8,
+        feedback: "felt good",
+      },
     ],
   },
 ];
@@ -49,13 +57,17 @@ describe("analyzeExercise", () => {
   });
   it("flags baseline exercises below the session threshold", () => {
     const ex = { exerciseName: "Hammer Curl", sets: sets(20, 18, 16, 14, 12) };
-    const h2 = buildExerciseHistory([{ id: "x", date: "2026-06-10", name: "Pull", exercises: [ex] }]);
+    const h2 = buildExerciseHistory([
+      { id: "x", date: "2026-06-10", name: "Pull", exercises: [ex] },
+    ]);
     const a = analyzeExercise(max753, ex, null, h2, "2026-06-10");
     expect(a.isBaseline).toBe(true);
   });
   it("marks abs as the rep-range bucket with no pattern/status", () => {
     const ex = { exerciseName: "Cable Crunch", sets: sets(20, 18, 16) };
-    const h2 = buildExerciseHistory([{ id: "x", date: "2026-06-10", name: "Push", exercises: [ex] }]);
+    const h2 = buildExerciseHistory([
+      { id: "x", date: "2026-06-10", name: "Push", exercises: [ex] },
+    ]);
     const a = analyzeExercise(max753, ex, null, h2, "2026-06-10");
     expect(a.bucketKind).toBe("abs");
     expect(a.status).toBeNull();

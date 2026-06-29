@@ -220,7 +220,12 @@ export default function MoreMenu() {
             className="flex w-full items-center justify-between px-3 py-3 text-left transition hover:bg-neutral-50 dark:hover:bg-neutral-800"
           >
             <span className={rowText}>Notepad</span>
-            <span aria-hidden className="text-neutral-400 dark:text-neutral-500">›</span>
+            <span
+              aria-hidden
+              className="text-neutral-400 dark:text-neutral-500"
+            >
+              ›
+            </span>
           </button>
           <button
             type="button"
@@ -233,7 +238,12 @@ export default function MoreMenu() {
                 Max 7/5/3 review + next-cycle plan
               </div>
             </div>
-            <span aria-hidden className="text-neutral-400 dark:text-neutral-500">›</span>
+            <span
+              aria-hidden
+              className="text-neutral-400 dark:text-neutral-500"
+            >
+              ›
+            </span>
           </button>
         </div>
       </div>

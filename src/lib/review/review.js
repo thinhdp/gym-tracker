@@ -8,7 +8,11 @@ import {
   dayPhases,
   mostRecentCompletedCycle,
 } from "./cycles";
-import { buildExerciseHistory, findPriorSession, analyzeExercise } from "./analyzeExercise";
+import {
+  buildExerciseHistory,
+  findPriorSession,
+  analyzeExercise,
+} from "./analyzeExercise";
 import { decide } from "./decide";
 import { tonnageByPattern, collectHistory } from "./tonnage";
 import { cycleAverage, evaluate } from "./bodyweight";
@@ -18,7 +22,9 @@ import { buildNarrative } from "./narrative";
 const HISTORY_WINDOWS = 6;
 
 function consecutiveSameWeight(history, name, beforeDate, weight) {
-  const arr = (history.get(normalizeName(name)) || []).filter((s) => s.date < beforeDate);
+  const arr = (history.get(normalizeName(name)) || []).filter(
+    (s) => s.date < beforeDate,
+  );
   let count = 0;
   for (let i = arr.length - 1; i >= 0; i--) {
     const w = arr[i].sets.length ? Number(arr[i].sets[0].weight) || 0 : 0;
@@ -67,7 +73,10 @@ export function buildCycleReview(config, data, cycleNumber) {
 
   const number = cycleNumber ?? mostRecentCompletedCycle(config, workouts);
   if (number == null) {
-    return emptyResult(config, warnings.concat("No in-program workouts found."));
+    return emptyResult(
+      config,
+      warnings.concat("No in-program workouts found."),
+    );
   }
 
   const { start, end } = cycleDates(config, number);
@@ -83,19 +92,30 @@ export function buildCycleReview(config, data, cycleNumber) {
     warnings.push(`Cycle ${number} has no sessions logged.`);
   }
   if (phase === "maintenance") {
-    warnings.push("Maintenance/travel cycle — sessions are environmentally confounded and excluded from progression analysis.");
+    warnings.push(
+      "Maintenance/travel cycle — sessions are environmentally confounded and excluded from progression analysis.",
+    );
   }
   if (phase === "post-program") {
-    warnings.push("This cycle is past the program's end date — consider a continuation phase.");
+    warnings.push(
+      "This cycle is past the program's end date — consider a continuation phase.",
+    );
   }
-  if (cycleWorkouts.length && cycleWorkouts.length < config.cycle.expectedSessions) {
-    warnings.push(`Partial cycle: ${cycleWorkouts.length} of ${config.cycle.expectedSessions} expected sessions.`);
+  if (
+    cycleWorkouts.length &&
+    cycleWorkouts.length < config.cycle.expectedSessions
+  ) {
+    warnings.push(
+      `Partial cycle: ${cycleWorkouts.length} of ${config.cycle.expectedSessions} expected sessions.`,
+    );
   }
 
   const history = buildExerciseHistory(workouts);
   const fbCycle = firstBulkCycle(config);
   const firstSessionDate = cycleWorkouts.length ? cycleWorkouts[0].date : null;
-  const firstBulkPhaseDate = (config.phases.find((p) => p.id === "lean-bulk") || {}).from;
+  const firstBulkPhaseDate = (
+    config.phases.find((p) => p.id === "lean-bulk") || {}
+  ).from;
 
   const sessions = cycleWorkouts.map((w) => {
     return {
@@ -103,7 +123,10 @@ export function buildCycleReview(config, data, cycleNumber) {
       dayInCycle: dayIndex(config, number, w.date),
       name: w.name || w.date,
       nExercises: (w.exercises || []).length,
-      nSets: (w.exercises || []).reduce((acc, e) => acc + (e.sets || []).length, 0),
+      nSets: (w.exercises || []).reduce(
+        (acc, e) => acc + (e.sets || []).length,
+        0,
+      ),
     };
   });
 
@@ -114,7 +137,12 @@ export function buildCycleReview(config, data, cycleNumber) {
       if (!ex.exerciseName) continue;
       const prior = findPriorSession(history, ex.exerciseName, w.date);
       const a = analyzeExercise(config, ex, prior, history, w.date);
-      const stallCount = consecutiveSameWeight(history, ex.exerciseName, w.date, a.weight);
+      const stallCount = consecutiveSameWeight(
+        history,
+        ex.exerciseName,
+        w.date,
+        a.weight,
+      );
       const isFirstBulkSession =
         number === fbCycle &&
         w.date === firstSessionDate &&
@@ -122,9 +150,21 @@ export function buildCycleReview(config, data, cycleNumber) {
         w.date >= firstBulkPhaseDate;
       const decision =
         phase === "maintenance"
-          ? { action: "HOLD", newWeight: a.weight, increment: 0, reason: "maintenance — hold", badgeLabel: "HOLD", flags: ["maintenance"] }
+          ? {
+              action: "HOLD",
+              newWeight: a.weight,
+              increment: 0,
+              reason: "maintenance — hold",
+              badgeLabel: "HOLD",
+              flags: ["maintenance"],
+            }
           : decide(config, a, { phase, stallCount, isFirstBulkSession });
-      exercises.push({ ...a, date: w.date, session: w.name || w.date, decision });
+      exercises.push({
+        ...a,
+        date: w.date,
+        session: w.name || w.date,
+        decision,
+      });
       planLines.push({
         session: w.name || w.date,
         exercise: a.name,
@@ -137,32 +177,79 @@ export function buildCycleReview(config, data, cycleNumber) {
     }
   }
 
-  const tonnageTrend = collectHistory(config, workouts, number, HISTORY_WINDOWS).map((win) => ({
+  const tonnageTrend = collectHistory(
+    config,
+    workouts,
+    number,
+    HISTORY_WINDOWS,
+  ).map((win) => ({
     ...win,
     phase: win.cycle != null ? phaseForCycle(config, win.cycle) : win.phase,
   }));
 
   const priorDates = number >= 2 ? cycleDates(config, number - 1) : null;
   const thisBW = cycleAverage(weightLogs, start, end);
-  const priorBW = priorDates ? cycleAverage(weightLogs, priorDates.start, priorDates.end) : { avg: null, n: 0 };
-  let bodyweight = { thisAvg: thisBW.avg, thisN: thisBW.n, priorAvg: priorBW.avg, priorN: priorBW.n, deltaKg: null, deltaPct: null, evaluation: "" };
+  const priorBW = priorDates
+    ? cycleAverage(weightLogs, priorDates.start, priorDates.end)
+    : { avg: null, n: 0 };
+  let bodyweight = {
+    thisAvg: thisBW.avg,
+    thisN: thisBW.n,
+    priorAvg: priorBW.avg,
+    priorN: priorBW.n,
+    deltaKg: null,
+    deltaPct: null,
+    evaluation: "",
+  };
   if (thisBW.avg != null && priorBW.avg != null && priorBW.avg > 0) {
     const deltaKg = thisBW.avg - priorBW.avg;
     const deltaPct = (deltaKg / priorBW.avg) * 100;
-    bodyweight = { ...bodyweight, deltaKg, deltaPct, evaluation: evaluate(config, phase, deltaPct) };
+    bodyweight = {
+      ...bodyweight,
+      deltaKg,
+      deltaPct,
+      evaluation: evaluate(config, phase, deltaPct),
+    };
   }
 
   const thisTn = tonnageByPattern(config, cycleWorkouts);
-  const priorTn = priorDates ? tonnageByPattern(config, workouts.filter((w) => w.date >= priorDates.start && w.date <= priorDates.end)) : {};
-  const byPattern = [...new Set([...Object.keys(thisTn), ...Object.keys(priorTn)])]
+  const priorTn = priorDates
+    ? tonnageByPattern(
+        config,
+        workouts.filter(
+          (w) => w.date >= priorDates.start && w.date <= priorDates.end,
+        ),
+      )
+    : {};
+  const byPattern = [
+    ...new Set([...Object.keys(thisTn), ...Object.keys(priorTn)]),
+  ]
     .sort()
-    .map((p) => ({ pattern: p, thisTonnage: thisTn[p] || 0, priorTonnage: priorTn[p] || 0, delta: (thisTn[p] || 0) - (priorTn[p] || 0) }));
+    .map((p) => ({
+      pattern: p,
+      thisTonnage: thisTn[p] || 0,
+      priorTonnage: priorTn[p] || 0,
+      delta: (thisTn[p] || 0) - (priorTn[p] || 0),
+    }));
 
-  const plan = { bySession: groupBySession(planLines), byBlock: groupByBlock(config, planLines) };
+  const plan = {
+    bySession: groupBySession(planLines),
+    byBlock: groupByBlock(config, planLines),
+  };
 
   const result = {
     program: { id: config.id, name: config.name },
-    cycle: { number, start, end, phase, dayPhases: phases, straddles, partial: cycleWorkouts.length > 0 && cycleWorkouts.length < config.cycle.expectedSessions },
+    cycle: {
+      number,
+      start,
+      end,
+      phase,
+      dayPhases: phases,
+      straddles,
+      partial:
+        cycleWorkouts.length > 0 &&
+        cycleWorkouts.length < config.cycle.expectedSessions,
+    },
     sessions,
     exercises,
     tonnageTrend,
@@ -189,10 +276,23 @@ function emptyResult(config, warnings) {
     sessions: [],
     exercises: [],
     tonnageTrend: [],
-    bodyweight: { thisAvg: null, thisN: 0, priorAvg: null, priorN: 0, deltaKg: null, deltaPct: null, evaluation: "" },
+    bodyweight: {
+      thisAvg: null,
+      thisN: 0,
+      priorAvg: null,
+      priorN: 0,
+      deltaKg: null,
+      deltaPct: null,
+      evaluation: "",
+    },
     byPattern: [],
     plan: { bySession: [], byBlock: [] },
     warnings,
-    narrative: { headline: "No data to review yet.", wins: [], concerns: [], volumeVerdict: "" },
+    narrative: {
+      headline: "No data to review yet.",
+      wins: [],
+      concerns: [],
+      volumeVerdict: "",
+    },
   };
 }

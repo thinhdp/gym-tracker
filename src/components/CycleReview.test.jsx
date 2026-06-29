@@ -5,7 +5,8 @@ import { AppProvider } from "../context/AppContext";
 import { K_WO } from "../lib/storage";
 import CycleReview from "./CycleReview";
 
-const sets = (w, ...reps) => reps.map((r, i) => ({ set: i + 1, weight: w, reps: r }));
+const sets = (w, ...reps) =>
+  reps.map((r, i) => ({ set: i + 1, weight: w, reps: r }));
 
 beforeEach(() => {
   localStorage.clear();
@@ -16,7 +17,12 @@ beforeEach(() => {
         id: "p2",
         date: "2026-06-09",
         name: "Push",
-        exercises: [{ exerciseName: "Bench Press Barbell", sets: sets(40, 9, 8, 7, 6, 5) }],
+        exercises: [
+          {
+            exerciseName: "Bench Press Barbell",
+            sets: sets(40, 9, 8, 7, 6, 5),
+          },
+        ],
       },
     ]),
   );

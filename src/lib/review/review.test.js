@@ -1,7 +1,8 @@
 import max753 from "./programs/max753";
 import { buildCycleReview } from "./review";
 
-const sets = (w, ...reps) => reps.map((r, i) => ({ set: i + 1, weight: w, reps: r }));
+const sets = (w, ...reps) =>
+  reps.map((r, i) => ({ set: i + 1, weight: w, reps: r }));
 
 // One Push session inside a known lean-bulk cycle (2026-06-09).
 const data = {
@@ -12,7 +13,9 @@ const data = {
       id: "p1",
       date: "2026-06-02",
       name: "Push",
-      exercises: [{ exerciseName: "Bench Press Barbell", sets: sets(40, 8, 7, 6, 5, 4) }],
+      exercises: [
+        { exerciseName: "Bench Press Barbell", sets: sets(40, 8, 7, 6, 5, 4) },
+      ],
     },
     {
       id: "p2",
@@ -20,7 +23,10 @@ const data = {
       name: "Push",
       exercises: [
         { exerciseName: "Bench Press Barbell", sets: sets(40, 9, 8, 7, 6, 5) },
-        { exerciseName: "Triceps Pushdown", sets: sets(20, 18, 16, 14, 12, 10) },
+        {
+          exerciseName: "Triceps Pushdown",
+          sets: sets(20, 18, 16, 14, 12, 10),
+        },
       ],
     },
   ],
@@ -41,8 +47,14 @@ describe("buildCycleReview", () => {
   });
 
   it("produces a PROGRESS decision for the overshoot lift", () => {
-    const r = buildCycleReview(max753, data, /* cycle of 2026-06-09 */ undefined);
-    const bench = r.exercises.find((e) => e.name === "Bench Press Barbell" && e.date === "2026-06-09");
+    const r = buildCycleReview(
+      max753,
+      data,
+      /* cycle of 2026-06-09 */ undefined,
+    );
+    const bench = r.exercises.find(
+      (e) => e.name === "Bench Press Barbell" && e.date === "2026-06-09",
+    );
     expect(bench.decision.action).toBe("PROGRESS");
   });
 

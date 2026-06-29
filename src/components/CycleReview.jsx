@@ -25,7 +25,9 @@ const BADGE = {
 
 function Badge({ action, label }) {
   return (
-    <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white ${BADGE[action] || "bg-amber-600"}`}>
+    <span
+      className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white ${BADGE[action] || "bg-amber-600"}`}
+    >
       {label}
     </span>
   );
@@ -40,7 +42,8 @@ export default function CycleReview() {
 
   const cycleNum = selected ?? cycles[0];
   const review = useMemo(
-    () => buildCycleReview(program, { workouts, weightLogs, exercises }, cycleNum),
+    () =>
+      buildCycleReview(program, { workouts, weightLogs, exercises }, cycleNum),
     [workouts, weightLogs, exercises, cycleNum],
   );
 
@@ -144,26 +147,37 @@ export default function CycleReview() {
             {review.tonnageTrend.slice(-4).map((w, i) => (
               <tr key={i} className="border-t dark:border-neutral-800">
                 <td className="py-1">{w.label}</td>
-                <td className="py-1 text-right tabular-nums">{Math.round(w.tonnage)}</td>
+                <td className="py-1 text-right tabular-nums">
+                  {Math.round(w.tonnage)}
+                </td>
                 <td className="py-1 text-right tabular-nums">{w.totalReps}</td>
                 <td className="py-1 text-right tabular-nums">
-                  {w.deltaPct == null ? (w.isInProgram ? "—" : "(pre)") : `${w.deltaPct >= 0 ? "+" : ""}${w.deltaPct.toFixed(1)}%`}
+                  {w.deltaPct == null
+                    ? w.isInProgram
+                      ? "—"
+                      : "(pre)"
+                    : `${w.deltaPct >= 0 ? "+" : ""}${w.deltaPct.toFixed(1)}%`}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        <p className="mt-1 text-xs italic text-neutral-500">{review.narrative.volumeVerdict}</p>
+        <p className="mt-1 text-xs italic text-neutral-500">
+          {review.narrative.volumeVerdict}
+        </p>
       </Section>
 
       {review.bodyweight.thisAvg != null && (
         <Section title="Bodyweight">
           <p className="text-sm text-neutral-700 dark:text-neutral-300">
-            {review.bodyweight.thisAvg.toFixed(1)}kg ({review.bodyweight.thisN} weigh-ins)
+            {review.bodyweight.thisAvg.toFixed(1)}kg ({review.bodyweight.thisN}{" "}
+            weigh-ins)
             {review.bodyweight.deltaPct != null && (
               <>
-                {" "}· {review.bodyweight.deltaPct >= 0 ? "+" : ""}
-                {review.bodyweight.deltaPct.toFixed(1)}% — {review.bodyweight.evaluation}
+                {" "}
+                · {review.bodyweight.deltaPct >= 0 ? "+" : ""}
+                {review.bodyweight.deltaPct.toFixed(1)}% —{" "}
+                {review.bodyweight.evaluation}
               </>
             )}
           </p>
@@ -188,12 +202,21 @@ export default function CycleReview() {
               <table className="w-full text-sm">
                 <tbody>
                   {g.lines.map((l, i) => (
-                    <tr key={i} className="border-t align-top dark:border-neutral-800">
+                    <tr
+                      key={i}
+                      className="border-t align-top dark:border-neutral-800"
+                    >
                       <td className="py-1.5">
-                        <div className="text-neutral-900 dark:text-neutral-100">{l.exercise}</div>
-                        <div className="text-xs text-neutral-500">{l.reason}</div>
+                        <div className="text-neutral-900 dark:text-neutral-100">
+                          {l.exercise}
+                        </div>
+                        <div className="text-xs text-neutral-500">
+                          {l.reason}
+                        </div>
                       </td>
-                      <td className="py-1.5 text-right font-semibold tabular-nums">{l.weightLabel}</td>
+                      <td className="py-1.5 text-right font-semibold tabular-nums">
+                        {l.weightLabel}
+                      </td>
                       <td className="py-1.5 pl-2 text-right">
                         <Badge action={l.action} label={l.badgeLabel} />
                       </td>

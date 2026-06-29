@@ -1,16 +1,49 @@
 import { buildNarrative } from "./narrative";
 
 const base = {
-  cycle: { number: 7, start: "2026-06-09", end: "2026-06-16", phase: "lean-bulk" },
+  cycle: {
+    number: 7,
+    start: "2026-06-09",
+    end: "2026-06-16",
+    phase: "lean-bulk",
+  },
   sessions: [{ date: "2026-06-09" }, { date: "2026-06-10" }],
   exercises: [
-    { name: "Bench Press Barbell", decision: { action: "PROGRESS", badgeLabel: "+2.5kg" }, flags: [] },
-    { name: "Deadlift", decision: { action: "DELOAD", reason: "irregular" }, flags: [] },
-    { name: "Shoulder Press", decision: { action: "HOLD", reason: "feedback: discomfort — hold", flags: ["3-strike"] }, flags: ["3-strike"] },
+    {
+      name: "Bench Press Barbell",
+      decision: { action: "PROGRESS", badgeLabel: "+2.5kg" },
+      flags: [],
+    },
+    {
+      name: "Deadlift",
+      decision: { action: "DELOAD", reason: "irregular" },
+      flags: [],
+    },
+    {
+      name: "Shoulder Press",
+      decision: {
+        action: "HOLD",
+        reason: "feedback: discomfort — hold",
+        flags: ["3-strike"],
+      },
+      flags: ["3-strike"],
+    },
   ],
   tonnageTrend: [
-    { cycle: 6, tonnage: 1000, patternQualityPct: 80, deltaPct: null, isInProgram: true },
-    { cycle: 7, tonnage: 1020, patternQualityPct: 80, deltaPct: 2.0, isInProgram: true },
+    {
+      cycle: 6,
+      tonnage: 1000,
+      patternQualityPct: 80,
+      deltaPct: null,
+      isInProgram: true,
+    },
+    {
+      cycle: 7,
+      tonnage: 1020,
+      patternQualityPct: 80,
+      deltaPct: 2.0,
+      isInProgram: true,
+    },
   ],
   bodyweight: { deltaPct: 0.4, evaluation: "ON TARGET (lean bulk band)" },
 };

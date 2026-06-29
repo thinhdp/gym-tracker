@@ -21,7 +21,20 @@ function esc(s) {
 
 function fmtDate(str) {
   const [, m, d] = str.split("-").map(Number);
-  const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1];
+  const mon = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ][m - 1];
   return `${d} ${mon}`;
 }
 
@@ -57,7 +70,12 @@ function trendRows(trend) {
   return (trend || [])
     .slice(-4)
     .map((w) => {
-      const delta = w.deltaPct == null ? (w.isInProgram ? "—" : "(pre)") : `${w.deltaPct >= 0 ? "+" : ""}${w.deltaPct.toFixed(1)}%`;
+      const delta =
+        w.deltaPct == null
+          ? w.isInProgram
+            ? "—"
+            : "(pre)"
+          : `${w.deltaPct >= 0 ? "+" : ""}${w.deltaPct.toFixed(1)}%`;
       return `<tr><td>${esc(w.label)}</td><td class="num">${Math.round(w.tonnage)}</td><td class="num">${w.totalReps}</td><td class="num">${esc(delta)}</td></tr>`;
     })
     .join("\n      ");
@@ -72,7 +90,10 @@ export function buildOnePager(result, grouping = "bySession") {
     .join("\n      ");
   const bw = result.bodyweight || {};
   // Not escaped here — the whole bwNote is escaped once at the interpolation site.
-  const bwNote = bw.thisAvg != null ? `${bw.thisAvg.toFixed(1)}kg (${bw.thisN} weigh-ins). ${bw.evaluation || ""}` : "no weigh-ins";
+  const bwNote =
+    bw.thisAvg != null
+      ? `${bw.thisAvg.toFixed(1)}kg (${bw.thisN} weigh-ins). ${bw.evaluation || ""}`
+      : "no weigh-ins";
 
   return `<!DOCTYPE html>
 <html lang="en">

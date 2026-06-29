@@ -64,7 +64,9 @@ export function analyzeExercise(config, ex, prior, history, dateStr) {
 
   let priorComparison = null;
   if (prior) {
-    const priorWeight = prior.sets.length ? Number(prior.sets[0].weight) || 0 : 0;
+    const priorWeight = prior.sets.length
+      ? Number(prior.sets[0].weight) || 0
+      : 0;
     const priorTotal = prior.sets.reduce(
       (acc, s) => acc + (Number(s.reps) || 0),
       0,

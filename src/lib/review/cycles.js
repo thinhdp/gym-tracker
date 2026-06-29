@@ -95,7 +95,8 @@ export function mostRecentCompletedCycle(config, workouts, today = null) {
   if (n == null) return null;
   while (n >= 1) {
     const { start, end } = cycleDates(config, n);
-    if ((workouts || []).some((w) => w.date >= start && w.date <= end)) return n;
+    if ((workouts || []).some((w) => w.date >= start && w.date <= end))
+      return n;
     n -= 1;
   }
   return null;

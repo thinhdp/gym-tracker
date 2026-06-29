@@ -19,7 +19,14 @@ export function weeklySummary(config, workouts) {
   let totalReps = 0;
   let nPartialReps = 0;
   let nComplete = 0;
-  const patternCounts = { linear: 0, flat: 0, steep: 0, irregular: 0, incomplete: 0, "n/a": 0 };
+  const patternCounts = {
+    linear: 0,
+    flat: 0,
+    steep: 0,
+    irregular: 0,
+    incomplete: 0,
+    "n/a": 0,
+  };
 
   for (const w of workouts || []) {
     for (const exr of w.exercises || []) {
@@ -55,9 +62,13 @@ export function tonnageByPattern(config, workouts) {
   const out = {};
   for (const w of workouts || []) {
     for (const exr of w.exercises || []) {
-      const mp = config.movementPatterns[normalizeName(exr.exerciseName)] || "uncategorized";
+      const mp =
+        config.movementPatterns[normalizeName(exr.exerciseName)] ||
+        "uncategorized";
       for (const s of exr.sets || []) {
-        out[mp] = (out[mp] || 0) + (Number(s.weight) || 0) * Math.floor(Number(s.reps) || 0);
+        out[mp] =
+          (out[mp] || 0) +
+          (Number(s.weight) || 0) * Math.floor(Number(s.reps) || 0);
       }
     }
   }
@@ -94,7 +105,10 @@ export function collectHistory(config, workouts, cycleN, nWindows) {
       s.setDate(s.getDate() - 7 * isoOffset);
       const e = new Date(s);
       e.setDate(s.getDate() + 6);
-      summary = weeklySummary(config, workoutsInRange(workouts, ymd(s), ymd(e)));
+      summary = weeklySummary(
+        config,
+        workoutsInRange(workouts, ymd(s), ymd(e)),
+      );
       win = {
         label: `${ymd(s)} (pre)`,
         cycle: null,
