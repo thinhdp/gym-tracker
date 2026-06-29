@@ -1770,10 +1770,9 @@ const data = {
 describe("buildCycleReview", () => {
   it("reviews the most recent cycle and emits structured sections", () => {
     const r = buildCycleReview(max753, data);
-    expect(r.cycle.number).toBe(
-      // both sessions could be different cycles; the latest is reviewed
-      r.cycle.number,
-    );
+    // 2026-06-09 is the latest session; cycle 6 of the 8-day program.
+    expect(r.cycle.number).toBe(6);
+    expect(r.cycle.phase).toBe("lean-bulk");
     expect(r.sessions.length).toBeGreaterThan(0);
     expect(r.exercises.length).toBeGreaterThan(0);
     expect(r.plan.bySession.length).toBeGreaterThan(0);
