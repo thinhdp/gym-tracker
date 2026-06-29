@@ -74,9 +74,17 @@ engine's input contract):
               "sumo deadlift", "trap bar deadlift"],
       nSets: 3, target: 15, set3Floor: 3, hitBand: 2, increment: 2.5,
     },
+    // Abs use a per-set rep-RANGE model (not a total-rep bucket): 3 sets,
+    // each set targeting 15-20 reps. Drop-off pattern classification does not
+    // apply; progression is range-based (see "Abs progression model" below).
+    abs: {
+      names: [/* normalized ab-exercise names, e.g. "hanging leg raise",
+                 "cable crunch", "ab crunch machine" */],
+      nSets: 3, repRangeMin: 15, repRangeMax: 20, increment: 2.5,
+    },
     // pullup transition rule (bodyweight -> weighted) lives here too
   },
-  movementPatterns: { /* normalized name -> "quad" | "hinge" | ... */ },
+  movementPatterns: { /* normalized name -> "quad" | "hinge" | ... | "abs" */ },
   baselineExercises: { names: ["romanian deadlift", "rdl", "hammer curl",
                                "incline dumbbell bench press"], sessionsRequired: 3 },
   cautionExercises: {
@@ -87,7 +95,13 @@ engine's input contract):
                 discomfort: "hold" },
     light:    { names: [/* flat bench, overhead triceps */], discomfort: "downgrade" },
   },
-  injuryKeywords: ["shoulder", "pain", "discomfort", "tweak", "hurt"],
+  // Feedback (ex.feedback free text) keyword rules. Each rule downgrades the
+  // matrix action when a keyword is found in that exercise's feedback.
+  feedbackRules: {
+    injury:  { keywords: ["shoulder", "pain", "discomfort", "tweak", "hurt"],
+               action: "caution" }, // -> DELOAD/HOLD/downgrade per caution tier
+    fatigue: { keywords: ["heavy", "tired"], action: "hold" }, // cap action at HOLD
+  },
   blocks: [
     { id: "A", label: "Block A", sessions: ["Quads", "Push", "Pull"] },
     { id: "B", label: "Block B", sessions: ["Hamstrings", "Push", "Pull"] },
@@ -121,8 +135,16 @@ All deterministic, framework-free, each with a co-located `*.test.js`.
   Implements: the rep-status × pattern matrix; the 3-strike stall counter
   (consecutive HOLDs per exercise across cycles → escalate to DELOAD); the phase
   modifier (cut = conservative, bulk = normal, first-bulk re-calibration HOLD);
-  front-delt caution overrides; the RPE modifier table; and feedback
-  injury-keyword detection (→ DELOAD/HOLD/downgrade per caution tier).
+  front-delt caution overrides; the RPE modifier table; the **abs rep-range
+  model** (below); and **feedback keyword rules** from `config.feedbackRules`
+  (injury terms → DELOAD/HOLD/downgrade per caution tier; fatigue terms
+  "heavy"/"tired" → cap the action at HOLD).
+
+  **Abs rep-range model** — exercises matched by `special.abs` are evaluated as
+  3 sets against a per-set range (15–20), not by total-rep bucket or drop-off
+  pattern: PROGRESS when all 3 sets reach the top of range (≥20), HOLD while in
+  range, DELOAD/HOLD-back if sets fall below the bottom (<15). Increment per
+  `special.abs.increment`.
 - **`tonnage.js`** — `weeklySummary(workouts)` (tonnage, reps, pattern counts,
   pattern-quality %), `tonnageByPattern(workouts, config)`,
   `collectHistory(config, workouts, cycleN, nWindows)` (in-program 8-day cycles;
@@ -186,8 +208,9 @@ classes in-app; inlined hex in the downloadable HTML).
    `feedback`. Use `ex.rpe` directly as the last-set-RPE proxy and apply the RPE
    modifier table. **Drop** natural-language RPE parsing and the `--rpe` sidecar.
 2. **Subjective notes** — use `ex.feedback`; an offline keyword scan
-   (`config.injuryKeywords`) drives the caution rules, and feedback text is
-   surfaced verbatim in concerns. No free-form interpretation.
+   (`config.feedbackRules`) drives action downgrades — injury terms trigger the
+   caution rules, fatigue terms ("heavy"/"tired") cap the action at HOLD — and
+   feedback text is surfaced verbatim in concerns. No free-form interpretation.
 3. **Input** — read live `AppContext` state; no JSON upload / schema-version
    gate (a `warnings` entry covers genuinely empty/odd data instead).
 4. **Prose** — templated from `ReviewResult` (no LLM).
@@ -225,6 +248,10 @@ docs provide ready-made fixtures, e.g.:
   DELOAD.
 - RPE modifier: last-set RPE 10 caps PROGRESS→HOLD; RPE ≤6 upgrades HOLD→PROGRESS.
 - Phase: cut downgrades borderline PROGRESS→HOLD; bulk applies matrix as-is.
+- Abs: 3 sets `20/20/20` → PROGRESS; `18/16/15` (in range) → HOLD; `14/12/10`
+  (below range) → DELOAD/HOLD-back; drop-off pattern not applied.
+- Feedback: "felt heavy today" or "tired" → action capped at HOLD; "shoulder
+  pain" on a strict-caution lift → DELOAD.
 
 `npm run check` (lint + format + tests + build) must pass before pushing.
 
