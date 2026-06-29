@@ -20,7 +20,7 @@ function esc(s) {
 }
 
 function fmtDate(str) {
-  const [y, m, d] = str.split("-").map(Number);
+  const [, m, d] = str.split("-").map(Number);
   const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1];
   return `${d} ${mon}`;
 }
@@ -71,7 +71,8 @@ export function buildOnePager(result, grouping = "bySession") {
     .map((x) => `<li><strong>${esc(x.title)}.</strong> ${esc(x.action)}</li>`)
     .join("\n      ");
   const bw = result.bodyweight || {};
-  const bwNote = bw.thisAvg != null ? `${bw.thisAvg.toFixed(1)}kg (${bw.thisN} weigh-ins). ${esc(bw.evaluation || "")}` : "no weigh-ins";
+  // Not escaped here — the whole bwNote is escaped once at the interpolation site.
+  const bwNote = bw.thisAvg != null ? `${bw.thisAvg.toFixed(1)}kg (${bw.thisN} weigh-ins). ${bw.evaluation || ""}` : "no weigh-ins";
 
   return `<!DOCTYPE html>
 <html lang="en">
