@@ -124,6 +124,38 @@ describe("feedback rules", () => {
   });
 });
 
+describe("conservatism guards — DELOAD never downgraded to HOLD", () => {
+  it("strict caution + severe undershoot + steep stays DELOAD", () => {
+    expect(
+      decide(max753, A({ name: "Shoulder Press", status: "UNDER-10", pattern: "steep", target: 50, setFloor: 7 }), { phase: "lean-bulk" }).action,
+    ).toBe("DELOAD");
+  });
+
+  it("first bulk session forces HOLD on a normal progression", () => {
+    expect(
+      decide(max753, A({ status: "OVER+4", pattern: "linear" }), { phase: "lean-bulk", isFirstBulkSession: true }).action,
+    ).toBe("HOLD");
+  });
+
+  it("first bulk session still honors a deload", () => {
+    expect(
+      decide(max753, A({ status: "UNDER-10", pattern: "linear" }), { phase: "lean-bulk", isFirstBulkSession: true }).action,
+    ).toBe("DELOAD");
+  });
+
+  it("HIT + flat doubles the increment", () => {
+    const d = decide(max753, A({ status: "HIT", pattern: "flat" }), { phase: "lean-bulk" });
+    expect(d.action).toBe("PROGRESS");
+    expect(d.newWeight).toBe(45);
+  });
+
+  it("OVER + flat -> PROGRESS", () => {
+    expect(
+      decide(max753, A({ status: "OVER+4", pattern: "flat" }), { phase: "lean-bulk" }).action,
+    ).toBe("PROGRESS");
+  });
+});
+
 describe("stall counter", () => {
   it("3rd consecutive hold escalates to DELOAD", () => {
     const d = decide(max753, A({ status: "UNDER-4", pattern: "linear" }), { phase: "lean-bulk", stallCount: 2 });

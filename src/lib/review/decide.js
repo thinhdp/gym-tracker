@@ -138,8 +138,10 @@ export function decide(config, a, context = {}) {
   // --- Phase modifier ---
   const phase = config.phases.find((ph) => ph.id === context.phase);
   if (context.isFirstBulkSession) {
-    action = "HOLD";
-    reason = "first bulk session — hold to recalibrate";
+    if (action !== "DELOAD") {
+      action = "HOLD";
+      reason = "first bulk session — hold to recalibrate";
+    }
   } else if (phase?.bias === "conservative" && action === "PROGRESS" && a.status === "HIT") {
     action = "HOLD";
     reason = "cut — hold borderline progress";
@@ -160,12 +162,16 @@ export function decide(config, a, context = {}) {
         reason = `caution: needs OVER+${caution.overshootMin} clean linear`;
       }
       if (a.pattern === "steep" || a.pattern === "irregular") {
-        action = "HOLD";
-        reason = "caution: non-linear on shoulder lift";
+        if (action !== "DELOAD") {
+          action = "HOLD";
+          reason = "caution: non-linear on shoulder lift";
+        }
       }
     } else if (caution.tier === "moderate" && a.pattern === "irregular") {
-      action = "HOLD";
-      reason = "caution: irregular on incline";
+      if (action !== "DELOAD") {
+        action = "HOLD";
+        reason = "caution: irregular on incline";
+      }
     }
     if (action === "PROGRESS" && caution.maxIncrement != null) {
       increment = Math.min(increment, caution.maxIncrement);
@@ -201,8 +207,10 @@ export function decide(config, a, context = {}) {
         deloadPct = -0.1;
         reason = "feedback: discomfort — deload";
       } else if (d === "hold") {
-        action = "HOLD";
-        reason = "feedback: discomfort — hold";
+        if (action !== "DELOAD") {
+          action = "HOLD";
+          reason = "feedback: discomfort — hold";
+        }
       } else if (d === "downgrade" && action === "PROGRESS") {
         action = "HOLD";
         reason = "feedback: discomfort — hold";
