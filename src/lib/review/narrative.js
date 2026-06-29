@@ -2,8 +2,10 @@
 // Templated prose for the review (replaces the skill's LLM-authored sections).
 // Everything is derived deterministically from the structured ReviewResult.
 
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
 function fmtDate(str) {
-  const [y, m, d] = str.split("-").map(Number);
+  const [, m, d] = str.split("-").map(Number);
   const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1];
   return `${d} ${mon}`;
 }
@@ -23,11 +25,13 @@ export function buildNarrative(result) {
         : "steady cycle";
   const headline =
     `Week ${c.number} (${fmtDate(c.start)}–${fmtDate(c.end)}, ${c.phase}) — ${verdict}: ` +
-    `${result.sessions.length} sessions, ${progressions.length} progressions, ${concerns.length} concerns.`;
+    `${plural(result.sessions.length, "session")}, ${plural(progressions.length, "progression")}, ${plural(concerns.length, "concern")}.`;
 
   const wins = [];
   for (const e of progressions.slice(0, 4)) {
-    wins.push(`${e.name} — ${e.decision.badgeLabel} (${e.decision.reason}).`);
+    wins.push(
+      `${e.name} — ${e.decision.badgeLabel}${e.decision.reason ? ` (${e.decision.reason})` : ""}.`,
+    );
   }
   if (result.bodyweight?.evaluation && /ON TARGET/.test(result.bodyweight.evaluation)) {
     wins.push(`Bodyweight ${result.bodyweight.deltaPct >= 0 ? "+" : ""}${result.bodyweight.deltaPct.toFixed(1)}% — ${result.bodyweight.evaluation}.`);

@@ -20,6 +20,9 @@ describe("buildNarrative", () => {
     const n = buildNarrative(base);
     expect(n.headline).toMatch(/Week 7/);
     expect(n.headline).toMatch(/lean-bulk/);
+    expect(n.headline).toMatch(/2 sessions/);
+    expect(n.headline).toMatch(/1 progression,/);
+    expect(n.headline).toMatch(/2 concerns/);
   });
   it("lists progressions as wins", () => {
     const n = buildNarrative(base);
