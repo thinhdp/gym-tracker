@@ -29,7 +29,13 @@ export function classifyPattern(reps, expectedNSets = 5) {
   if (rangeDrop <= 1) return "flat";
   if (expectedNSets === 3) {
     if (maxDrop >= 3 || (rangeDrop > 5 && avgDrop > 2)) return "steep";
-  } else if (maxDrop >= 4 || firstDrop >= 3 || (rangeDrop > 8 && avgDrop > 2.5)) {
+  } else if (
+    maxDrop >= 4 ||
+    // firstDrop >= 3 catches a big early drop like [8,5,4,3,2] (maxDrop 3, rangeDrop 6)
+    // that the maxDrop>=4 / rangeDrop>8 thresholds miss but the framework calls steep.
+    firstDrop >= 3 ||
+    (rangeDrop > 8 && avgDrop > 2.5)
+  ) {
     return "steep";
   }
   return "linear";
