@@ -4,14 +4,13 @@
 
 import {
   cycleDates,
-  cycleForDate,
   phaseForCycle,
   dayPhases,
   mostRecentCompletedCycle,
 } from "./cycles";
 import { buildExerciseHistory, findPriorSession, analyzeExercise } from "./analyzeExercise";
 import { decide } from "./decide";
-import { weeklySummary, tonnageByPattern, collectHistory } from "./tonnage";
+import { tonnageByPattern, collectHistory } from "./tonnage";
 import { cycleAverage, evaluate } from "./bodyweight";
 import { normalizeName } from "./match";
 import { buildNarrative } from "./narrative";
@@ -99,7 +98,6 @@ export function buildCycleReview(config, data, cycleNumber) {
   const firstBulkPhaseDate = (config.phases.find((p) => p.id === "lean-bulk") || {}).from;
 
   const sessions = cycleWorkouts.map((w) => {
-    const day = cycleForDate(config, w.date); // not day-in-cycle; see dayInCycle below
     return {
       date: w.date,
       dayInCycle: dayIndex(config, number, w.date),
