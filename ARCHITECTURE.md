@@ -90,12 +90,23 @@ gym-tracker/
     │   ├── metrics.js            # Period bucketing + per-period metrics (reps/sets/PRs)
     │   ├── homeStats.js          # Home dashboard: volume/streak/week helpers
     │   ├── theme.js              # resolveDark / applyTheme (light|dark|system)
-    │   └── liveSession.js        # Live-session done-map + clock helpers
+    │   ├── liveSession.js        # Live-session done-map + clock helpers
+    │   └── review/              # Offline Max 7/5/3 cycle-analysis engine
+    │       ├── programs/max753.js  # Swappable program config (exercises, sets, rep targets)
+    │       ├── cycles.js           # Cycle boundary detection from workout history
+    │       ├── tonnage.js          # Per-cycle tonnage aggregation + trend
+    │       ├── bodyweight.js       # Bodyweight evaluation over a cycle window
+    │       ├── decisions.js        # Per-exercise progression / regression decisions
+    │       ├── narrative.js        # Templated wins/concerns prose
+    │       ├── plan.js             # Next-cycle plan builder (by session / by block)
+    │       ├── onePager.js         # Plain-text one-pager report builder
+    │       └── buildReview.js      # Top-level orchestrator → ReviewResult
     └── components/
         ├── Home.jsx                 # Home dashboard (Home tab)
         ├── WorkoutsTab.jsx          # Workouts tab shell: List/Calendar toggle + Start
         ├── Progress.jsx             # Progress tab shell: Bodyweight/Strength toggle
-        ├── MoreMenu.jsx             # More tab: prefs (theme), Notepad, data export/import
+        ├── MoreMenu.jsx             # More tab: prefs (theme), Notepad, Cycle Review, data export/import
+        ├── CycleReview.jsx          # Cycle Review sub-screen: per-exercise decisions, tonnage/BW trends, next-cycle plan + downloadable one-pager
         ├── LiveSession.jsx          # Full-screen set-by-set live workout logger
         ├── WorkoutPlanner.jsx       # "Plan / Log Workout" form (Workouts tab)
         ├── WorkoutHistory.jsx       # List of past workouts (Workouts tab)
@@ -168,7 +179,8 @@ main.jsx
                     │   ├── ExerciseRow → ComboInput
                     │   └── ExerciseHistoryModal
                     │
-                    └── [tab="more"]      MoreMenu        (theme; Notepad sub-screen; DataManagementMenu)
+                    └── [tab="more"]      MoreMenu        (theme; Notepad; CycleReview; DataManagementMenu)
+                                              └── CycleReview  (cycle picker, decisions, tonnage/BW, plan, one-pager download)
 ```
 
 ## State-management model
@@ -377,6 +389,13 @@ is reflected everywhere immediately. The
 Strength tab additionally runs `workouts` through `src/lib/strength.js` to
 compute estimated 1RM, per-exercise progression series, personal records, and
 volume-by-muscle trends over a selected time range.
+
+`src/lib/review/` is the offline **Max 7/5/3 cycle-analysis engine**. It reads
+`workouts` + `weightLogs` and computes a `ReviewResult` per 8-day cycle:
+per-exercise progression decisions, tonnage trend, bodyweight evaluation, a
+narrative (wins/concerns), and a next-cycle plan (grouped by session or block).
+The program config is swappable (`programs/max753.js`). The review is computed on
+the fly — it **persists nothing and adds no localStorage keys**.
 
 ## Unit handling (kg / lb)
 

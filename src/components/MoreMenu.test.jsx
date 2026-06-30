@@ -6,6 +6,7 @@ import MoreMenu from "./MoreMenu";
 
 vi.mock("./Notepad", () => ({ default: () => <div>NOTEPAD</div> }));
 vi.mock("./DataManagementMenu", () => ({ default: () => <div>DATA</div> }));
+vi.mock("./CycleReview", () => ({ default: () => <div>CYCLE_REVIEW</div> }));
 
 const renderMore = () =>
   render(
@@ -32,6 +33,15 @@ describe("MoreMenu", () => {
     renderMore();
     await user.click(screen.getByRole("button", { name: "Notepad" }));
     expect(screen.getByText("NOTEPAD")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /More/ }));
+    expect(screen.getByRole("heading", { name: "More" })).toBeInTheDocument();
+  });
+
+  it("opens the cycle review as a sub-screen and returns", async () => {
+    const user = userEvent.setup();
+    renderMore();
+    await user.click(screen.getByRole("button", { name: /Cycle Review/i }));
+    expect(screen.getByText("CYCLE_REVIEW")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /More/ }));
     expect(screen.getByRole("heading", { name: "More" })).toBeInTheDocument();
   });

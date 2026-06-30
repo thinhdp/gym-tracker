@@ -239,6 +239,10 @@ they are **not** persisted. See `src/lib/strength.js`, `src/lib/metrics.js`, and
   bucketed by week or month, for the top muscles by total volume.
 - **Range windows** (`rangeWindows` / `filterByRange`) — current vs previous
   equal-length window for `3M` / `6M` / `1Y` / `all`.
+- **Cycle Review** — `src/lib/review/*` computes an 8-day-cycle `ReviewResult`
+  (per-exercise progression decisions, tonnage trend, bodyweight evaluation,
+  next-cycle plan) from `workouts` + `weightLogs`; not persisted. Reads
+  bodyweight via `K_WEIGHT_LOGS`; adds no new keys.
 
 ## Backup / export payload
 
