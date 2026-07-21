@@ -95,6 +95,8 @@ export function AppProvider({ children }) {
     const w = instantiateRoutine(routine, {
       date: ymdFromDate(new Date()),
       exercises,
+      // Live sessions start blank — the routine's reps become a recommendation.
+      zeroReps: true,
     });
     setWorkouts((prev) =>
       [w, ...prev].sort((a, b) => (a.date < b.date ? 1 : -1)),
