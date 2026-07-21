@@ -46,9 +46,11 @@ Three things look like bugs but are deliberate. Leave them alone.
 | `src/components/RoutineEditor.jsx` | Passes `showWeight={false}` | 4 |
 | `src/components/NumberInputAutoClear.jsx` | `blankZero` | 5 |
 | `src/components/NumberInputAutoClear.test.jsx` | Tests | 5 |
-| `src/lib/backup.js` | `normalizeWorkout` preserves `targetReps` | 7 |
+| `src/lib/sets.js` | **New.** `normalizeSet` — one definition of the set shape | 7 |
+| `src/lib/sets.test.js` | **New.** Tests | 7 |
+| `src/lib/backup.js` | `normalizeWorkout` uses `normalizeSet` | 7 |
 | `src/lib/backup.test.js` | Tests | 7 |
-| `src/components/WorkoutPlanner.jsx` | `saveWorkout` preserves `targetReps` | 7 |
+| `src/components/WorkoutPlanner.jsx` | `saveWorkout` uses `normalizeSet` | 7 |
 | `docs/DATA-MODEL.md` | Document `targetReps` | 7 |
 
 `WeightRepInputs.jsx` has no co-located test file today and does not get one — it is a thin presentational wrapper with no state, and both new props are covered through its two consumers (`WorkoutExerciseEditor.test.jsx` in Task 4, `LiveSession.test.jsx` in Task 6). This is a deliberate reading of the testing policy, not an oversight.
@@ -806,17 +808,129 @@ git commit -m "Show recommended reps as a grey placeholder on the live screen"
 
 Both `normalizeWorkout` and `WorkoutPlanner.saveWorkout` rebuild sets as exactly `{ set, weight, reps }`, silently dropping the new field. Without this, a merge-import would erase hints from an in-progress workout, the two plan routes would disagree with each other, and `docs/DATA-MODEL.md` would document a field its own import path discards.
 
+Both call sites need the identical normalisation, so it lives in one helper
+rather than being duplicated. This was decided before execution: the set shape
+gets one home now that it has grown a field.
+
 **Files:**
+- Create: `src/lib/sets.js`
+- Create: `src/lib/sets.test.js`
 - Modify: `src/lib/backup.js:45-49`
 - Modify: `src/components/WorkoutPlanner.jsx:70-75`
 - Modify: `docs/DATA-MODEL.md:106-114`
-- Test: `src/lib/backup.test.js`
+- Test: `src/lib/backup.test.js`, `src/lib/sets.test.js`
 
 **Interfaces:**
 - Consumes: the `targetReps` set field from Task 2.
-- Produces: nothing consumed by later tasks.
+- Produces: `normalizeSet(raw, index)` from `src/lib/sets.js`, returning
+  `{ set: index + 1, weight: number, reps: number }` plus `targetReps: number`
+  only when the input's `targetReps` is a positive number. Tolerates `null` /
+  `undefined` / missing fields on `raw`.
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Write the failing helper tests**
+
+Create `src/lib/sets.test.js`:
+
+```js
+import { normalizeSet } from "./sets";
+
+describe("normalizeSet", () => {
+  it("numbers the set from its index and coerces weight and reps", () => {
+    expect(normalizeSet({ weight: "60", reps: "8" }, 0)).toEqual({
+      set: 1,
+      weight: 60,
+      reps: 8,
+    });
+  });
+
+  it("defaults missing or unparseable fields to 0", () => {
+    expect(normalizeSet({}, 2)).toEqual({ set: 3, weight: 0, reps: 0 });
+    expect(normalizeSet({ weight: "abc", reps: null }, 0)).toEqual({
+      set: 1,
+      weight: 0,
+      reps: 0,
+    });
+  });
+
+  it("tolerates a null or undefined raw set", () => {
+    expect(normalizeSet(null, 0)).toEqual({ set: 1, weight: 0, reps: 0 });
+    expect(normalizeSet(undefined, 1)).toEqual({ set: 2, weight: 0, reps: 0 });
+  });
+
+  it("carries a positive targetReps through", () => {
+    expect(normalizeSet({ weight: 60, reps: 0, targetReps: 10 }, 0)).toEqual({
+      set: 1,
+      weight: 60,
+      reps: 0,
+      targetReps: 10,
+    });
+  });
+
+  it("omits targetReps when absent or non-positive", () => {
+    expect(normalizeSet({ weight: 60, reps: 8 }, 0)).not.toHaveProperty(
+      "targetReps",
+    );
+    expect(
+      normalizeSet({ weight: 60, reps: 8, targetReps: 0 }, 0),
+    ).not.toHaveProperty("targetReps");
+  });
+});
+```
+
+- [ ] **Step 2: Run the helper tests to verify they fail**
+
+```bash
+npm run test -- src/lib/sets.test.js
+```
+
+Expected: FAIL — `Failed to resolve import "./sets"`.
+
+- [ ] **Step 3: Create the helper**
+
+Create `src/lib/sets.js`:
+
+```js
+/**
+ * Normalise one raw set into the stored Set shape.
+ *
+ * Shared by every path that rebuilds sets from untrusted or re-mapped data
+ * (backup import, the workout planner) so the shape has a single definition.
+ *
+ * `targetReps` is optional: it is carried only when positive, never written as
+ * 0, so sets that never had a rep target round-trip unchanged.
+ *
+ * @param {object|null|undefined} raw  a set-like object
+ * @param {number} index               0-based position; becomes 1-based `set`
+ * @returns {{set: number, weight: number, reps: number, targetReps?: number}}
+ */
+export function normalizeSet(raw, index) {
+  const set = {
+    set: index + 1,
+    weight: Number(raw?.weight) || 0,
+    reps: Number(raw?.reps) || 0,
+  };
+  const targetReps = Number(raw?.targetReps) || 0;
+  if (targetReps > 0) set.targetReps = targetReps;
+  return set;
+}
+```
+
+- [ ] **Step 4: Run the helper tests to verify they pass**
+
+```bash
+npm run test -- src/lib/sets.test.js
+```
+
+Expected: PASS, all five tests.
+
+- [ ] **Step 5: Commit the helper**
+
+```bash
+git add src/lib/sets.js src/lib/sets.test.js
+git commit -m "Add normalizeSet helper as the single definition of the set shape"
+```
+
+- [ ] **Step 6: Write the failing normalizeWorkout tests**
 
 Append inside the existing `describe("normalizeWorkout", ...)` block in `src/lib/backup.test.js`:
 
@@ -849,7 +963,7 @@ Append inside the existing `describe("normalizeWorkout", ...)` block in `src/lib
   });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [ ] **Step 7: Run the tests to verify they fail**
 
 ```bash
 npm run test -- src/lib/backup.test.js
@@ -857,55 +971,51 @@ npm run test -- src/lib/backup.test.js
 
 Expected: the first test FAILS with `expected undefined to be 10`. The second should already PASS.
 
-- [ ] **Step 3: Implement `normalizeWorkout`**
+- [ ] **Step 8: Use the helper in `normalizeWorkout`**
 
-In `src/lib/backup.js`, replace the `sets` mapping on lines 45-49:
+In `src/lib/backup.js`, add the import alongside the existing ones at the top:
 
 ```js
-      const sets = setsRaw.slice(0, MAX_SETS).map((s, idx) => {
-        const set = {
-          set: idx + 1,
-          weight: Number(s?.weight) || 0,
-          reps: Number(s?.reps) || 0,
-        };
-        // Optional recommended-rep hint; omitted rather than stored as 0 so
-        // old backups round-trip byte-identically.
-        const targetReps = Number(s?.targetReps) || 0;
-        if (targetReps > 0) set.targetReps = targetReps;
-        return set;
-      });
+import { normalizeSet } from "./sets";
 ```
 
-The `sets.length ? sets : [{ set: 1, weight: 0, reps: 0 }]` fallback below it is unchanged.
+Then replace the `sets` mapping on lines 45-49 with a call to it:
 
-- [ ] **Step 4: Run the tests to verify they pass**
+```js
+      const sets = setsRaw.slice(0, MAX_SETS).map(normalizeSet);
+```
+
+`Array.prototype.map` passes `(element, index)`, which is exactly
+`normalizeSet`'s signature. The `sets.length ? sets : [{ set: 1, weight: 0, reps: 0 }]`
+fallback below it is unchanged.
+
+- [ ] **Step 9: Run the tests to verify they pass**
 
 ```bash
 npm run test -- src/lib/backup.test.js
 ```
 
-Expected: PASS, all tests in the file.
+Expected: PASS, all tests in the file — including the pre-existing ones covering
+`MAX_SETS` truncation, renumbering, and coercion of junk values, which now
+exercise the shared helper.
 
-- [ ] **Step 5: Apply the same preservation in `WorkoutPlanner`**
+- [ ] **Step 10: Use the helper in `WorkoutPlanner` too**
 
-In `src/components/WorkoutPlanner.jsx`, replace the `sets` mapping inside `saveWorkout` (lines 70-75):
+In `src/components/WorkoutPlanner.jsx`, add the import:
 
 ```jsx
-        sets: i.sets.slice(0, MAX_SETS).map((s, idx) => {
-          const set = {
-            set: idx + 1,
-            weight: Number(s.weight) || 0,
-            reps: Number(s.reps) || 0,
-          };
-          const targetReps = Number(s.targetReps) || 0;
-          if (targetReps > 0) set.targetReps = targetReps;
-          return set;
-        }),
+import { normalizeSet } from "../lib/sets";
+```
+
+Then replace the `sets` mapping inside `saveWorkout` (lines 70-75):
+
+```jsx
+        sets: i.sets.slice(0, MAX_SETS).map(normalizeSet),
 ```
 
 This aligns it with `addWorkoutFromRoutine`, which stores the instantiated workout verbatim and already keeps the field.
 
-- [ ] **Step 6: Document the field**
+- [ ] **Step 11: Document the field**
 
 In `docs/DATA-MODEL.md`, add a row to the `Set` table (after the `reps` row on line 114):
 
@@ -936,7 +1046,7 @@ read as unlogged until you enter what you actually did; their `targetReps` is
 display-only and never counts toward logged volume.
 ```
 
-- [ ] **Step 7: Run the full gate**
+- [ ] **Step 12: Run the full gate**
 
 ```bash
 npm run check
@@ -944,7 +1054,7 @@ npm run check
 
 Expected: PASS — lint, format check, all tests, and build. If the format check fails, run `npm run format` and re-run.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 13: Commit**
 
 ```bash
 git add src/lib/backup.js src/lib/backup.test.js src/components/WorkoutPlanner.jsx docs/DATA-MODEL.md
