@@ -15,6 +15,7 @@ import { MAX_SETS } from "../lib/constants";
 import { normalizeRpe, normalizeFeedback } from "../lib/rpe";
 import { instantiateRoutine } from "../lib/routines";
 import RoutinePicker from "./RoutinePicker";
+import { normalizeSet } from "../lib/sets";
 
 /**
  * Planner component for creating a new workout.  Uses AppContext
@@ -68,11 +69,7 @@ export default function WorkoutPlanner({ onCreated, prefillRoutine = null }) {
       name: (name && name.trim()) || date,
       exercises: items.map((i) => ({
         exerciseName: i.exerciseName.trim(),
-        sets: i.sets.slice(0, MAX_SETS).map((s, idx) => ({
-          set: idx + 1,
-          weight: Number(s.weight) || 0,
-          reps: Number(s.reps) || 0,
-        })),
+        sets: i.sets.slice(0, MAX_SETS).map(normalizeSet),
         rpe: normalizeRpe(i.rpe),
         feedback: normalizeFeedback(i.feedback),
       })),

@@ -126,6 +126,36 @@ describe("normalizeWorkout", () => {
     });
     expect(w.date).toBe("2026-06-01");
   });
+
+  it("preserves targetReps when present", () => {
+    const w = normalizeWorkout({
+      date: "2026-06-01",
+      exercises: [
+        {
+          exerciseName: "Bench",
+          sets: [{ weight: 60, reps: 0, targetReps: 10 }],
+        },
+      ],
+    });
+    expect(w.exercises[0].sets[0].targetReps).toBe(10);
+  });
+
+  it("omits targetReps when absent or zero", () => {
+    const w = normalizeWorkout({
+      date: "2026-06-01",
+      exercises: [
+        {
+          exerciseName: "Bench",
+          sets: [
+            { weight: 60, reps: 8 },
+            { weight: 60, reps: 8, targetReps: 0 },
+          ],
+        },
+      ],
+    });
+    expect(w.exercises[0].sets[0]).not.toHaveProperty("targetReps");
+    expect(w.exercises[0].sets[1]).not.toHaveProperty("targetReps");
+  });
 });
 
 describe("normalizeData", () => {
