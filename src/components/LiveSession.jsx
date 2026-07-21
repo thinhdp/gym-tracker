@@ -438,6 +438,9 @@ export default function LiveSession() {
                     <WeightRepInputs
                       weight={toDisplayWeight(s.weight, unit)}
                       reps={s.reps}
+                      repsPlaceholder={
+                        s.targetReps > 0 ? String(s.targetReps) : null
+                      }
                       onWeightChange={(v) =>
                         updateSet(currentIdx, j, {
                           weight: fromDisplayWeight(v, unit),

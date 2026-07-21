@@ -12,6 +12,7 @@ import NumberInputAutoClear from "./NumberInputAutoClear";
  *   - onWeightChange: callback when weight changes
  *   - onRepsChange: callback when reps change
  *   - showWeight: when false, renders reps only (routine editor)
+ *   - repsPlaceholder: grey hint shown in the reps box while the set is unlogged
  */
 export default function WeightRepInputs({
   weight,
@@ -19,6 +20,7 @@ export default function WeightRepInputs({
   onWeightChange,
   onRepsChange,
   showWeight = true,
+  repsPlaceholder,
 }) {
   return (
     <div
@@ -40,6 +42,8 @@ export default function WeightRepInputs({
           step="1"
           min="0"
           className="border rounded-xl px-3 py-1.5 text-sm w-16 bg-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+          placeholder={repsPlaceholder || "0"}
+          blankZero={Boolean(repsPlaceholder)}
           valueNumber={reps}
           onNumberChange={onRepsChange}
         />
