@@ -76,8 +76,9 @@ export function exerciseSeries(workouts, exerciseName) {
       let bestE = 0;
       let vol = 0;
       for (const s of ex.sets || []) {
-        const wt = Number(s.weight) || 0;
         const reps = setReps(s);
+        if (reps <= 0) continue;
+        const wt = Number(s.weight) || 0;
         if (wt > top) top = wt;
         const e = estimate1RM(wt, reps);
         if (e > bestE) bestE = e;
@@ -110,6 +111,7 @@ export function exercisePRs(workouts, exerciseName) {
         const wt = Number(s.weight) || 0;
         if (wt <= 0) continue;
         const reps = setReps(s);
+        if (reps <= 0) continue;
         const e = estimate1RM(wt, reps);
         if (e > bestE1RM) bestE1RM = e;
         if (!heaviest || wt > heaviest.weight) heaviest = { weight: wt, reps };
@@ -145,7 +147,9 @@ export function recentPRs(workouts, limit = 8) {
       for (const s of ex.sets || []) {
         const wt = Number(s.weight) || 0;
         if (wt <= 0) continue;
-        const e = estimate1RM(wt, setReps(s));
+        const reps = setReps(s);
+        if (reps <= 0) continue;
+        const e = estimate1RM(wt, reps);
         if (!dayE.has(name) || e > dayE.get(name)) dayE.set(name, e);
         if (!dayW.has(name) || wt > dayW.get(name)) dayW.set(name, wt);
       }

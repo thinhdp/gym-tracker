@@ -19,6 +19,7 @@ export default function WorkoutExerciseEditor({
   onRemove,
   unit,
   recommendRep,
+  showWeight = true,
   // Optional props to support reordering from parent
   onMoveUp,
   onMoveDown,
@@ -104,8 +105,10 @@ export default function WorkoutExerciseEditor({
       {/* Header row for sets */}
       <div className="flex items-center gap-3 px-3 py-1 text-xs text-neutral-500 dark:text-neutral-400">
         <span className="w-16" />
-        <div className="flex-1 grid grid-cols-2 gap-3">
-          <div>Weight ({unit})</div>
+        <div
+          className={`flex-1 grid gap-3 ${showWeight ? "grid-cols-2" : "grid-cols-1"}`}
+        >
+          {showWeight && <div>Weight ({unit})</div>}
           <div>Reps</div>
         </div>
         <span className="w-10" />
@@ -124,6 +127,7 @@ export default function WorkoutExerciseEditor({
               Set {idx + 1}
             </span>
             <WeightRepInputs
+              showWeight={showWeight}
               weight={toDisplayWeight(s.weight, unit)}
               reps={s.reps}
               onWeightChange={(v) => {

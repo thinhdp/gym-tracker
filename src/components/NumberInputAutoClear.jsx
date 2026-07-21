@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { Input } from "./ui/Input";
 
-/** Clears the default 0 on mobile when focusing a number input */
+/**
+ * Clears the default 0 on mobile when focusing a number input.
+ * With `blankZero`, a zero value renders empty even unfocused, so the
+ * `placeholder` is visible as a hint.
+ */
 export default function NumberInputAutoClear({
   valueNumber,
   onNumberChange,
@@ -9,16 +13,17 @@ export default function NumberInputAutoClear({
   min = "0",
   placeholder = "0",
   className = "",
+  blankZero = false,
 }) {
   const [clear, setClear] = useState(false);
-  const display =
-    clear &&
-    (valueNumber === 0 ||
-      valueNumber === "0" ||
-      valueNumber === "" ||
-      valueNumber == null)
-      ? ""
-      : valueNumber;
+  const isZero =
+    valueNumber === 0 ||
+    valueNumber === "0" ||
+    valueNumber === "" ||
+    valueNumber == null;
+  // `clear` blanks a zero only while focused; `blankZero` blanks it always, so
+  // a placeholder (e.g. a recommended rep count) can show through.
+  const display = (clear || blankZero) && isZero ? "" : valueNumber;
   return (
     <Input
       type="number"

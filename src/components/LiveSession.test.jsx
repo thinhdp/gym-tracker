@@ -47,6 +47,27 @@ function seedTwo() {
   return renderLive();
 }
 
+function seedWithTargets() {
+  saveLS(K_WO, [
+    {
+      id: "w3",
+      date: "2026-06-13",
+      name: "Push Day",
+      exercises: [
+        {
+          exerciseName: "Bench",
+          sets: [
+            { set: 1, weight: 80, reps: 0, targetReps: 10 },
+            { set: 2, weight: 80, reps: 0 }, // no target
+          ],
+        },
+      ],
+    },
+  ]);
+  saveLS(K_SESSION, { workoutId: "w3", startedAt: Date.now(), currentIdx: 0 });
+  return renderLive();
+}
+
 describe("LiveSession", () => {
   it("renders the current exercise and a sets/elapsed readout", () => {
     seedAndRender();
@@ -197,5 +218,51 @@ describe("LiveSession", () => {
     seedAndRender();
     await user.click(screen.getByRole("button", { name: "Finish" }));
     expect(screen.queryByText("Bench")).not.toBeInTheDocument();
+  });
+
+  it("sizes the exercise-name button to its text, not the whole row", () => {
+    seedAndRender();
+    // The nav chip's accessible name is "1. Bench", so an exact match on
+    // "Bench" selects only the title button.
+    const nameButton = screen.getByRole("button", { name: "Bench" });
+    // flex-1 would stretch the button across the row, making the empty space
+    // beside the name a live tap target for the history modal.
+    expect(nameButton.className).not.toMatch(/\bflex-1\b/);
+  });
+
+  it("still opens past logs when the name itself is tapped", async () => {
+    const user = userEvent.setup();
+    seedAndRender();
+    await user.click(screen.getByRole("button", { name: "Bench" }));
+    // The modal excludes the in-progress workout, and it is the only one
+    // seeded, so it opens on its empty state (ExerciseHistoryModal.jsx:52).
+    expect(screen.getByText("No past workouts.")).toBeInTheDocument();
+  });
+
+  it("shows the routine's target as a placeholder on an unlogged set", () => {
+    seedWithTargets();
+    // Order per row: weight, reps. Row 1 is the set with a target.
+    const [, firstReps] = screen.getAllByRole("spinbutton");
+    expect(firstReps).toHaveValue(null); // empty, not a literal 0
+    expect(firstReps).toHaveAttribute("placeholder", "10");
+  });
+
+  it("falls back to a 0 placeholder when a set has no target", () => {
+    seedWithTargets();
+    const inputs = screen.getAllByRole("spinbutton");
+    const secondReps = inputs[3]; // row 2: weight, reps
+    expect(secondReps).toHaveAttribute("placeholder", "0");
+  });
+
+  it("counts no sets as logged until reps are typed", async () => {
+    const user = userEvent.setup();
+    seedWithTargets();
+    expect(screen.getByText(/0\/2 sets/)).toBeInTheDocument();
+
+    const [, firstReps] = screen.getAllByRole("spinbutton");
+    await user.type(firstReps, "9");
+
+    expect(screen.getByText(/1\/2 sets/)).toBeInTheDocument();
+    expect(firstReps).toHaveValue(9);
   });
 });

@@ -165,6 +165,41 @@ describe("instantiateRoutine", () => {
     });
     expect(w.exercises[0].sets[0].weight).toBe(55);
   });
+
+  it("records the routine's reps as targetReps in both modes", () => {
+    const prefilled = instantiateRoutine(routine, {
+      date: "2026-06-17",
+      exercises,
+    });
+    const zeroed = instantiateRoutine(routine, {
+      date: "2026-06-17",
+      exercises,
+      zeroReps: true,
+    });
+    expect(prefilled.exercises[0].sets[0].targetReps).toBe(8);
+    expect(zeroed.exercises[0].sets[0].targetReps).toBe(8);
+    expect(zeroed.exercises[1].sets[0].targetReps).toBe(10);
+  });
+
+  it("zeroes reps when zeroReps is set, keeping the target intact", () => {
+    const w = instantiateRoutine(routine, {
+      date: "2026-06-17",
+      exercises,
+      zeroReps: true,
+    });
+    expect(w.exercises[0].sets[0].reps).toBe(0);
+    expect(w.exercises[1].sets[0].reps).toBe(0);
+  });
+
+  it("still resolves weights normally when zeroReps is set", () => {
+    const w = instantiateRoutine(routine, {
+      date: "2026-06-17",
+      exercises,
+      zeroReps: true,
+    });
+    expect(w.exercises[0].sets[0].weight).toBe(62); // from history
+    expect(w.exercises[1].sets[0].weight).toBe(35); // routine fallback
+  });
 });
 
 describe("normalizeRoutine", () => {

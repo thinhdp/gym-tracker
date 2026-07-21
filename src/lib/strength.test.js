@@ -89,6 +89,20 @@ describe("exerciseSeries", () => {
   it("ignores other exercises", () => {
     expect(exerciseSeries(wos, "Deadlift")).toEqual([]);
   });
+
+  it("ignores a non-performed set (real weight, reps: 0) in the day's bests", () => {
+    // The abandoned set's history-filled weight (140) is higher than the
+    // logged set's (100), so if it leaked in it would wrongly win top-set
+    // weight and e1RM, and its 0 reps would wrongly count as a "set".
+    const s = exerciseSeries(
+      [workout("2026-06-20", [ex("Squat", [set(100, 5), set(140, 0)])])],
+      "Squat",
+    );
+    const day = s.find((p) => p.date === "2026-06-20");
+    expect(day.topSetWeight).toBe(100);
+    expect(day.bestE1RM).toBeCloseTo(estimate1RM(100, 5), 5);
+    expect(day.volume).toBe(100 * 5);
+  });
 });
 
 describe("exercisePRs", () => {
@@ -105,6 +119,17 @@ describe("exercisePRs", () => {
 
   it("returns null PR shapes for an unknown exercise", () => {
     expect(exercisePRs([], "Nope")).toEqual({
+      bestE1RM: 0,
+      heaviest: null,
+      bestSetVolume: null,
+    });
+  });
+
+  it("ignores a non-performed set (real weight, reps: 0)", () => {
+    // Simulates an abandoned live-routine session: the set has a
+    // history-filled weight but was never actually logged (reps: 0).
+    const wos = [workout("2026-06-01", [ex("Squat", [set(140, 0)])])];
+    expect(exercisePRs(wos, "Squat")).toEqual({
       bestE1RM: 0,
       heaviest: null,
       bestSetVolume: null,
@@ -133,6 +158,22 @@ describe("recentPRs", () => {
 
   it("honors the limit", () => {
     expect(recentPRs(wos, 1)).toHaveLength(1);
+  });
+
+  it("does not report a PR from a non-performed set (real weight, reps: 0)", () => {
+    // An abandoned live-routine session leaves a set with a history-filled
+    // weight and reps: 0. It must not register as a PR, nor should it raise
+    // the running best so that a later genuine PR still fires.
+    const withAbandoned = [
+      ...wos,
+      workout("2026-06-20", [ex("Squat", [set(200, 0)])]),
+      workout("2026-06-25", [ex("Squat", [set(106, 8)])]), // genuine e1RM PR
+    ];
+    const prs = recentPRs(withAbandoned, 0);
+    expect(prs.find((p) => p.date === "2026-06-20")).toBeUndefined();
+    const jun25 = prs.find((p) => p.date === "2026-06-25");
+    expect(jun25).toBeDefined();
+    expect(jun25.type).toBe("e1RM");
   });
 });
 

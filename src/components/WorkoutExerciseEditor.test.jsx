@@ -6,7 +6,7 @@ import { ConfirmProvider } from "./ConfirmDialog";
 import { MAX_SETS } from "../lib/constants";
 
 /** Controlled harness: applies onChange patches like the planner/history do. */
-function Harness({ initialSets, unit = "kg", spy }) {
+function Harness({ initialSets, unit = "kg", spy, showWeight }) {
   const [item, setItem] = useState({
     exerciseName: "Bench Press",
     sets: initialSets,
@@ -16,6 +16,7 @@ function Harness({ initialSets, unit = "kg", spy }) {
       <WorkoutExerciseEditor
         item={item}
         unit={unit}
+        showWeight={showWeight}
         onChange={(patch) => {
           spy?.(patch);
           setItem((prev) => ({ ...prev, ...patch }));
@@ -101,5 +102,33 @@ describe("WorkoutExerciseEditor", () => {
     const lastPatch = spy.mock.calls.at(-1)[0];
     expect(lastPatch.sets[0].weight).toBe(47.63);
     expect(weightInput).toHaveValue(105);
+  });
+
+  it("shows both weight and reps inputs by default", () => {
+    render(<Harness initialSets={sets(1, 100, 5)} />);
+    expect(screen.getAllByRole("spinbutton")).toHaveLength(2);
+    expect(screen.getByText("Weight (kg)")).toBeInTheDocument();
+  });
+
+  it("hides the weight input and its header when showWeight is false", () => {
+    render(<Harness initialSets={sets(1, 100, 5)} showWeight={false} />);
+    expect(screen.getAllByRole("spinbutton")).toHaveLength(1);
+    expect(screen.queryByText("Weight (kg)")).not.toBeInTheDocument();
+    expect(screen.getByText("Reps")).toBeInTheDocument();
+  });
+
+  it("still edits reps when the weight input is hidden", async () => {
+    const user = userEvent.setup();
+    const spy = vi.fn();
+    render(
+      <Harness initialSets={sets(1, 100, 5)} showWeight={false} spy={spy} />,
+    );
+    // Only one spinbutton remains, and it must be reps — not weight.
+    const [repsInput] = screen.getAllByRole("spinbutton");
+    await user.clear(repsInput);
+    await user.type(repsInput, "12");
+    const lastPatch = spy.mock.calls.at(-1)[0];
+    expect(lastPatch.sets[0].reps).toBe(12);
+    expect(lastPatch.sets[0].weight).toBe(100); // untouched
   });
 });

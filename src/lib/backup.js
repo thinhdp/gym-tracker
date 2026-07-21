@@ -2,6 +2,7 @@ import { todayStr, uuid } from "./storage";
 import { MAX_SETS } from "./constants";
 import { normalizeRpe, normalizeFeedback } from "./rpe";
 import { normalizeRoutine, mergeRoutines } from "./routines";
+import { normalizeSet } from "./sets";
 export { mergeRoutines };
 
 export function downloadJSON(filename, data) {
@@ -42,11 +43,7 @@ export function normalizeWorkout(w) {
       const exerciseName = String(e?.exerciseName || "").trim();
       if (!exerciseName) return null;
       const setsRaw = Array.isArray(e?.sets) ? e.sets : [];
-      const sets = setsRaw.slice(0, MAX_SETS).map((s, idx) => ({
-        set: idx + 1,
-        weight: Number(s?.weight) || 0,
-        reps: Number(s?.reps) || 0,
-      }));
+      const sets = setsRaw.slice(0, MAX_SETS).map(normalizeSet);
       return {
         exerciseName,
         sets: sets.length ? sets : [{ set: 1, weight: 0, reps: 0 }],

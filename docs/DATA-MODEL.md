@@ -107,11 +107,17 @@ text is safe because all storage and export round-trips through
 
 One set within a `WorkoutExercise`.
 
-| Field    | Type     | Purpose                                                     | Default    |
-| -------- | -------- | ----------------------------------------------------------- | ---------- |
-| `set`    | `number` | 1-based index; renumbered on add/delete to stay contiguous. | sequential |
-| `weight` | `number` | **Always kilograms**, regardless of the kg/lb toggle.       | `0`        |
-| `reps`   | `number` | Repetitions.                                                | `0`        |
+| Field        | Type      | Purpose                                                                                                                                                                  | Default    |
+| ------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| `set`        | `number`  | 1-based index; renumbered on add/delete to stay contiguous.                                                                                                              | sequential |
+| `weight`     | `number`  | **Always kilograms**, regardless of the kg/lb toggle.                                                                                                                    | `0`        |
+| `reps`       | `number`  | Repetitions.                                                                                                                                                             | `0`        |
+| `targetReps` | `number?` | Recommended reps from the routine; shown as a grey placeholder while the set is unlogged. Absent on manually added sets and on workouts saved before this field existed. | absent     |
+
+`targetReps` is written by `instantiateRoutine` from the routine's stored reps.
+A live-started routine session sets `reps: 0` and relies on `targetReps` for the
+placeholder; a _planned_ workout keeps its reps pre-filled, so the placeholder
+never surfaces there. See `docs/superpowers/specs/2026-07-21-recommended-reps-design.md`.
 
 Constraints enforced in code:
 
@@ -148,7 +154,9 @@ There is **no done-flag map**: a set is treated as logged once it has `reps > 0`
 so completion lives on the `Set` itself (and follows it when exercises are
 reordered). The session only tracks which workout, when it started, and which
 exercise is on screen. Helpers in `src/lib/liveSession.js`. Not included in
-backups.
+backups. Sets instantiated from a routine into a live session start at
+`reps: 0` and so read as unlogged until you enter what you actually did; their
+`targetReps` is display-only and never counts toward logged volume.
 
 ### Bodyweight log (`weightLogs`)
 
