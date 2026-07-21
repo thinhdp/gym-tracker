@@ -98,6 +98,7 @@ export default function RoutineEditor({ routine = null, onSave, onCancel }) {
               key={it.exerciseName}
               item={it}
               unit={unit}
+              showWeight={false}
               recommendRep={rec}
               onChange={(patch) =>
                 setItems((prev) =>
