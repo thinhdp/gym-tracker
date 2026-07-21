@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Treat a routine's reps as a *recommendation* shown as a grey placeholder on the live screen rather than a pre-filled log, remove the now-redundant weight input from the routine editor, and fix a tap-target bug on the live workout screen.
+**Goal:** Treat a routine's reps as a _recommendation_ shown as a grey placeholder on the live screen rather than a pre-filled log, remove the now-redundant weight input from the routine editor, and fix a tap-target bug on the live workout screen.
 
 **Architecture:** A new optional per-set field `targetReps` carries the routine's rep target into the instantiated workout, while `reps` starts at `0` for live-started routines only. Three presentational components gain optional, default-off props (`showWeight`, `repsPlaceholder`, `blankZero`) so every existing call site renders unchanged. No new libraries, no migration.
 
@@ -14,7 +14,7 @@
 
 Copied from `CLAUDE.md`. Every task's requirements implicitly include these.
 
-- **Weights are stored in kg.** Convert only at the input/display boundary with `toDisplayWeight` / `fromDisplayWeight` (`src/lib/units.js`). No task here touches weight values — only weight *visibility*.
+- **Weights are stored in kg.** Convert only at the input/display boundary with `toDisplayWeight` / `fromDisplayWeight` (`src/lib/units.js`). No task here touches weight values — only weight _visibility_.
 - **Never call `localStorage` directly** — use `loadLS` / `saveLS` from `src/lib/storage.js`.
 - **Destructive actions** use the `useConfirm()` hook, not `window.confirm`.
 - **No TypeScript, no CSS files** (Tailwind classes inline), **no new libraries**.
@@ -32,26 +32,26 @@ Three things look like bugs but are deliberate. Leave them alone.
 
 ## File Structure
 
-| File | Change | Task |
-| ---- | ------ | ---- |
-| `src/components/LiveSession.jsx` | Tap-target fix; pass `repsPlaceholder` | 1, 6 |
-| `src/components/LiveSession.test.jsx` | Tests for both | 1, 6 |
-| `src/lib/routines.js` | `instantiateRoutine` gains `zeroReps`, emits `targetReps` | 2 |
-| `src/lib/routines.test.js` | Tests for both modes | 2 |
-| `src/context/AppContext.jsx` | `startRoutine` passes `zeroReps: true` | 3 |
-| `src/context/AppContext.test.jsx` | The test that actually pins the feature down | 3 |
-| `src/components/WeightRepInputs.jsx` | `showWeight`, then `repsPlaceholder` | 4, 6 |
-| `src/components/WorkoutExerciseEditor.jsx` | `showWeight` + header grid collapse | 4 |
-| `src/components/WorkoutExerciseEditor.test.jsx` | Tests | 4 |
-| `src/components/RoutineEditor.jsx` | Passes `showWeight={false}` | 4 |
-| `src/components/NumberInputAutoClear.jsx` | `blankZero` | 5 |
-| `src/components/NumberInputAutoClear.test.jsx` | Tests | 5 |
-| `src/lib/sets.js` | **New.** `normalizeSet` — one definition of the set shape | 7 |
-| `src/lib/sets.test.js` | **New.** Tests | 7 |
-| `src/lib/backup.js` | `normalizeWorkout` uses `normalizeSet` | 7 |
-| `src/lib/backup.test.js` | Tests | 7 |
-| `src/components/WorkoutPlanner.jsx` | `saveWorkout` uses `normalizeSet` | 7 |
-| `docs/DATA-MODEL.md` | Document `targetReps` | 7 |
+| File                                            | Change                                                    | Task |
+| ----------------------------------------------- | --------------------------------------------------------- | ---- |
+| `src/components/LiveSession.jsx`                | Tap-target fix; pass `repsPlaceholder`                    | 1, 6 |
+| `src/components/LiveSession.test.jsx`           | Tests for both                                            | 1, 6 |
+| `src/lib/routines.js`                           | `instantiateRoutine` gains `zeroReps`, emits `targetReps` | 2    |
+| `src/lib/routines.test.js`                      | Tests for both modes                                      | 2    |
+| `src/context/AppContext.jsx`                    | `startRoutine` passes `zeroReps: true`                    | 3    |
+| `src/context/AppContext.test.jsx`               | The test that actually pins the feature down              | 3    |
+| `src/components/WeightRepInputs.jsx`            | `showWeight`, then `repsPlaceholder`                      | 4, 6 |
+| `src/components/WorkoutExerciseEditor.jsx`      | `showWeight` + header grid collapse                       | 4    |
+| `src/components/WorkoutExerciseEditor.test.jsx` | Tests                                                     | 4    |
+| `src/components/RoutineEditor.jsx`              | Passes `showWeight={false}`                               | 4    |
+| `src/components/NumberInputAutoClear.jsx`       | `blankZero`                                               | 5    |
+| `src/components/NumberInputAutoClear.test.jsx`  | Tests                                                     | 5    |
+| `src/lib/sets.js`                               | **New.** `normalizeSet` — one definition of the set shape | 7    |
+| `src/lib/sets.test.js`                          | **New.** Tests                                            | 7    |
+| `src/lib/backup.js`                             | `normalizeWorkout` uses `normalizeSet`                    | 7    |
+| `src/lib/backup.test.js`                        | Tests                                                     | 7    |
+| `src/components/WorkoutPlanner.jsx`             | `saveWorkout` uses `normalizeSet`                         | 7    |
+| `docs/DATA-MODEL.md`                            | Document `targetReps`                                     | 7    |
 
 `WeightRepInputs.jsx` has no co-located test file today and does not get one — it is a thin presentational wrapper with no state, and both new props are covered through its two consumers (`WorkoutExerciseEditor.test.jsx` in Task 4, `LiveSession.test.jsx` in Task 6). This is a deliberate reading of the testing policy, not an oversight.
 
@@ -64,10 +64,12 @@ Tasks 1 and 2 are independent of each other. Tasks 3–7 depend on the tasks bef
 The name button carries `flex-1`, so it stretches across the whole row and tapping the empty space beside the name still hits it, opening the past-workout modal.
 
 **Files:**
+
 - Modify: `src/components/LiveSession.jsx:340-347`
 - Test: `src/components/LiveSession.test.jsx`
 
 **Interfaces:**
+
 - Consumes: nothing — fully independent of every other task.
 - Produces: nothing consumed by later tasks.
 
@@ -76,24 +78,24 @@ The name button carries `flex-1`, so it stretches across the whole row and tappi
 Append inside the existing `describe("LiveSession", ...)` block in `src/components/LiveSession.test.jsx`. The file already defines `seedAndRender()`; reuse it.
 
 ```jsx
-  it("sizes the exercise-name button to its text, not the whole row", () => {
-    seedAndRender();
-    // The nav chip's accessible name is "1. Bench", so an exact match on
-    // "Bench" selects only the title button.
-    const nameButton = screen.getByRole("button", { name: "Bench" });
-    // flex-1 would stretch the button across the row, making the empty space
-    // beside the name a live tap target for the history modal.
-    expect(nameButton.className).not.toMatch(/\bflex-1\b/);
-  });
+it("sizes the exercise-name button to its text, not the whole row", () => {
+  seedAndRender();
+  // The nav chip's accessible name is "1. Bench", so an exact match on
+  // "Bench" selects only the title button.
+  const nameButton = screen.getByRole("button", { name: "Bench" });
+  // flex-1 would stretch the button across the row, making the empty space
+  // beside the name a live tap target for the history modal.
+  expect(nameButton.className).not.toMatch(/\bflex-1\b/);
+});
 
-  it("still opens past logs when the name itself is tapped", async () => {
-    const user = userEvent.setup();
-    seedAndRender();
-    await user.click(screen.getByRole("button", { name: "Bench" }));
-    // The modal excludes the in-progress workout, and it is the only one
-    // seeded, so it opens on its empty state (ExerciseHistoryModal.jsx:52).
-    expect(screen.getByText("No past workouts.")).toBeInTheDocument();
-  });
+it("still opens past logs when the name itself is tapped", async () => {
+  const user = userEvent.setup();
+  seedAndRender();
+  await user.click(screen.getByRole("button", { name: "Bench" }));
+  // The modal excludes the in-progress workout, and it is the only one
+  // seeded, so it opens on its empty state (ExerciseHistoryModal.jsx:52).
+  expect(screen.getByText("No past workouts.")).toBeInTheDocument();
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -109,7 +111,8 @@ Expected: the `flex-1` test FAILS (the class is present). The second test should
 In `src/components/LiveSession.jsx`, the button at line 340. Replace `min-w-0 flex-1 truncate` with `min-w-0 max-w-full truncate` in its `className`. The full attribute becomes:
 
 ```jsx
-                  className="min-w-0 max-w-full truncate text-left text-lg font-semibold text-neutral-900 underline decoration-dotted underline-offset-4 transition hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400"
+className =
+  "min-w-0 max-w-full truncate text-left text-lg font-semibold text-neutral-900 underline decoration-dotted underline-offset-4 transition hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400";
 ```
 
 Nothing else changes. The wrapper `<div>` at line 339 keeps its classes — it has only one child (the action buttons are a separate row at line 352), so `justify-between` is already inert there.
@@ -136,10 +139,12 @@ git commit -m "Fix exercise-name row opening past logs on empty-space taps"
 ### Task 2: `instantiateRoutine` gains `zeroReps` and emits `targetReps`
 
 **Files:**
+
 - Modify: `src/lib/routines.js:38-68`
 - Test: `src/lib/routines.test.js`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `instantiateRoutine(routine, { date, exercises = [], zeroReps = false })`. Each emitted set is `{ set: number, weight: number, reps: number, targetReps: number }`. `targetReps` is always present and always equals the routine's stored `reps` for that set. `reps` is `0` when `zeroReps` is true, otherwise equals `targetReps`. Task 3 calls this with `zeroReps: true`; Task 6 reads `targetReps`.
 
@@ -148,40 +153,40 @@ git commit -m "Fix exercise-name row opening past logs on empty-space taps"
 Append inside the existing `describe("instantiateRoutine", ...)` block in `src/lib/routines.test.js`. That block already defines the `routine` and `exercises` fixtures used below — Bench Press targets 8 reps with history at 62 kg, OHP targets 10 reps with no history.
 
 ```js
-  it("records the routine's reps as targetReps in both modes", () => {
-    const prefilled = instantiateRoutine(routine, {
-      date: "2026-06-17",
-      exercises,
-    });
-    const zeroed = instantiateRoutine(routine, {
-      date: "2026-06-17",
-      exercises,
-      zeroReps: true,
-    });
-    expect(prefilled.exercises[0].sets[0].targetReps).toBe(8);
-    expect(zeroed.exercises[0].sets[0].targetReps).toBe(8);
-    expect(zeroed.exercises[1].sets[0].targetReps).toBe(10);
+it("records the routine's reps as targetReps in both modes", () => {
+  const prefilled = instantiateRoutine(routine, {
+    date: "2026-06-17",
+    exercises,
   });
+  const zeroed = instantiateRoutine(routine, {
+    date: "2026-06-17",
+    exercises,
+    zeroReps: true,
+  });
+  expect(prefilled.exercises[0].sets[0].targetReps).toBe(8);
+  expect(zeroed.exercises[0].sets[0].targetReps).toBe(8);
+  expect(zeroed.exercises[1].sets[0].targetReps).toBe(10);
+});
 
-  it("zeroes reps when zeroReps is set, keeping the target intact", () => {
-    const w = instantiateRoutine(routine, {
-      date: "2026-06-17",
-      exercises,
-      zeroReps: true,
-    });
-    expect(w.exercises[0].sets[0].reps).toBe(0);
-    expect(w.exercises[1].sets[0].reps).toBe(0);
+it("zeroes reps when zeroReps is set, keeping the target intact", () => {
+  const w = instantiateRoutine(routine, {
+    date: "2026-06-17",
+    exercises,
+    zeroReps: true,
   });
+  expect(w.exercises[0].sets[0].reps).toBe(0);
+  expect(w.exercises[1].sets[0].reps).toBe(0);
+});
 
-  it("still resolves weights normally when zeroReps is set", () => {
-    const w = instantiateRoutine(routine, {
-      date: "2026-06-17",
-      exercises,
-      zeroReps: true,
-    });
-    expect(w.exercises[0].sets[0].weight).toBe(62); // from history
-    expect(w.exercises[1].sets[0].weight).toBe(35); // routine fallback
+it("still resolves weights normally when zeroReps is set", () => {
+  const w = instantiateRoutine(routine, {
+    date: "2026-06-17",
+    exercises,
+    zeroReps: true,
   });
+  expect(w.exercises[0].sets[0].weight).toBe(62); // from history
+  expect(w.exercises[1].sets[0].weight).toBe(35); // routine fallback
+});
 ```
 
 The existing `"preserves rep targets from routine"` test covers the default (`zeroReps` absent → `reps` unchanged). Leave it as is; it is now also the guard that the default stays `false`.
@@ -251,13 +256,15 @@ git commit -m "Add zeroReps option and targetReps field to instantiateRoutine"
 
 ### Task 3: `startRoutine` zeroes reps
 
-**This is the task the whole feature hangs on.** `zeroReps` defaults to `false`, so omitting the argument here reproduces today's behaviour exactly *and every other test in this plan still passes*. Nothing else pins it down. `startRoutine` has no test coverage today.
+**This is the task the whole feature hangs on.** `zeroReps` defaults to `false`, so omitting the argument here reproduces today's behaviour exactly _and every other test in this plan still passes_. Nothing else pins it down. `startRoutine` has no test coverage today.
 
 **Files:**
+
 - Modify: `src/context/AppContext.jsx:92-103`
 - Test: `src/context/AppContext.test.jsx`
 
 **Interfaces:**
+
 - Consumes: `instantiateRoutine(..., { zeroReps })` from Task 2.
 - Produces: `startRoutine(id)` creates a workout whose sets all have `reps: 0` and a populated `targetReps`. Task 6 renders that workout.
 
@@ -343,12 +350,12 @@ Expected: the first test FAILS with `expected [10, 8] to deeply equal [0, 0]`. T
 In `src/context/AppContext.jsx`, in `startRoutine` (line 92), add `zeroReps: true` to the `instantiateRoutine` call:
 
 ```jsx
-    const w = instantiateRoutine(routine, {
-      date: ymdFromDate(new Date()),
-      exercises,
-      // Live sessions start blank — the routine's reps become a recommendation.
-      zeroReps: true,
-    });
+const w = instantiateRoutine(routine, {
+  date: ymdFromDate(new Date()),
+  exercises,
+  // Live sessions start blank — the routine's reps become a recommendation.
+  zeroReps: true,
+});
 ```
 
 Do **not** touch `addWorkoutFromRoutine` on line 108.
@@ -375,12 +382,14 @@ git commit -m "Start live routine sessions with zero reps"
 `instantiateRoutine` already overrides the routine's weight from workout history, so the editor's weight column is near-dead UI.
 
 **Files:**
+
 - Modify: `src/components/WeightRepInputs.jsx`
 - Modify: `src/components/WorkoutExerciseEditor.jsx:105-112` (header) and `:126-143` (rows)
 - Modify: `src/components/RoutineEditor.jsx:97-127`
 - Test: `src/components/WorkoutExerciseEditor.test.jsx`
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces: `WeightRepInputs` accepts `showWeight = true`; `WorkoutExerciseEditor` accepts `showWeight = true` and forwards it. Task 6 adds a second prop to `WeightRepInputs` alongside this one.
 
@@ -416,33 +425,33 @@ Passing `showWeight={undefined}` by default lets the component's own default (`t
 Then append these tests inside the existing `describe("WorkoutExerciseEditor", ...)` block:
 
 ```jsx
-  it("shows both weight and reps inputs by default", () => {
-    render(<Harness initialSets={sets(1, 100, 5)} />);
-    expect(screen.getAllByRole("spinbutton")).toHaveLength(2);
-    expect(screen.getByText("Weight (kg)")).toBeInTheDocument();
-  });
+it("shows both weight and reps inputs by default", () => {
+  render(<Harness initialSets={sets(1, 100, 5)} />);
+  expect(screen.getAllByRole("spinbutton")).toHaveLength(2);
+  expect(screen.getByText("Weight (kg)")).toBeInTheDocument();
+});
 
-  it("hides the weight input and its header when showWeight is false", () => {
-    render(<Harness initialSets={sets(1, 100, 5)} showWeight={false} />);
-    expect(screen.getAllByRole("spinbutton")).toHaveLength(1);
-    expect(screen.queryByText("Weight (kg)")).not.toBeInTheDocument();
-    expect(screen.getByText("Reps")).toBeInTheDocument();
-  });
+it("hides the weight input and its header when showWeight is false", () => {
+  render(<Harness initialSets={sets(1, 100, 5)} showWeight={false} />);
+  expect(screen.getAllByRole("spinbutton")).toHaveLength(1);
+  expect(screen.queryByText("Weight (kg)")).not.toBeInTheDocument();
+  expect(screen.getByText("Reps")).toBeInTheDocument();
+});
 
-  it("still edits reps when the weight input is hidden", async () => {
-    const user = userEvent.setup();
-    const spy = vi.fn();
-    render(
-      <Harness initialSets={sets(1, 100, 5)} showWeight={false} spy={spy} />,
-    );
-    // Only one spinbutton remains, and it must be reps — not weight.
-    const [repsInput] = screen.getAllByRole("spinbutton");
-    await user.clear(repsInput);
-    await user.type(repsInput, "12");
-    const lastPatch = spy.mock.calls.at(-1)[0];
-    expect(lastPatch.sets[0].reps).toBe(12);
-    expect(lastPatch.sets[0].weight).toBe(100); // untouched
-  });
+it("still edits reps when the weight input is hidden", async () => {
+  const user = userEvent.setup();
+  const spy = vi.fn();
+  render(
+    <Harness initialSets={sets(1, 100, 5)} showWeight={false} spy={spy} />,
+  );
+  // Only one spinbutton remains, and it must be reps — not weight.
+  const [repsInput] = screen.getAllByRole("spinbutton");
+  await user.clear(repsInput);
+  await user.type(repsInput, "12");
+  const lastPatch = spy.mock.calls.at(-1)[0];
+  expect(lastPatch.sets[0].reps).toBe(12);
+  expect(lastPatch.sets[0].weight).toBe(100); // untouched
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -503,12 +512,12 @@ Add `showWeight = true` to the destructured props (after `recommendRep` on line 
 Replace the header row's inner wrapper (lines 107-110). **Both** changes are required — dropping the cell alone would leave "Reps" in the left half of a two-column grid while the single-column row below spans full width:
 
 ```jsx
-        <div
-          className={`flex-1 grid gap-3 ${showWeight ? "grid-cols-2" : "grid-cols-1"}`}
-        >
-          {showWeight && <div>Weight ({unit})</div>}
-          <div>Reps</div>
-        </div>
+<div
+  className={`flex-1 grid gap-3 ${showWeight ? "grid-cols-2" : "grid-cols-1"}`}
+>
+  {showWeight && <div>Weight ({unit})</div>}
+  <div>Reps</div>
+</div>
 ```
 
 Then forward the prop to `WeightRepInputs` (line 126) by adding one line to its props:
@@ -563,13 +572,15 @@ git commit -m "Hide the weight input in the routine editor"
 
 ### Task 5: `NumberInputAutoClear` gains `blankZero`
 
-Today the component blanks a displayed `0` only *while focused*. An unlogged set therefore renders a literal `0` that would sit on top of any placeholder. `blankZero` is what makes a placeholder hint possible at all.
+Today the component blanks a displayed `0` only _while focused_. An unlogged set therefore renders a literal `0` that would sit on top of any placeholder. `blankZero` is what makes a placeholder hint possible at all.
 
 **Files:**
+
 - Modify: `src/components/NumberInputAutoClear.jsx`
 - Test: `src/components/NumberInputAutoClear.test.jsx`
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces: `NumberInputAutoClear` accepts `blankZero = false`. When `true`, a `valueNumber` of `0`, `"0"`, `""`, or `null`/`undefined` renders as `""` regardless of focus, so `placeholder` shows through. Task 6 passes it.
 
@@ -599,27 +610,27 @@ function Harness({ initial = 0, spy, blankZero, placeholder }) {
 Append these tests inside the existing `describe` block:
 
 ```jsx
-  it("renders an empty input for 0 while unfocused when blankZero is set", () => {
-    render(<Harness initial={0} blankZero placeholder="10" />);
-    const input = screen.getByRole("spinbutton");
-    expect(input).toHaveValue(null); // empty, without needing focus
-    expect(input).toHaveAttribute("placeholder", "10");
-  });
+it("renders an empty input for 0 while unfocused when blankZero is set", () => {
+  render(<Harness initial={0} blankZero placeholder="10" />);
+  const input = screen.getByRole("spinbutton");
+  expect(input).toHaveValue(null); // empty, without needing focus
+  expect(input).toHaveAttribute("placeholder", "10");
+});
 
-  it("shows a non-zero value normally even with blankZero", () => {
-    render(<Harness initial={7} blankZero placeholder="10" />);
-    expect(screen.getByRole("spinbutton")).toHaveValue(7);
-  });
+it("shows a non-zero value normally even with blankZero", () => {
+  render(<Harness initial={7} blankZero placeholder="10" />);
+  expect(screen.getByRole("spinbutton")).toHaveValue(7);
+});
 
-  it("still reports typed values through onNumberChange with blankZero", async () => {
-    const user = userEvent.setup();
-    const spy = vi.fn();
-    render(<Harness initial={0} blankZero placeholder="10" spy={spy} />);
-    const input = screen.getByRole("spinbutton");
-    await user.type(input, "9");
-    expect(spy).toHaveBeenLastCalledWith(9);
-    expect(input).toHaveValue(9);
-  });
+it("still reports typed values through onNumberChange with blankZero", async () => {
+  const user = userEvent.setup();
+  const spy = vi.fn();
+  render(<Harness initial={0} blankZero placeholder="10" spy={spy} />);
+  const input = screen.getByRole("spinbutton");
+  await user.type(input, "9");
+  expect(spy).toHaveBeenLastCalledWith(9);
+  expect(input).toHaveValue(9);
+});
 ```
 
 The pre-existing test `"shows the value initially"` (asserting `0` renders as `0` without `blankZero`) is the guard that every current call site is unaffected. Leave it.
@@ -637,15 +648,15 @@ Expected: the first new test FAILS with `expected element to have value null, bu
 In `src/components/NumberInputAutoClear.jsx`, add `blankZero = false` to the props (after `className`), and replace the `display` computation on lines 14-21:
 
 ```jsx
-  const [clear, setClear] = useState(false);
-  const isZero =
-    valueNumber === 0 ||
-    valueNumber === "0" ||
-    valueNumber === "" ||
-    valueNumber == null;
-  // `clear` blanks a zero only while focused; `blankZero` blanks it always, so
-  // a placeholder (e.g. a recommended rep count) can show through.
-  const display = (clear || blankZero) && isZero ? "" : valueNumber;
+const [clear, setClear] = useState(false);
+const isZero =
+  valueNumber === 0 ||
+  valueNumber === "0" ||
+  valueNumber === "" ||
+  valueNumber == null;
+// `clear` blanks a zero only while focused; `blankZero` blanks it always, so
+// a placeholder (e.g. a recommended rep count) can show through.
+const display = (clear || blankZero) && isZero ? "" : valueNumber;
 ```
 
 Update the component's doc comment (line 4) to:
@@ -678,11 +689,13 @@ git commit -m "Add blankZero to NumberInputAutoClear so placeholders show throug
 ### Task 6: Show the recommended reps as a grey placeholder
 
 **Files:**
+
 - Modify: `src/components/WeightRepInputs.jsx`
 - Modify: `src/components/LiveSession.jsx:438-449`
 - Test: `src/components/LiveSession.test.jsx`
 
 **Interfaces:**
+
 - Consumes: `showWeight` on `WeightRepInputs` (Task 4); `blankZero` on `NumberInputAutoClear` (Task 5); `targetReps` on sets (Tasks 2 and 3).
 - Produces: `WeightRepInputs` accepts `repsPlaceholder` (a string, or null/undefined for none).
 
@@ -716,32 +729,32 @@ function seedWithTargets() {
 Then append these tests inside the existing `describe("LiveSession", ...)` block:
 
 ```jsx
-  it("shows the routine's target as a placeholder on an unlogged set", () => {
-    seedWithTargets();
-    // Order per row: weight, reps. Row 1 is the set with a target.
-    const [, firstReps] = screen.getAllByRole("spinbutton");
-    expect(firstReps).toHaveValue(null); // empty, not a literal 0
-    expect(firstReps).toHaveAttribute("placeholder", "10");
-  });
+it("shows the routine's target as a placeholder on an unlogged set", () => {
+  seedWithTargets();
+  // Order per row: weight, reps. Row 1 is the set with a target.
+  const [, firstReps] = screen.getAllByRole("spinbutton");
+  expect(firstReps).toHaveValue(null); // empty, not a literal 0
+  expect(firstReps).toHaveAttribute("placeholder", "10");
+});
 
-  it("falls back to a 0 placeholder when a set has no target", () => {
-    seedWithTargets();
-    const inputs = screen.getAllByRole("spinbutton");
-    const secondReps = inputs[3]; // row 2: weight, reps
-    expect(secondReps).toHaveAttribute("placeholder", "0");
-  });
+it("falls back to a 0 placeholder when a set has no target", () => {
+  seedWithTargets();
+  const inputs = screen.getAllByRole("spinbutton");
+  const secondReps = inputs[3]; // row 2: weight, reps
+  expect(secondReps).toHaveAttribute("placeholder", "0");
+});
 
-  it("counts no sets as logged until reps are typed", async () => {
-    const user = userEvent.setup();
-    seedWithTargets();
-    expect(screen.getByText(/0\/2 sets/)).toBeInTheDocument();
+it("counts no sets as logged until reps are typed", async () => {
+  const user = userEvent.setup();
+  seedWithTargets();
+  expect(screen.getByText(/0\/2 sets/)).toBeInTheDocument();
 
-    const [, firstReps] = screen.getAllByRole("spinbutton");
-    await user.type(firstReps, "9");
+  const [, firstReps] = screen.getAllByRole("spinbutton");
+  await user.type(firstReps, "9");
 
-    expect(screen.getByText(/1\/2 sets/)).toBeInTheDocument();
-    expect(firstReps).toHaveValue(9);
-  });
+  expect(screen.getByText(/1\/2 sets/)).toBeInTheDocument();
+  expect(firstReps).toHaveValue(9);
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -757,15 +770,15 @@ Expected: the first test FAILS — the input renders `0` and carries the default
 Add `repsPlaceholder` to the props (after `showWeight`) and to the JSDoc prop list, then apply it to the reps input only:
 
 ```jsx
-        <NumberInputAutoClear
-          step="1"
-          min="0"
-          className="border rounded-xl px-3 py-1.5 text-sm w-16 bg-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
-          placeholder={repsPlaceholder || "0"}
-          blankZero={Boolean(repsPlaceholder)}
-          valueNumber={reps}
-          onNumberChange={onRepsChange}
-        />
+<NumberInputAutoClear
+  step="1"
+  min="0"
+  className="border rounded-xl px-3 py-1.5 text-sm w-16 bg-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+  placeholder={repsPlaceholder || "0"}
+  blankZero={Boolean(repsPlaceholder)}
+  valueNumber={reps}
+  onNumberChange={onRepsChange}
+/>
 ```
 
 The weight input is untouched and never receives `blankZero`.
@@ -793,7 +806,7 @@ Leave `addSet` (line 125) alone — a manually added set has no target and corre
 npm run test -- src/components/LiveSession.test.jsx
 ```
 
-Expected: PASS, all tests in the file — including the pre-existing ones that seed sets *with* reps and assert they read as logged.
+Expected: PASS, all tests in the file — including the pre-existing ones that seed sets _with_ reps and assert they read as logged.
 
 - [ ] **Step 6: Commit**
 
@@ -813,6 +826,7 @@ rather than being duplicated. This was decided before execution: the set shape
 gets one home now that it has grown a field.
 
 **Files:**
+
 - Create: `src/lib/sets.js`
 - Create: `src/lib/sets.test.js`
 - Modify: `src/lib/backup.js:45-49`
@@ -821,6 +835,7 @@ gets one home now that it has grown a field.
 - Test: `src/lib/backup.test.js`, `src/lib/sets.test.js`
 
 **Interfaces:**
+
 - Consumes: the `targetReps` set field from Task 2.
 - Produces: `normalizeSet(raw, index)` from `src/lib/sets.js`, returning
   `{ set: index + 1, weight: number, reps: number }` plus `targetReps: number`
@@ -935,32 +950,35 @@ git commit -m "Add normalizeSet helper as the single definition of the set shape
 Append inside the existing `describe("normalizeWorkout", ...)` block in `src/lib/backup.test.js`:
 
 ```js
-  it("preserves targetReps when present", () => {
-    const w = normalizeWorkout({
-      date: "2026-06-01",
-      exercises: [
-        {
-          exerciseName: "Bench",
-          sets: [{ weight: 60, reps: 0, targetReps: 10 }],
-        },
-      ],
-    });
-    expect(w.exercises[0].sets[0].targetReps).toBe(10);
+it("preserves targetReps when present", () => {
+  const w = normalizeWorkout({
+    date: "2026-06-01",
+    exercises: [
+      {
+        exerciseName: "Bench",
+        sets: [{ weight: 60, reps: 0, targetReps: 10 }],
+      },
+    ],
   });
+  expect(w.exercises[0].sets[0].targetReps).toBe(10);
+});
 
-  it("omits targetReps when absent or zero", () => {
-    const w = normalizeWorkout({
-      date: "2026-06-01",
-      exercises: [
-        {
-          exerciseName: "Bench",
-          sets: [{ weight: 60, reps: 8 }, { weight: 60, reps: 8, targetReps: 0 }],
-        },
-      ],
-    });
-    expect(w.exercises[0].sets[0]).not.toHaveProperty("targetReps");
-    expect(w.exercises[0].sets[1]).not.toHaveProperty("targetReps");
+it("omits targetReps when absent or zero", () => {
+  const w = normalizeWorkout({
+    date: "2026-06-01",
+    exercises: [
+      {
+        exerciseName: "Bench",
+        sets: [
+          { weight: 60, reps: 8 },
+          { weight: 60, reps: 8, targetReps: 0 },
+        ],
+      },
+    ],
   });
+  expect(w.exercises[0].sets[0]).not.toHaveProperty("targetReps");
+  expect(w.exercises[0].sets[1]).not.toHaveProperty("targetReps");
+});
 ```
 
 - [ ] **Step 7: Run the tests to verify they fail**
@@ -982,7 +1000,7 @@ import { normalizeSet } from "./sets";
 Then replace the `sets` mapping on lines 45-49 with a call to it:
 
 ```js
-      const sets = setsRaw.slice(0, MAX_SETS).map(normalizeSet);
+const sets = setsRaw.slice(0, MAX_SETS).map(normalizeSet);
 ```
 
 `Array.prototype.map` passes `(element, index)`, which is exactly
@@ -1026,7 +1044,7 @@ In `docs/DATA-MODEL.md`, add a row to the `Set` table (after the `reps` row on l
 Then update the `sets` example on line 92 to show the field:
 
 ```markdown
-| `sets`         | `Set[]`          | Sets performed; 1–`MAX_SETS` (10) entries.              | `[{ set:1, weight:0, reps:0 }]` |
+| `sets` | `Set[]` | Sets performed; 1–`MAX_SETS` (10) entries. | `[{ set:1, weight:0, reps:0 }]` |
 ```
 
 leave that default cell as is (a bare set genuinely has no `targetReps`), and instead append this sentence below the `Set` table, before "Constraints enforced in code:":
@@ -1034,7 +1052,7 @@ leave that default cell as is (a bare set genuinely has no `targetReps`), and in
 ```markdown
 `targetReps` is written by `instantiateRoutine` from the routine's stored reps.
 A live-started routine session sets `reps: 0` and relies on `targetReps` for the
-placeholder; a *planned* workout keeps its reps pre-filled, so the placeholder
+placeholder; a _planned_ workout keeps its reps pre-filled, so the placeholder
 never surfaces there. See `docs/superpowers/specs/2026-07-21-recommended-reps-design.md`.
 ```
 

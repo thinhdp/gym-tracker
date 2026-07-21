@@ -1,7 +1,7 @@
 # Recommended Reps & Routine Weight Cleanup — Design
 
 Three related changes to how routine data reaches the live workout screen: stop
-editing weights in the routine editor, treat routine reps as a *recommendation*
+editing weights in the routine editor, treat routine reps as a _recommendation_
 rather than a pre-filled log, and fix a tap-target bug on the live screen.
 
 ## Goals
@@ -33,9 +33,9 @@ rather than a pre-filled log, and fix a tap-target bug on the live screen.
 | Routine weight input | Removed from the editor. Stored routine weights are **kept**, still used as the no-history fallback. |
 | Hint source          | Per-set `targetReps` copied from the routine, not the exercise's `recommendRep` string.              |
 | Planned workouts     | Unchanged — still pre-filled. Only `startRoutine` zeroes reps.                                       |
-| Hint placement       | Grey placeholder **inside** the reps input, shown while the set is unlogged.                          |
-| Save as routine      | Unchanged. Skipped sets save as `reps: 0`, losing their target — accepted.                            |
-| Backup import        | `targetReps` preserved through `normalizeWorkout` so the hint survives a round-trip.                  |
+| Hint placement       | Grey placeholder **inside** the reps input, shown while the set is unlogged.                         |
+| Save as routine      | Unchanged. Skipped sets save as `reps: 0`, losing their target — accepted.                           |
+| Backup import        | `targetReps` preserved through `normalizeWorkout` so the hint survives a round-trip.                 |
 
 ### Accepted losses
 
@@ -70,7 +70,7 @@ at session start — was rejected outright: `startSession` is also how an
 interrupted or past workout is re-opened (`WorkoutHistoryItem`), so that would
 erase real logged sets.
 
-Consequence to accept: starting a *planned* workout still shows pre-filled reps.
+Consequence to accept: starting a _planned_ workout still shows pre-filled reps.
 
 ### Consequences for analysis
 
@@ -107,11 +107,11 @@ back to the routine's stored weight.
 
 Call sites:
 
-| Call site                                     | `zeroReps` |
-| --------------------------------------------- | ---------- |
-| `AppContext.startRoutine` (▶ Start, live)      | `true`     |
-| `AppContext.addWorkoutFromRoutine` (plan)      | default    |
-| `WorkoutPlanner` (two call sites, plan)        | default    |
+| Call site                                 | `zeroReps` |
+| ----------------------------------------- | ---------- |
+| `AppContext.startRoutine` (▶ Start, live) | `true`     |
+| `AppContext.addWorkoutFromRoutine` (plan) | default    |
+| `WorkoutPlanner` (two call sites, plan)   | default    |
 
 ### 2. `src/components/NumberInputAutoClear.jsx`
 
@@ -160,7 +160,7 @@ Passes `showWeight={false}`. `handleSave` is unchanged — it still persists
   number; sets with no target keep the plain `0` placeholder.
 - Bug fix at the exercise-name button (`LiveSession.jsx:340`): drop `flex-1` so
   the button shrinks to its text instead of spanning the row. Keep `max-w-full
-  truncate` for long names — flexbox clamps the automatic minimum size by
+truncate` for long names — flexbox clamps the automatic minimum size by
   max-width, so truncation still works. Its wrapper at line 339 needs no change;
   it has only one child (the action buttons are a separate row at line 352).
 
@@ -207,8 +207,8 @@ Per the repo's testing policy, every touched module gets co-located tests.
 - `src/context/AppContext.test.jsx` — **the most important test here.**
   `startRoutine` produces a workout whose sets are all `reps: 0` with
   `targetReps` set. `zeroReps` defaults to `false`, so omitting that one argument
-  at the call site reproduces today's behaviour exactly and *every other test in
-  this list still passes*. Nothing else pins the feature down. There is currently
+  at the call site reproduces today's behaviour exactly and _every other test in
+  this list still passes_. Nothing else pins the feature down. There is currently
   no `startRoutine` coverage at all.
 - `src/lib/backup.test.js` — `normalizeWorkout` preserves `targetReps` when
   present and omits it when absent.
