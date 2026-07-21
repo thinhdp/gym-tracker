@@ -30,12 +30,18 @@ export function routineFromWorkout(workout) {
  * Weights are pulled from the exercise's lastWorkout (last set); falls back to
  * the routine's stored weight if no history exists. Rep targets always come
  * from the routine.
+ * Reps are pre-filled from the routine unless `zeroReps` is set, in which case
+ * every set starts at 0 and the routine's number is carried as `targetReps`
+ * for display as a recommendation.
  *
  * @param {object} routine
- * @param {{ date: string, exercises: object[] }} ctx  exercises = exercise database
+ * @param {{ date: string, exercises: object[], zeroReps: boolean }} ctx  exercises = exercise database
  * @returns {object} a Workout
  */
-export function instantiateRoutine(routine, { date, exercises = [] }) {
+export function instantiateRoutine(
+  routine,
+  { date, exercises = [], zeroReps = false },
+) {
   const d = date || todayStr();
   const exMap = new Map(
     (exercises || []).map((e) => [e.name.toLowerCase(), e]),
@@ -54,12 +60,18 @@ export function instantiateRoutine(routine, { date, exercises = [] }) {
 
       return {
         exerciseName: we.exerciseName,
-        sets: (we.sets || []).map((s, idx) => ({
-          set: idx + 1,
-          weight:
-            historyWeight !== null ? historyWeight : Number(s.weight) || 0,
-          reps: Number(s.reps) || 0,
-        })),
+        sets: (we.sets || []).map((s, idx) => {
+          // The routine's stored reps are the *target*. Live sessions start at
+          // zero so the number you see is the number you actually did.
+          const targetReps = Number(s.reps) || 0;
+          return {
+            set: idx + 1,
+            weight:
+              historyWeight !== null ? historyWeight : Number(s.weight) || 0,
+            reps: zeroReps ? 0 : targetReps,
+            targetReps,
+          };
+        }),
         rpe: null,
         feedback: "",
       };
