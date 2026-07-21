@@ -29,7 +29,7 @@ rather than a pre-filled log, and fix a tap-target bug on the live screen.
 | Routine weight input | Removed from the editor. Stored routine weights are **kept**, still used as the no-history fallback. |
 | Hint source          | Per-set `targetReps` copied from the routine, not the exercise's `recommendRep` string.              |
 | Planned workouts     | Unchanged — still pre-filled. Only `startRoutine` zeroes reps.                                       |
-| Hint placement       | Small muted `·N` immediately right of the reps input, inside `WeightRepInputs`.                       |
+| Hint placement       | Grey placeholder **inside** the reps input, shown while the set is unlogged.                          |
 
 ### Why planned workouts stay pre-filled
 
@@ -69,29 +69,44 @@ Call sites:
 | `AppContext.addWorkoutFromRoutine` (plan)      | default    |
 | `WorkoutPlanner` (two call sites, plan)        | default    |
 
-### 2. `src/components/WeightRepInputs.jsx`
+### 2. `src/components/NumberInputAutoClear.jsx`
+
+Gains `blankZero = false`. When `true`, a `valueNumber` of `0` (or `""`/`null`)
+renders as `""` **whether or not the input is focused**, so the `placeholder`
+shows through. The existing focus-clearing behaviour is untouched, and the
+default keeps every current call site rendering exactly as it does today.
+
+This is the piece that makes a placeholder hint possible at all: today an
+unlogged set renders a literal `0`, which would hide any placeholder.
+
+### 3. `src/components/WeightRepInputs.jsx`
 
 Two new optional props, both backwards-compatible:
 
 - `showWeight = true` — when `false`, the weight input is not rendered and the
   wrapper drops to a single column.
-- `repsHint` — when truthy, renders a small muted `·{repsHint}` beside the reps
-  input.
+- `repsPlaceholder` — when truthy, passed to the reps input as `placeholder`
+  along with `blankZero`, so an unlogged set shows the grey target number.
+  Falls back to the existing `"0"` placeholder when absent.
 
-### 3. `src/components/WorkoutExerciseEditor.jsx`
+The weight input never receives `blankZero`; only reps are affected.
+
+### 4. `src/components/WorkoutExerciseEditor.jsx`
 
 Accepts `showWeight = true` and forwards it to `WeightRepInputs`. When `false`,
 the `Weight ({unit})` header cell is omitted so the header stays aligned with the
 rows.
 
-### 4. `src/components/RoutineEditor.jsx`
+### 5. `src/components/RoutineEditor.jsx`
 
 Passes `showWeight={false}`. `handleSave` is unchanged — it still persists
 `weight` from the item, preserving whatever the routine already stored.
 
-### 5. `src/components/LiveSession.jsx`
+### 6. `src/components/LiveSession.jsx`
 
-- Set rows pass `repsHint={s.targetReps > 0 ? s.targetReps : null}`.
+- Set rows pass `repsPlaceholder={s.targetReps > 0 ? String(s.targetReps) : null}`.
+  An unlogged set therefore shows an empty reps box carrying a grey target
+  number; sets with no target keep the plain `0` placeholder.
 - Bug fix at the exercise-name button: drop `flex-1` so the button shrinks to its
   text instead of spanning the row. Keep truncation for long names
   (`max-w-full truncate self-start`). The surrounding `justify-between` wrapper
@@ -121,9 +136,17 @@ Per the repo's testing policy, every touched module gets co-located tests.
 - `src/components/WorkoutExerciseEditor.test.jsx`
   - Weight input present by default; absent with `showWeight={false}`.
   - Reps editing still fires `onChange` when the weight input is hidden.
+- `src/components/NumberInputAutoClear.test.jsx` (file exists — extend it)
+  - With `blankZero`, a `valueNumber` of `0` renders an empty input while
+    unfocused, and the `placeholder` is the given target.
+  - Without `blankZero` (default), `0` still renders as `0` — guards every
+    existing call site.
+  - Typing into a `blankZero` input still reports the number through
+    `onNumberChange`.
 - `src/components/LiveSession.test.jsx`
-  - A session whose sets carry `targetReps` renders the hint; a session without
-    it renders no hint.
+  - A set with `targetReps` renders an empty reps input whose placeholder is
+    that target; a set without one falls back to placeholder `0`.
+  - Typing reps into such a set updates the value and ticks it.
   - Sets with `reps: 0` render unticked.
   - The exercise-name button does not carry the row-spanning class (guards the
     tap-target regression).
@@ -133,7 +156,9 @@ Per the repo's testing policy, every touched module gets co-located tests.
 ## Manual smoke check
 
 1. Routine tab → edit a routine: no weight inputs, reps still editable, save works.
-2. Routine tab → ▶ Start: every set shows reps `0`, unticked, with `·N` hints.
+2. Routine tab → ▶ Start: every set's reps box is empty and unticked, showing
+   the routine's target as a grey placeholder. Typing a number replaces it and
+   ticks the set.
 3. Weights are pre-filled from the last workout for exercises with history.
 4. On the live screen, tap the blank area right of the exercise name — nothing
    happens. Tap the name — the past-logs modal opens.
