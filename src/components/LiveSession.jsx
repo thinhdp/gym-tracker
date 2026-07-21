@@ -341,7 +341,7 @@ export default function LiveSession() {
                   type="button"
                   onClick={() => setHistoryExercise(current.exerciseName)}
                   title="View past logs"
-                  className="min-w-0 flex-1 truncate text-left text-lg font-semibold text-neutral-900 underline decoration-dotted underline-offset-4 transition hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400"
+                  className="min-w-0 max-w-full truncate text-left text-lg font-semibold text-neutral-900 underline decoration-dotted underline-offset-4 transition hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400"
                 >
                   {current.exerciseName}
                 </button>

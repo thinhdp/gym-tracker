@@ -198,4 +198,23 @@ describe("LiveSession", () => {
     await user.click(screen.getByRole("button", { name: "Finish" }));
     expect(screen.queryByText("Bench")).not.toBeInTheDocument();
   });
+
+  it("sizes the exercise-name button to its text, not the whole row", () => {
+    seedAndRender();
+    // The nav chip's accessible name is "1. Bench", so an exact match on
+    // "Bench" selects only the title button.
+    const nameButton = screen.getByRole("button", { name: "Bench" });
+    // flex-1 would stretch the button across the row, making the empty space
+    // beside the name a live tap target for the history modal.
+    expect(nameButton.className).not.toMatch(/\bflex-1\b/);
+  });
+
+  it("still opens past logs when the name itself is tapped", async () => {
+    const user = userEvent.setup();
+    seedAndRender();
+    await user.click(screen.getByRole("button", { name: "Bench" }));
+    // The modal excludes the in-progress workout, and it is the only one
+    // seeded, so it opens on its empty state (ExerciseHistoryModal.jsx:52).
+    expect(screen.getByText("No past workouts.")).toBeInTheDocument();
+  });
 });
