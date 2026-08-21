@@ -99,7 +99,8 @@ export function collectHistory(config, workouts, cycleN, nWindows) {
         cycle: n,
         start,
         end,
-        windowDays: config.cycle.lengthDays,
+        windowDays:
+          Math.round((parseYMD(end) - parseYMD(start)) / 86400000) + 1,
         isInProgram: true,
         phase: undefined, // filled by review.js if needed; not required for trend
       };

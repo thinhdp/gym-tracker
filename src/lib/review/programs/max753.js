@@ -13,7 +13,16 @@ export const max753 = {
   name: "Max 7/5/3",
 
   // 8-day microcycle: 3 train / 1 rest / 3 train / 1 rest. Cycle 1 starts here.
-  cycle: { startDate: "2026-04-27", lengthDays: 8, expectedSessions: 6 },
+  // anchors: re-anchor points for when real cycles slip off the calendar —
+  // cycle N restarts date math at its startDate, and the cycle before N
+  // stretches to the day before. Cycle 10 ran long (tiredness/injury,
+  // 8-16 Jul), so cycle 11 re-anchors to 19 Jul.
+  cycle: {
+    startDate: "2026-04-27",
+    lengthDays: 8,
+    expectedSessions: 6,
+    anchors: [{ cycle: 11, startDate: "2026-07-19" }],
+  },
 
   // Chronological, non-overlapping calendar phases. bodyweight pcts are per cycle.
   phases: [
