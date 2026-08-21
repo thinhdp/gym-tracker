@@ -35,7 +35,8 @@ describe("phaseForDate / phaseForCycle", () => {
     expect(phaseForDate(max753, "2026-05-01")).toBe("cut");
     expect(phaseForDate(max753, "2026-05-26")).toBe("maintenance");
     expect(phaseForDate(max753, "2026-06-10")).toBe("lean-bulk");
-    expect(phaseForDate(max753, "2026-08-01")).toBe("post-program");
+    expect(phaseForDate(max753, "2026-12-31")).toBe("lean-bulk");
+    expect(phaseForDate(max753, "2027-01-01")).toBe("post-program");
     expect(phaseForDate(max753, "2026-04-20")).toBe("pre-program");
   });
   it("uses majority days for a cycle, later phase breaking ties", () => {

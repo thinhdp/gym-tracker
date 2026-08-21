@@ -40,7 +40,7 @@ export const max753 = {
     {
       id: "lean-bulk",
       from: "2026-06-01",
-      to: "2026-07-26",
+      to: "2026-12-31",
       bias: "normal",
       bodyweight: { minPct: 0.25, maxPct: 0.5, tooFastPct: 0.7 },
     },
