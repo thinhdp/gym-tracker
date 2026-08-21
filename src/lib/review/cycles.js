@@ -26,18 +26,46 @@ function addDays(date, n) {
   return d;
 }
 
+// Segments of uninterrupted lengthDays cycles: the base start plus any
+// config.cycle.anchors ({cycle, startDate} re-anchor points, for when a real
+// cycle ran long and the calendar slipped). The last cycle of a segment
+// stretches to the day before the next segment's anchor.
+function segments(config) {
+  const base = [{ cycle: 1, startDate: config.cycle.startDate }];
+  const anchors = [...(config.cycle.anchors || [])].sort(
+    (a, b) => a.cycle - b.cycle,
+  );
+  return base.concat(anchors);
+}
+
 export function cycleForDate(config, dateStr) {
-  const start = parseYMD(config.cycle.startDate);
   const d = parseYMD(dateStr);
-  if (!start || !d || d < start) return null;
-  const days = Math.round((d - start) / MS_PER_DAY);
-  return Math.floor(days / config.cycle.lengthDays) + 1;
+  if (!d) return null;
+  const segs = segments(config);
+  let seg = null;
+  for (const s of segs) {
+    const start = parseYMD(s.startDate);
+    if (start && d >= start) seg = s;
+  }
+  if (!seg) return null;
+  const days = Math.round((d - parseYMD(seg.startDate)) / MS_PER_DAY);
+  const n = seg.cycle + Math.floor(days / config.cycle.lengthDays);
+  const next = segs[segs.indexOf(seg) + 1];
+  return next ? Math.min(n, next.cycle - 1) : n;
 }
 
 export function cycleDates(config, n) {
-  const start = parseYMD(config.cycle.startDate);
-  const s = addDays(start, (n - 1) * config.cycle.lengthDays);
-  const e = addDays(s, config.cycle.lengthDays - 1);
+  const segs = segments(config);
+  let i = 0;
+  for (let j = 0; j < segs.length; j++) if (segs[j].cycle <= n) i = j;
+  const seg = segs[i];
+  const s = addDays(
+    parseYMD(seg.startDate),
+    (n - seg.cycle) * config.cycle.lengthDays,
+  );
+  let e = addDays(s, config.cycle.lengthDays - 1);
+  const next = segs[i + 1];
+  if (next && n === next.cycle - 1) e = addDays(parseYMD(next.startDate), -1);
   return { start: ymd(s), end: ymd(e) };
 }
 
@@ -53,10 +81,11 @@ export function phaseForDate(config, dateStr) {
 }
 
 export function dayPhases(config, n) {
-  const { start } = cycleDates(config, n);
+  const { start, end } = cycleDates(config, n);
   const s = parseYMD(start);
+  const nDays = Math.round((parseYMD(end) - s) / MS_PER_DAY) + 1;
   const out = [];
-  for (let i = 0; i < config.cycle.lengthDays; i++) {
+  for (let i = 0; i < nDays; i++) {
     out.push(phaseForDate(config, ymd(addDays(s, i))));
   }
   return out;
