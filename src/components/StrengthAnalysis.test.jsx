@@ -78,6 +78,29 @@ describe("StrengthAnalysis", () => {
     expect(screen.getByText("Recent PRs")).toBeInTheDocument();
   });
 
+  it("renders the per-cycle muscle-group chart and switches its metric", async () => {
+    seed();
+    const user = userEvent.setup();
+    const { container } = render(<StrengthAnalysis />);
+    expect(screen.getByText("Per cycle by muscle group")).toBeInTheDocument();
+    // Quads → Legs, so the cycle chart draws lines.
+    expect(container.querySelectorAll(".recharts-line").length).toBeGreaterThan(
+      0,
+    );
+    await user.click(screen.getByRole("button", { name: "Tonnage" }));
+    // Tonnage shows the display unit next to the heading.
+    expect(screen.getByText("(kg)")).toBeInTheDocument();
+  });
+
+  it("shows the cycle-chart empty state when no logged muscle is grouped", () => {
+    mockApp.exercises = [{ name: "Plank", mainMuscle: "Abs" }];
+    mockApp.workouts = [workout(daysAgo(5), [ex("Plank", [set(0, 30)])])];
+    render(<StrengthAnalysis />);
+    expect(
+      screen.getByText(/no max 7\/5\/3 cycles in this range/i),
+    ).toBeInTheDocument();
+  });
+
   it("keeps the exercise field clearable instead of refilling a default", async () => {
     seed();
     const user = userEvent.setup();
