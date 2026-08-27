@@ -1,8 +1,8 @@
 // src/lib/cycleMuscleStats.js
-// Per-cycle training stats grouped into Push / Pull / Legs, for the Strength
-// tab's per-cycle chart. A "cycle" is the program's microcycle — date math
-// comes from src/lib/review/cycles.js so re-anchored cycles line up with the
-// Cycle Review feature.
+// Per-cycle training stats for the muscles of one Push / Pull / Legs category,
+// for the Strength tab's per-cycle chart. A "cycle" is the program's
+// microcycle — date math comes from src/lib/review/cycles.js so re-anchored
+// cycles line up with the Cycle Review feature.
 //
 // Weights are in kg (the storage invariant); tonnage is returned in kg and
 // converted to display units at the render boundary.
@@ -10,24 +10,15 @@
 import { cycleForDate, cycleDates } from "./review/cycles";
 import { setReps } from "./metrics";
 
-export const GROUP_NAMES = ["Push", "Pull", "Legs"];
-
-// mainMuscle (lowercased) -> group. Muscles not listed here (abs, calves,
-// abductors, adductors, hip flexors, unknown) are excluded from the chart.
-const MUSCLE_GROUPS = {
-  chest: "Push",
-  shoulders: "Push",
-  "shoulders (side)": "Push",
-  triceps: "Push",
-  back: "Pull",
-  "back (lats)": "Pull",
-  "shoulders (rear)": "Pull",
-  biceps: "Pull",
-  quads: "Legs",
-  hamstrings: "Legs",
-  glutes: "Legs",
-  "glutes, hamstrings": "Legs",
+// Category -> the mainMuscle values it covers (canonical display labels).
+// Muscles not listed (abs, calves, abductors, adductors, hip flexors,
+// unknown) are excluded from the chart.
+export const MUSCLE_CATEGORIES = {
+  Push: ["Chest", "Shoulders", "Shoulders (side)", "Triceps"],
+  Pull: ["Back", "Back (Lats)", "Shoulders (rear)", "Biceps"],
+  Legs: ["Quads", "Hamstrings", "Glutes", "Glutes, Hamstrings"],
 };
+export const CATEGORY_NAMES = Object.keys(MUSCLE_CATEGORIES);
 
 // One value for a WorkoutExercise under the given metric:
 // sets = count of logged sets (reps > 0), reps = Σ reps, tonnage = Σ kg × reps.
@@ -42,38 +33,50 @@ function exerciseValue(ex, metric) {
   return v;
 }
 
-// Per-cycle Push/Pull/Legs series for `metric` ("sets" | "reps" | "tonnage").
-// Returns { cycles: [{ n, start, end }], groups: [{ name, points }] } with one
-// point per cycle, cycles contiguous from the first to the last logged cycle.
-// Pre-program workouts are ignored; empty input returns empty arrays.
-export function cycleMuscleGroupSeries(config, workouts, exercisesDb, metric) {
-  const groupByName = new Map();
+// Per-cycle series for each muscle of `category` ("Push" | "Pull" | "Legs")
+// under `metric` ("sets" | "reps" | "tonnage"). Returns
+// { cycles: [{ n, start, end }], muscles: [{ name, points }] } with one point
+// per cycle, cycles contiguous from the first to the last logged cycle.
+// Muscles with no data in any cycle are omitted; pre-program workouts are
+// ignored; empty input returns empty arrays.
+export function cycleMuscleSeries(
+  config,
+  workouts,
+  exercisesDb,
+  category,
+  metric,
+) {
+  const labels = MUSCLE_CATEGORIES[category] || [];
+  const labelByLower = new Map(labels.map((l) => [l.toLowerCase(), l]));
+
+  // exercise name (lowercased) -> canonical muscle label in this category.
+  const muscleByExercise = new Map();
   for (const ex of exercisesDb || []) {
-    const muscle = (ex.mainMuscle || "").trim().toLowerCase();
-    const group = MUSCLE_GROUPS[muscle];
-    if (group) groupByName.set(ex.name.trim().toLowerCase(), group);
+    const label = labelByLower.get((ex.mainMuscle || "").trim().toLowerCase());
+    if (label) muscleByExercise.set(ex.name.trim().toLowerCase(), label);
   }
 
-  // cycle n -> { Push, Pull, Legs }
+  // cycle n -> { muscleLabel: value }
   const perCycle = new Map();
   for (const w of workouts || []) {
     if (!w.date) continue;
     const n = cycleForDate(config, w.date);
     if (n == null) continue;
     for (const ex of w.exercises || []) {
-      const group = groupByName.get(
+      const muscle = muscleByExercise.get(
         (ex.exerciseName || "").trim().toLowerCase(),
       );
-      if (!group) continue;
+      if (!muscle) continue;
       const v = exerciseValue(ex, metric);
       if (!v) continue;
-      if (!perCycle.has(n)) perCycle.set(n, { Push: 0, Pull: 0, Legs: 0 });
-      perCycle.get(n)[group] += v;
+      if (!perCycle.has(n)) perCycle.set(n, {});
+      const m = perCycle.get(n);
+      m[muscle] = (m[muscle] || 0) + v;
     }
   }
 
   const logged = [...perCycle.keys()];
-  if (!logged.length) return { cycles: [], groups: [] };
+  if (!logged.length) return { cycles: [], muscles: [] };
   const first = Math.min(...logged);
   const last = Math.max(...logged);
 
@@ -82,9 +85,11 @@ export function cycleMuscleGroupSeries(config, workouts, exercisesDb, metric) {
     const { start, end } = cycleDates(config, n);
     cycles.push({ n, start, end });
   }
-  const groups = GROUP_NAMES.map((name) => ({
-    name,
-    points: cycles.map((c) => perCycle.get(c.n)?.[name] || 0),
-  }));
-  return { cycles, groups };
+  const muscles = labels
+    .map((name) => ({
+      name,
+      points: cycles.map((c) => perCycle.get(c.n)?.[name] || 0),
+    }))
+    .filter((m) => m.points.some((p) => p > 0));
+  return { cycles, muscles };
 }
