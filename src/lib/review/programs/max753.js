@@ -16,12 +16,16 @@ export const max753 = {
   // anchors: re-anchor points for when real cycles slip off the calendar —
   // cycle N restarts date math at its startDate, and the cycle before N
   // stretches to the day before. Cycle 10 ran long (tiredness/injury,
-  // 8-16 Jul), so cycle 11 re-anchors to 19 Jul.
+  // 8-16 Jul), so cycle 11 re-anchors to 19 Jul. Cycle 16 ran long
+  // (fatigue/burnout, 28 Aug-5 Sep), so cycle 17 re-anchors to 6 Sep.
   cycle: {
     startDate: "2026-04-27",
     lengthDays: 8,
     expectedSessions: 6,
-    anchors: [{ cycle: 11, startDate: "2026-07-19" }],
+    anchors: [
+      { cycle: 11, startDate: "2026-07-19" },
+      { cycle: 17, startDate: "2026-09-06" },
+    ],
   },
 
   // Chronological, non-overlapping calendar phases. bodyweight pcts are per cycle.

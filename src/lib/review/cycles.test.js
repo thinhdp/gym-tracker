@@ -68,6 +68,39 @@ describe("cycle anchors (cycle 10 ran long, cycle 11 re-anchored to 19 Jul)", ()
   });
 });
 
+describe("cycle anchors (cycle 16 ran long, cycle 17 re-anchored to 6 Sep)", () => {
+  it("stretches cycle 16 through 5 Sep", () => {
+    // Cycle 16 nominally 28 Aug-4 Sep, but ran through 5 Sep (fatigue/burnout).
+    expect(cycleDates(max753, 16)).toEqual({
+      start: "2026-08-28",
+      end: "2026-09-05",
+    });
+    expect(cycleForDate(max753, "2026-08-28")).toBe(16);
+    expect(cycleForDate(max753, "2026-09-05")).toBe(16);
+    expect(dayPhases(max753, 16)).toHaveLength(9);
+  });
+  it("restarts date math at 6 Sep", () => {
+    expect(cycleDates(max753, 17)).toEqual({
+      start: "2026-09-06",
+      end: "2026-09-13",
+    });
+    expect(cycleForDate(max753, "2026-09-06")).toBe(17);
+    expect(cycleForDate(max753, "2026-09-13")).toBe(17);
+    expect(cycleDates(max753, 18)).toEqual({
+      start: "2026-09-14",
+      end: "2026-09-21",
+    });
+    expect(cycleForDate(max753, "2026-09-14")).toBe(18);
+  });
+  it("cycles between the two anchors are unaffected", () => {
+    expect(cycleDates(max753, 15)).toEqual({
+      start: "2026-08-20",
+      end: "2026-08-27",
+    });
+    expect(cycleForDate(max753, "2026-08-27")).toBe(15);
+  });
+});
+
 describe("phaseForDate / phaseForCycle", () => {
   it("classifies dates into calendar phases", () => {
     expect(phaseForDate(max753, "2026-05-01")).toBe("cut");
