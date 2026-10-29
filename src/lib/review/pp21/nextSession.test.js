@@ -1,11 +1,18 @@
 import fixture from "./fixture.pp21.json";
 import pp21 from "../programs/pp21";
-import { upcomingSession, workoutFromPlan, setsLabel } from "./nextSession";
+import {
+  upcomingSession,
+  workoutFromPlan,
+  setsLabel,
+  needsWeight,
+  rpeLabel,
+  repsLabel,
+} from "./nextSession";
 
 const empty = { workouts: [], exercises: [] };
 
 describe("upcomingSession", () => {
-  it("starts with Push A at the start weights when nothing is logged", () => {
+  it("starts with Push A and blank weights when nothing is logged", () => {
     const u = upcomingSession(empty, pp21, "2026-10-29");
     expect(u.plan.sessionId).toBe("pushA");
     expect(u.date).toBe("2026-10-29");
@@ -13,7 +20,7 @@ describe("upcomingSession", () => {
     expect(u.isRestDay).toBe(false);
     const bench = u.plan.exercises.find((e) => e.exId === "bench");
     expect(bench.decision).toBe("START");
-    expect(bench.sets.map((s) => s.weight)).toEqual([45, 40]);
+    expect(bench.sets.map((s) => s.weight)).toEqual([null, null]);
   });
 
   it("flags a scheduled rest day and dates the session after it", () => {
@@ -111,7 +118,36 @@ describe("setsLabel", () => {
     expect(setsLabel([{ weight: 45, targetReps: 5 }], "lb")).toBe("99.2×5");
   });
 
+  it("shows an unknown weight as ?", () => {
+    expect(setsLabel([{ weight: null, targetReps: 5 }], "kg")).toBe("?×5");
+  });
+
   it("returns an empty string for no sets", () => {
     expect(setsLabel([], "kg")).toBe("");
+  });
+});
+
+describe("needsWeight", () => {
+  it("is true when any set has no weight yet", () => {
+    expect(needsWeight([{ weight: null }, { weight: 0 }])).toBe(true);
+    expect(needsWeight([{ weight: 0 }, { weight: 40 }])).toBe(false);
+  });
+});
+
+describe("rpeLabel", () => {
+  it("formats each RPE target shape", () => {
+    expect(rpeLabel({ top: [8, 9] })).toBe("8–9");
+    expect(rpeLabel({ top: [8, 8] })).toBe("8");
+    expect(rpeLabel({ set1: 9, set2: 10 })).toBe("9–10");
+    expect(rpeLabel({ note: "RPE 7" })).toBe("7");
+    expect(rpeLabel(null)).toBe("");
+  });
+});
+
+describe("repsLabel", () => {
+  it("collapses equal targets and lists unequal ones", () => {
+    expect(repsLabel([{ targetReps: 10 }, { targetReps: 10 }])).toBe("2×10");
+    expect(repsLabel([{ targetReps: 5 }, { targetReps: 7 }])).toBe("5 / 7");
+    expect(repsLabel([{ targetReps: 8 }])).toBe("8");
   });
 });

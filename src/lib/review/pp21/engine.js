@@ -250,29 +250,31 @@ function assignRotations(ws, p) {
 /* ── step 3: per-exercise decisions ── */
 
 function buildPrescription(ex, w, target, extra = {}) {
+  // null weight = not known yet (no recent history): the lifter picks it
+  const kg = (x) => (x == null ? null : fix(x));
   const sets =
     ex.scheme === "top_backoff"
       ? [
-          { set: 1, weight: fix(w.top), reps: 0, targetReps: target[0] },
+          { set: 1, weight: kg(w.top), reps: 0, targetReps: target[0] },
           ...(extra.skipBackoff
             ? []
             : [
                 {
                   set: 2,
-                  weight: fix(w.backoff),
+                  weight: kg(w.backoff),
                   reps: 0,
                   targetReps: target[1],
                 },
               ]),
         ]
       : [
-          { set: 1, weight: fix(w.weight), reps: 0, targetReps: target[0] },
-          { set: 2, weight: fix(w.weight), reps: 0, targetReps: target[1] },
+          { set: 1, weight: kg(w.weight), reps: 0, targetReps: target[0] },
+          { set: 2, weight: kg(w.weight), reps: 0, targetReps: target[1] },
         ];
   return {
     ...(ex.scheme === "top_backoff"
-      ? { top: fix(w.top), backoff: fix(w.backoff) }
-      : { weight: fix(w.weight) }),
+      ? { top: kg(w.top), backoff: kg(w.backoff) }
+      : { weight: kg(w.weight) }),
     repRange: ex.reps,
     rpe: ex.rpe,
     routineSets: sets,
@@ -280,20 +282,76 @@ function buildPrescription(ex, w, target, extra = {}) {
   };
 }
 
-function startPrescription(ex, th) {
+// Best recent set of this exercise from any workout (before the program too),
+// matched by name/alias: { e1rm, weight, reps, date } or null. Bodyweight-mode
+// lifts log added weight, so for them the heaviest added weight that reached
+// the bottom of the rep range is kept instead of an e1RM.
+const SEED_WINDOW_DAYS = 56;
+const SEED_MAX_REPS = 15; // Epley drifts past ~15 reps
+function seedFromHistory(exId, data, p, asOf, idx) {
+  const ex = p.exercises[exId];
+  const from = toDay(asOf) - SEED_WINDOW_DAYS,
+    to = toDay(asOf);
+  let best = null;
+  for (const w of data.workouts || []) {
+    if (!w.date) continue;
+    const d = toDay(w.date);
+    if (d < from || d > to) continue;
+    for (const we of w.exercises || []) {
+      if (idx.get(norm(we.exerciseName)) !== exId) continue;
+      for (const s of we.sets || []) {
+        const reps = Math.floor(num(s.reps));
+        const weight = num(s.weight);
+        if (reps < 1 || reps > SEED_MAX_REPS) continue;
+        if (ex.backoffMode === "bodyweight") {
+          if (reps < ex.reps[0]) continue;
+          if (!best || weight > best.weight)
+            best = { e1rm: null, weight, reps, date: w.date };
+        } else if (weight > 0) {
+          const e1rm = epley(weight, reps);
+          if (!best || e1rm > best.e1rm)
+            best = { e1rm, weight, reps, date: w.date };
+        }
+      }
+    }
+  }
+  return best;
+}
+
+// Start prescription for an exercise with no in-program sessions. With a
+// recent best set: the weight for the first target reps at the low end of the
+// RPE target (reps + reps in reserve as a rep max, from the e1RM), minus
+// seedSafetyPct, floored to the step. Without one: weights are left null.
+function startPrescription(ex, th, seed) {
+  const lo = ex.reps[0];
+  const rpeLow = ex.scheme === "top_backoff" ? ex.rpe.top[0] : ex.rpe.set1;
+  const repMax = lo + Math.max(0, 10 - rpeLow);
+  let w = null;
+  if (seed && ex.backoffMode === "bodyweight") w = seed.weight;
+  else if (seed) {
+    const est = floorTo(
+      (seed.e1rm / (1 + repMax / 30)) * (1 - th.seedSafetyPct),
+      ex.step,
+    );
+    w = est > 0 ? est : null;
+  }
   if (ex.scheme === "top_backoff") {
-    const top = ex.start.top ?? 0;
     const backoff =
       ex.backoffMode === "bodyweight"
         ? 0
-        : (ex.start.backoff ?? roundTo(top * th.backoffPct, ex.step));
-    return buildPrescription(ex, { top, backoff }, [
-      ex.reps[0],
-      ex.reps[0] + 2,
-    ]);
+        : w == null
+          ? null
+          : roundTo(w * th.backoffPct, ex.step);
+    return buildPrescription(ex, { top: w, backoff }, [lo, lo + 2]);
   }
-  const weight = ex.start.weight ?? 0;
-  return buildPrescription(ex, { weight }, [ex.reps[0], ex.reps[0]]);
+  return buildPrescription(ex, { weight: w }, [lo, lo]);
+}
+
+function startReason(seed, ex) {
+  if (!seed)
+    return `No recent history. Pick a weight for ${ex.reps[0]} reps at the target RPE.`;
+  const set = `${seed.weight === 0 ? "BW" : seed.weight}×${seed.reps}`;
+  return `Estimated from your best recent set (${set} on ${seed.date}).`;
 }
 
 // Did this exposure beat the previous one? Weight up, or same weight with more reps.
@@ -449,7 +507,7 @@ function nextTargets(e, ex, d) {
   });
 }
 
-function reviewExercise(exId, exps, p) {
+function reviewExercise(exId, exps, p, seed) {
   const ex = p.exercises[exId],
     th = p.thresholds;
   const st = {
@@ -458,11 +516,11 @@ function reviewExercise(exId, exps, p) {
     resets: 0,
     prevShoulderPain: false,
     swapUntilRotation: 0,
-    next: startPrescription(ex, th),
+    next: startPrescription(ex, th, seed),
   };
   const history = [];
   let lastDecision = "START",
-    lastReasons = ["No sessions logged yet. Use the start weights."],
+    lastReasons = [startReason(seed, ex)],
     lastFlags = [];
   let confidence = "high";
 
@@ -753,8 +811,14 @@ export function reviewProgram(data, p, opts = {}) {
       });
     }
   }
+  const nameIdx = buildNameIndex(p);
   const exercises = Object.keys(p.exercises).map((id) =>
-    reviewExercise(id, exps[id], p),
+    reviewExercise(
+      id,
+      exps[id],
+      p,
+      exps[id].length ? null : seedFromHistory(id, data, p, asOf, nameIdx),
+    ),
   );
 
   // sessions. A slot counts as done if any workout of the same rotation

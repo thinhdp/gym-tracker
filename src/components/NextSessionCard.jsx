@@ -3,7 +3,8 @@
 // the review engine prescribes next, its date, a rest-day or deload banner, and
 // each exercise's decision chip, prescribed sets and first reason. Start adds
 // a workout prefilled with those weights (reps start blank, targets shown as
-// placeholders) and opens the live session.
+// placeholders) and opens the live session. An exercise with no recent history
+// has no weight yet: it asks the lifter to pick one for the target reps/RPE.
 // Props: today (YYYY-MM-DD). Reads workouts/exercises/unit from useApp().
 
 import React, { useMemo } from "react";
@@ -13,6 +14,9 @@ import {
   upcomingSession,
   workoutFromPlan,
   setsLabel,
+  needsWeight,
+  rpeLabel,
+  repsLabel,
 } from "../lib/review/pp21/nextSession";
 import DecisionChip from "./DecisionChip";
 
@@ -80,10 +84,13 @@ export default function NextSessionCard({ today }) {
               <div className="text-xs text-neutral-500 dark:text-neutral-400">
                 {e.doneEarlier
                   ? "Already done this rotation."
-                  : `${setsLabel(e.sets, unit)} ${unitLabel}`}
+                  : needsWeight(e.sets)
+                    ? `Pick a weight: ${repsLabel(e.sets)} reps @ RPE ${rpeLabel(e.rpe)}`
+                    : `${setsLabel(e.sets, unit)} ${unitLabel}`}
                 {e.carriedFrom && ` · moved from ${e.carriedFrom}`}
               </div>
-              {!e.doneEarlier && e.reasons?.[0] && (
+              {/* the "Pick a weight" line already says why there's no weight */}
+              {!e.doneEarlier && !needsWeight(e.sets) && e.reasons?.[0] && (
                 <div className="text-[11px] text-neutral-400 dark:text-neutral-500">
                   {e.reasons[0]}
                 </div>

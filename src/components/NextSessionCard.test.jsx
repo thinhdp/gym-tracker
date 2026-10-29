@@ -23,18 +23,48 @@ const renderCard = (today) =>
 
 const started = () => JSON.parse(screen.getByTestId("probe").textContent);
 
+// A pre-program bench session the start weights are estimated from:
+// 50×6 -> 45 kg top set, 40 kg back-off (see engine start prescription).
+const seedBench = () =>
+  saveLS(K_WO, [
+    {
+      id: "old",
+      date: "2026-10-20",
+      name: "Old program",
+      exercises: [
+        {
+          exerciseName: "Bench Press Barbell",
+          sets: [{ set: 1, weight: 50, reps: 6 }],
+        },
+      ],
+    },
+  ]);
+
 describe("NextSessionCard", () => {
-  it("shows Push A with start weights and START chips when nothing is logged", () => {
+  it("asks a new user to pick weights for Push A", () => {
     renderCard("2026-10-29");
     expect(screen.getByText("Push A")).toBeInTheDocument();
     expect(screen.getByText("Today")).toBeInTheDocument();
     const bench = screen.getByText("Bench Press Barbell").closest("li");
-    expect(within(bench).getByText("45×5 · 40×7 kg")).toBeInTheDocument();
+    expect(
+      within(bench).getByText("Pick a weight: 5 / 7 reps @ RPE 8–9"),
+    ).toBeInTheDocument();
     expect(within(bench).getByText("START")).toBeInTheDocument();
     expect(screen.queryByText(/Rest day today/)).not.toBeInTheDocument();
   });
 
+  it("shows weights estimated from recent history", () => {
+    seedBench();
+    renderCard("2026-10-29");
+    const bench = screen.getByText("Bench Press Barbell").closest("li");
+    expect(within(bench).getByText("45×5 · 40×7 kg")).toBeInTheDocument();
+    expect(
+      within(bench).getByText(/Estimated from your best recent set/),
+    ).toBeInTheDocument();
+  });
+
   it("Start opens a live session prefilled with the prescription", async () => {
+    seedBench();
     renderCard("2026-10-29");
     await userEvent.click(screen.getByRole("button", { name: "Start Push A" }));
     const w = started();
@@ -45,6 +75,8 @@ describe("NextSessionCard", () => {
       { set: 1, weight: 45, reps: 0, targetReps: 5 },
       { set: 2, weight: 40, reps: 0, targetReps: 7 },
     ]);
+    // no history: the weight is left at 0 for the lifter to fill in
+    expect(w.exercises[1].sets[0].weight).toBe(0);
   });
 
   it("shows a rest-day banner but still allows starting", async () => {
@@ -62,6 +94,7 @@ describe("NextSessionCard", () => {
 
   it("displays weights in the chosen unit", () => {
     saveLS(K_UNIT, "lb");
+    seedBench();
     renderCard("2026-10-29");
     const bench = screen.getByText("Bench Press Barbell").closest("li");
     expect(within(bench).getByText("99.2×5 · 88.2×7 lb")).toBeInTheDocument();

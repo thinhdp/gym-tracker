@@ -59,12 +59,38 @@ export function workoutFromPlan(plan, date) {
   };
 }
 
-// "47.5×5 · 42.5×7" for prescribed sets; 0 kg is bodyweight (pull-up back-off).
+// "47.5×5 · 42.5×7" for prescribed sets; 0 kg is bodyweight (pull-up
+// back-off) and a null weight (no history yet) shows as "?".
 export function setsLabel(sets, unit) {
   return sets
-    .map(
-      (s) =>
-        `${s.weight === 0 ? "BW" : toDisplayWeight(s.weight, unit)}×${s.targetReps}`,
-    )
+    .map((s) => {
+      const w =
+        s.weight == null
+          ? "?"
+          : s.weight === 0
+            ? "BW"
+            : toDisplayWeight(s.weight, unit);
+      return `${w}×${s.targetReps}`;
+    })
     .join(" · ");
+}
+
+// True when the plan leaves the weight to the lifter (no recent history).
+export const needsWeight = (sets) => sets.some((s) => s.weight == null);
+
+// Target reps of the prescribed sets: "2×10" when equal, else "5 / 7".
+export function repsLabel(sets) {
+  const reps = sets.map((s) => s.targetReps);
+  return reps.length > 1 && reps.every((r) => r === reps[0])
+    ? `${reps.length}×${reps[0]}`
+    : reps.join(" / ");
+}
+
+// "8–9" from an exercise's RPE target ({ top: [lo, hi] } | { set1, set2 } |
+// { note } during a deload).
+export function rpeLabel(rpe) {
+  if (!rpe) return "";
+  if (rpe.note) return rpe.note.replace(/^RPE\s*/, "");
+  const [a, b] = rpe.top ?? [rpe.set1, rpe.set2];
+  return a === b ? String(a) : `${a}–${b}`;
 }
