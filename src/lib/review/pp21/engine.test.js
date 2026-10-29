@@ -430,15 +430,45 @@ describe("start prescription (no in-program sessions yet)", () => {
     expect(incline.next.routineSets[0].weight).toBeGreaterThan(0);
   });
 
-  it("ignores history older than 8 weeks", () => {
+  it("prefers the last 8 weeks over a heavier older set", () => {
     const x = start(
       [
-        log("2026-08-01", "Bench Press Barbell", [[50, 6]]),
-        log("2026-10-20", "Leg extension", [[70, 12]]),
+        log("2026-08-01", "Bench Press Barbell", [[60, 6]]),
+        log("2026-10-20", "Bench Press Barbell", [[50, 6]]),
       ],
       "bench",
     );
-    expect(x.next.routineSets[0].weight).toBeNull();
+    expect(x.next.routineSets[0].weight).toBe(45);
+  });
+
+  it("falls back to the last session ever when nothing is recent", () => {
+    // 45×6 on 1 Aug, 12 weeks before the 24 Oct review date -> 40 kg
+    const x = start(
+      [
+        log("2026-07-01", "Incline Smith", [[50, 6]]),
+        log("2026-08-01", "Incline Smith", [[45, 6]]),
+        log("2026-10-24", "Leg extension", [[70, 12]]),
+      ],
+      "inclineSmith",
+    );
+    expect(x.next.routineSets.map((s) => s.weight)).toEqual([40, 35]);
+    expect(x.reasons[0]).toBe(
+      "Estimated from your last session of it (45×6 on 2026-08-01, 12 weeks ago).",
+    );
+  });
+
+  it("counts sets up to 20 reps", () => {
+    // 45×20 -> e1RM 75; 12 reps @ RPE 9 ≈ a 13RM = 52.3, -5% = 49.7 -> 47.5
+    const x = start(
+      [log("2026-10-20", "Standing Calf Raise Barbell", [[45, 20]])],
+      "standingCalf",
+    );
+    expect(x.next.routineSets[0].weight).toBe(47.5);
+    const tooMany = start(
+      [log("2026-10-20", "Standing Calf Raise Barbell", [[45, 25]])],
+      "standingCalf",
+    );
+    expect(tooMany.next.routineSets[0].weight).toBeNull();
   });
 
   it("uses added weight for pull-ups, bodyweight when none was added", () => {

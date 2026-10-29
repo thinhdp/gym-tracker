@@ -283,39 +283,45 @@ function buildPrescription(ex, w, target, extra = {}) {
 }
 
 // Best recent set of this exercise from any workout (before the program too),
-// matched by name/alias: { e1rm, weight, reps, date } or null. Bodyweight-mode
-// lifts log added weight, so for them the heaviest added weight that reached
-// the bottom of the rep range is kept instead of an e1RM.
+// matched by name/alias: { e1rm, weight, reps, date, weeksAgo } or null. Looks
+// at the last SEED_WINDOW_DAYS; with nothing there, falls back to the most
+// recent session of it ever (weeksAgo says how stale). Bodyweight-mode lifts
+// log added weight, so for them the heaviest added weight that reached the
+// bottom of the rep range is kept instead of an e1RM.
 const SEED_WINDOW_DAYS = 56;
-const SEED_MAX_REPS = 15; // Epley drifts past ~15 reps
+const SEED_MAX_REPS = 20; // Epley drifts past this; high-rep ranges go to 20
 function seedFromHistory(exId, data, p, asOf, idx) {
   const ex = p.exercises[exId];
-  const from = toDay(asOf) - SEED_WINDOW_DAYS,
-    to = toDay(asOf);
-  let best = null;
+  const to = toDay(asOf);
+  const sets = [];
   for (const w of data.workouts || []) {
-    if (!w.date) continue;
-    const d = toDay(w.date);
-    if (d < from || d > to) continue;
+    if (!w.date || toDay(w.date) > to) continue;
     for (const we of w.exercises || []) {
       if (idx.get(norm(we.exerciseName)) !== exId) continue;
       for (const s of we.sets || []) {
         const reps = Math.floor(num(s.reps));
         const weight = num(s.weight);
         if (reps < 1 || reps > SEED_MAX_REPS) continue;
-        if (ex.backoffMode === "bodyweight") {
-          if (reps < ex.reps[0]) continue;
-          if (!best || weight > best.weight)
-            best = { e1rm: null, weight, reps, date: w.date };
-        } else if (weight > 0) {
-          const e1rm = epley(weight, reps);
-          if (!best || e1rm > best.e1rm)
-            best = { e1rm, weight, reps, date: w.date };
-        }
+        if (ex.backoffMode === "bodyweight" ? reps < ex.reps[0] : weight <= 0)
+          continue;
+        sets.push({ weight, reps, date: w.date, day: toDay(w.date) });
       }
     }
   }
-  return best;
+  if (!sets.length) return null;
+  const recent = sets.filter((s) => s.day >= to - SEED_WINDOW_DAYS);
+  const lastDay = Math.max(...sets.map((s) => s.day));
+  const pool = recent.length ? recent : sets.filter((s) => s.day === lastDay);
+  const score = (s) =>
+    ex.backoffMode === "bodyweight" ? s.weight : epley(s.weight, s.reps);
+  const best = pool.reduce((a, s) => (score(s) > score(a) ? s : a));
+  return {
+    e1rm: ex.backoffMode === "bodyweight" ? null : score(best),
+    weight: best.weight,
+    reps: best.reps,
+    date: best.date,
+    weeksAgo: Math.floor((to - best.day) / 7),
+  };
 }
 
 // Start prescription for an exercise with no in-program sessions. With a
@@ -351,7 +357,9 @@ function startReason(seed, ex) {
   if (!seed)
     return `No recent history. Pick a weight for ${ex.reps[0]} reps at the target RPE.`;
   const set = `${seed.weight === 0 ? "BW" : seed.weight}×${seed.reps}`;
-  return `Estimated from your best recent set (${set} on ${seed.date}).`;
+  return seed.weeksAgo * 7 > SEED_WINDOW_DAYS
+    ? `Estimated from your last session of it (${set} on ${seed.date}, ${seed.weeksAgo} weeks ago).`
+    : `Estimated from your best recent set (${set} on ${seed.date}).`;
 }
 
 // Did this exposure beat the previous one? Weight up, or same weight with more reps.

@@ -46,9 +46,9 @@ Only workouts dated on or after `startDate` (2026-10-28) are reviewed. Older Max
 
 **Start weights (`START`).** The config has no fixed start weights. Until an exercise is logged in the program, its first prescription comes from the lifter's own history:
 
-- **Recent best set.** The engine looks at any workout in the 8 weeks up to the review date, including ones before `startDate`, matched by the slot's name or aliases. It takes the set with the highest Epley e1RM, ignoring sets over 15 reps. The start weight is what fits the first target reps at the low end of the RPE target, treating reps plus reps-in-reserve as a rep max. That figure is cut by `seedSafetyPct` (5%) and floored to the step. Example: bench 50×6 gives an e1RM of 60. A top set of 5 @ RPE 8 is about a 7RM, so 60 ÷ 1.233 × 0.95 = 46.2, giving 45 kg, with a 40 kg back-off.
+- **Recent best set.** The engine looks at any workout in the 8 weeks up to the review date, including ones before `startDate`, matched by the slot's name or aliases. If nothing falls in that window, it falls back to the most recent session of the exercise ever, and the reason says how many weeks ago that was. It takes the set with the highest Epley e1RM, ignoring sets over 20 reps. The start weight is what fits the first target reps at the low end of the RPE target, treating reps plus reps-in-reserve as a rep max. That figure is cut by `seedSafetyPct` (5%) and floored to the step. Example: bench 50×6 gives an e1RM of 60. A top set of 5 @ RPE 8 is about a 7RM, so 60 ÷ 1.233 × 0.95 = 46.2, giving 45 kg, with a 40 kg back-off.
 - **Bodyweight lifts** (`backoffMode: "bodyweight"`, i.e. pull-ups) use the heaviest added weight that reached the bottom of the rep range, or 0 (bodyweight).
-- **No recent history.** The weights are `null`, and the lifter picks a weight for the target reps and RPE ("Pick a weight" on the Home card, `?` in the review). From the first logged session on, the normal rules take over.
+- **No history at all.** The weights are `null`, and the lifter picks a weight for the target reps and RPE ("Pick a weight" on the Home card, `?` in the review). From the first logged session on, the normal rules take over.
 
 ---
 
