@@ -73,8 +73,10 @@ function StallDots({ count }) {
 }
 
 export default function PushPullReview() {
-  const { workouts, unit } = useApp();
-  const data = useMemo(() => ({ workouts }), [workouts]);
+  const { workouts, exercises, unit } = useApp();
+  // the exercise catalog supplies each logged exercise's mainMuscle, which the
+  // engine uses to fill a slot when the logged name differs from the plan
+  const data = useMemo(() => ({ workouts, exercises }), [workouts, exercises]);
   const rotations = useMemo(() => loggedRotations(data, program), [data]);
   const [selected, setSelected] = useState(null);
 
@@ -88,9 +90,9 @@ export default function PushPullReview() {
   if (!rr) {
     return (
       <div className="rounded-xl border bg-white p-6 text-center text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
-        No Push·Pull sessions to review yet. Log a{" "}
-        <strong>[PP21] Push A</strong> on or after {short(program.startDate)}{" "}
-        and check back.
+        No Push·Pull sessions to review yet. Log a workout with{" "}
+        <strong>Push A</strong> in its name on or after{" "}
+        {short(program.startDate)} and check back.
       </div>
     );
   }
@@ -188,7 +190,13 @@ export default function PushPullReview() {
                   className="border-t align-top dark:border-neutral-800"
                 >
                   <td className="py-1.5">
-                    <div className="text-neutral-900 dark:text-neutral-100">
+                    <div
+                      className={
+                        e.doneEarlier
+                          ? "text-neutral-400 line-through"
+                          : "text-neutral-900 dark:text-neutral-100"
+                      }
+                    >
                       {e.exerciseName}
                       {e.optional && (
                         <span className="text-xs text-neutral-400">
@@ -198,11 +206,14 @@ export default function PushPullReview() {
                       )}
                     </div>
                     <div className="text-xs text-neutral-500">
-                      {setsLabel(e.sets, unit)} {unitLabel}
+                      {e.doneEarlier
+                        ? "Already done this rotation."
+                        : `${setsLabel(e.sets, unit)} ${unitLabel}`}
+                      {e.carriedFrom && ` · moved from ${e.carriedFrom}`}
                     </div>
                   </td>
                   <td className="py-1.5 pl-2 text-right">
-                    <Chip decision={e.decision} />
+                    {!e.doneEarlier && <Chip decision={e.decision} />}
                   </td>
                 </tr>
               ))}
@@ -297,9 +308,14 @@ function ExerciseRow({ x, unit }) {
     <tr className="border-t align-top dark:border-neutral-800">
       <td className="py-1.5">
         <div className="text-neutral-900 dark:text-neutral-100">
-          {x.name}
+          {x.loggedAs ?? x.name}
           <StallDots count={x.stallCount} />
         </div>
+        {x.loggedAs && (
+          <div className="text-[11px] text-neutral-400">
+            in the {x.name} slot
+          </div>
+        )}
         <div className="text-xs text-neutral-500">
           {step ? step.reasons.join(" ") : "Not logged this rotation."}
         </div>

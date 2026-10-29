@@ -98,11 +98,17 @@ function extractWorking(sets, ex, th) {
 
 /* ── step 1: normalise workouts ── */
 
+// "[LV] Push A" contains "push a" as a whole phrase; "Push AB" does not.
+const hasPhrase = (text, phrase) => {
+  const esc = norm(phrase).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z0-9])${esc}($|[^a-z0-9])`).test(text);
+};
+
 function matchSession(w, ids, p) {
   const name = norm(w.name);
   if (name) {
     for (const [sid, s] of Object.entries(p.sessions)) {
-      if (s.routineNames.some((r) => name.includes(norm(r))))
+      if (s.routineNames.some((r) => hasPhrase(name, r)))
         return { sessionId: sid, matchedBy: "routineName" };
     }
   }
@@ -120,8 +126,52 @@ function matchSession(w, ids, p) {
     : { sessionId: "unplanned", matchedBy: "none" };
 }
 
+// Map a workout's logged exercises to program slots, in passes:
+// 1. name/alias -> a slot of this session; 2. catalog mainMuscle -> the next
+// unfilled slot of this session with that muscle ("substituted"); 3. name/alias
+// -> a slot of another session ("moved", e.g. abductor done on Push A instead
+// of Pull A). Anything left is an extra. Muscle matching stays within the
+// session so add-on work never feeds another day's progression.
+function mapExercises(exs, sessionId, p, idx, muscleOf) {
+  const slots = p.sessions[sessionId]?.exercises ?? [];
+  const filled = new Set();
+  const res = exs.map(() => null);
+  const pass = (how, pick) =>
+    exs.forEach((ex, i) => {
+      if (res[i]) return;
+      const id = pick(ex);
+      if (id && !filled.has(id)) {
+        res[i] = { exId: id, ex, how };
+        filled.add(id);
+      }
+    });
+  pass("name", (ex) => {
+    const id = idx.get(norm(ex.exerciseName));
+    return slots.includes(id) ? id : null;
+  });
+  pass("muscle", (ex) => {
+    const m = muscleOf(ex.exerciseName);
+    if (!m) return null;
+    return slots.find(
+      (id) =>
+        !filled.has(id) &&
+        (p.exercises[id].mainMuscles || []).some((x) => norm(x) === m),
+    );
+  });
+  pass("moved", (ex) => idx.get(norm(ex.exerciseName)));
+  return {
+    mapped: res.filter(Boolean),
+    extras: exs.filter((_, i) => !res[i]).map((ex) => ex.exerciseName),
+  };
+}
+
 function normalise(data, p, asOf) {
   const idx = buildNameIndex(p);
+  // logged exercise name -> catalog mainMuscle (both normalised)
+  const muscles = new Map();
+  for (const e of data.exercises || [])
+    if (e?.name && e.mainMuscle) muscles.set(norm(e.name), norm(e.mainMuscle));
+  const muscleOf = (name) => muscles.get(norm(name));
   const start = toDay(p.startDate),
     end = toDay(asOf);
   const deloadRe = new RegExp(p.noteFlags.deload ?? "deload", "i");
@@ -134,18 +184,11 @@ function normalise(data, p, asOf) {
     )
     .map((w) => {
       const exs = w.exercises || [];
-      const mapped = [];
-      const extras = [];
-      for (const ex of exs) {
-        const id = idx.get(norm(ex.exerciseName));
-        if (id) mapped.push({ exId: id, ex });
-        else extras.push(ex.exerciseName);
-      }
-      const { sessionId, matchedBy } = matchSession(
-        w,
-        mapped.map((m) => m.exId),
-        p,
-      );
+      const byName = exs
+        .map((ex) => idx.get(norm(ex.exerciseName)))
+        .filter(Boolean);
+      const { sessionId, matchedBy } = matchSession(w, byName, p);
+      const { mapped, extras } = mapExercises(exs, sessionId, p, idx, muscleOf);
       const deloadNotes = exs.filter((e) =>
         deloadRe.test(e.feedback ?? ""),
       ).length;
@@ -417,11 +460,19 @@ function reviewExercise(exId, exps, p) {
     }
     if (!e.top) continue;
 
-    const cmp = compareToPrev(e, st.prev, ex);
+    // a different logged exercise in this slot restarts the comparison:
+    // 20 kg dumbbells vs a 45 kg barbell says nothing about progress
+    const switched =
+      !!st.prev && norm(st.prev.loggedName) !== norm(e.loggedName);
+    if (switched) st.stallCount = 0;
+    const cmp = switched
+      ? { progressed: null, weightDropped: false }
+      : compareToPrev(e, st.prev, ex);
     if (cmp.progressed === true || cmp.weightDropped) st.stallCount = 0;
     else if (cmp.progressed === false) st.stallCount++;
 
     const regressed =
+      !switched &&
       !!st.prev?.top &&
       e.top.weight >= st.prev.top.weight &&
       e.e1rm < st.prev.e1rm * (1 - th.regressPct);
@@ -444,6 +495,12 @@ function reviewExercise(exId, exps, p) {
       }
     };
 
+    if (switched)
+      flags.push({
+        code: "SWITCHED",
+        severity: "info",
+        message: `Switched from ${st.prev.loggedName} to ${e.loggedName}. Progression restarts from this session.`,
+      });
     if (e.partialReps)
       flags.push({
         code: "PARTIAL_REPS",
@@ -603,9 +660,15 @@ function reviewExercise(exId, exps, p) {
     lastFlags = flags;
   }
 
+  const lastReal = [...exps].reverse().find((e) => !e.deload);
   return {
     exId,
     name: ex.name,
+    // the exercise actually logged in this slot, when it isn't the planned one
+    loggedAs:
+      lastReal && norm(lastReal.loggedName) !== norm(ex.name)
+        ? lastReal.loggedName
+        : null,
     session: ex.session,
     exposures: exps.filter((e) => !e.deload).length,
     last: exps[exps.length - 1],
@@ -667,15 +730,31 @@ export function reviewProgram(data, p, opts = {}) {
     reviewExercise(id, exps[id], p),
   );
 
-  // sessions
+  // sessions. A slot counts as done if any workout of the same rotation
+  // filled it, so an exercise moved to another day isn't reported missing.
+  const doneInRotation = new Map();
+  for (const nw of ws) {
+    const r = rot.get(nw.w.id) ?? 0;
+    if (!doneInRotation.has(r)) doneInRotation.set(r, new Set());
+    for (const m of nw.mapped) doneInRotation.get(r).add(m.exId);
+  }
+  const lastOrder = p.sessionOrder[p.sessionOrder.length - 1];
+  const latestRot = Math.max(0, ...rot.values());
+  const latestOpen = !ws.some(
+    (nw) => rot.get(nw.w.id) === latestRot && nw.sessionId === lastOrder,
+  );
   const sessions = ws.map((nw) => {
     const s = p.sessions[nw.sessionId];
-    const loggedIds = new Set(nw.mapped.map((m) => m.exId));
+    const r = rot.get(nw.w.id) ?? 0;
+    const done = doneInRotation.get(r) ?? new Set();
     const missing = s
       ? s.exercises
-          .filter((id) => !p.exercises[id].optional && !loggedIds.has(id))
+          .filter((id) => !p.exercises[id].optional && !done.has(id))
           .map((id) => p.exercises[id].name)
       : [];
+    const pending = r === latestRot && latestOpen;
+    const substituted = nw.mapped.filter((m) => m.how === "muscle");
+    const moved = nw.mapped.filter((m) => m.how === "moved");
     let main = 0,
       opt = 0,
       rpeLogged = 0;
@@ -703,14 +782,34 @@ export function reviewProgram(data, p, opts = {}) {
       flags.push({
         code: "NAME_MISMATCH",
         severity: "info",
-        message: `Matched by exercises. Name the routine "${s?.routineNames[0]}" for exact matching.`,
+        message: `Matched by exercises. Put "${s?.routineNames[0]}" in the workout name for exact matching.`,
+      });
+    if (substituted.length)
+      flags.push({
+        code: "SUBSTITUTED",
+        severity: "info",
+        message: `Matched by muscle: ${substituted.map((m) => `${m.ex.exerciseName} → ${p.exercises[m.exId].name}`).join(", ")}.`,
+      });
+    if (moved.length)
+      flags.push({
+        code: "MOVED",
+        severity: "info",
+        message: `From another day: ${moved.map((m) => `${m.ex.exerciseName} (${p.sessions[p.exercises[m.exId].session].name})`).join(", ")}.`,
       });
     if (missing.length)
-      flags.push({
-        code: "MISSING_EXERCISES",
-        severity: "warn",
-        message: `Skipped: ${missing.join(", ")}.`,
-      });
+      flags.push(
+        pending
+          ? {
+              code: "NOT_YET_DONE",
+              severity: "info",
+              message: `Not done yet this rotation: ${missing.join(", ")}.`,
+            }
+          : {
+              code: "MISSING_EXERCISES",
+              severity: "warn",
+              message: `Skipped this rotation: ${missing.join(", ")}.`,
+            },
+      );
     if (main + extraSets > th.maxWorkingSets)
       flags.push({
         code: "VOLUME_HIGH",
@@ -956,6 +1055,21 @@ export function reviewProgram(data, p, opts = {}) {
         rotationsSinceDeload: sinceDeload,
       },
       sizeCheckDue,
+      // the latest rotation while it's still open: slots done so far
+      openRotation: latestOpen
+        ? {
+            rotation: latestRot,
+            done: [...(doneInRotation.get(latestRot) ?? [])],
+            // slots done on another session's day: { exId, doneIn }
+            swaps: ws
+              .filter((nw) => rot.get(nw.w.id) === latestRot)
+              .flatMap((nw) =>
+                nw.mapped
+                  .filter((m) => m.how === "moved")
+                  .map((m) => ({ exId: m.exId, doneIn: nw.sessionId })),
+              ),
+          }
+        : null,
       chest: { minPer7Days: minChest, shortWindows },
       schedule: { longStreaks, longGaps },
       flags: gFlags,
@@ -971,18 +1085,45 @@ export function nextSessionPlan(
   sessionId = review.global.nextSession,
 ) {
   const deload = review.global.deload.activeNow;
+  const slots = p.sessions[sessionId].exercises;
+  // Swaps inside an open rotation: a slot of this session already done on an
+  // earlier day is marked doneEarlier, and the slot it displaced on that day
+  // (still not done) is carried in: abductor on Push A -> adductor on Pull A.
+  const open = review.global.openRotation;
+  const done = new Set(open?.done ?? []);
+  const carried = [];
+  for (const sw of open?.swaps ?? []) {
+    if (!slots.includes(sw.exId)) continue;
+    const displaced = p.sessions[sw.doneIn]?.exercises.find(
+      (id) =>
+        !p.exercises[id].optional &&
+        !done.has(id) &&
+        !slots.includes(id) &&
+        !carried.includes(id),
+    );
+    if (displaced) carried.push(displaced);
+  }
   return {
     sessionId,
     name: p.sessions[sessionId].name,
     routineName: p.sessions[sessionId].routineNames[0],
     deload,
-    exercises: p.sessions[sessionId].exercises.map((id) => {
+    exercises: [...slots, ...carried].map((id) => {
       const x = review.exercises.find((e) => e.exId === id);
       // deload: 1 set at the same weight, stop around 3 reps short of failure
-      const sets = deload ? x.next.routineSets.slice(0, 1) : x.next.routineSets;
+      const sets = done.has(id)
+        ? []
+        : deload
+          ? x.next.routineSets.slice(0, 1)
+          : x.next.routineSets;
       return {
         exId: id,
-        exerciseName: x.next.swapTo ?? x.name,
+        doneEarlier: done.has(id),
+        carriedFrom: carried.includes(id)
+          ? p.sessions[p.exercises[id].session].name
+          : null,
+        exerciseName: x.next.swapTo ?? x.loggedAs ?? x.name,
+        slotName: x.name,
         optional: p.exercises[id].optional,
         decision: x.decision,
         sets,
@@ -1027,4 +1168,20 @@ export function loggedRotations(data, p) {
       end: r.end,
     }))
     .reverse();
+}
+
+// Rotation numbering for the Strength tab's per-cycle chart (see
+// src/lib/cycleMuscleStats.js): rotations are assigned over the whole log, so
+// filtering the chart to a date range doesn't renumber them.
+export function rotationCycler(data, p) {
+  const r = reviewProgram(data, p);
+  const byWorkout = new Map(r.sessions.map((s) => [s.workoutId, s.rotation]));
+  const ranges = new Map(r.rotations.map((x) => [x.rotation, x]));
+  return {
+    cycleOf: (w) => byWorkout.get(w.id) ?? null,
+    range: (n) => ({
+      start: ranges.get(n)?.start ?? "",
+      end: ranges.get(n)?.end ?? "",
+    }),
+  };
 }

@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import max753 from "./review/programs/max753";
+import pp21 from "./review/programs/pp21";
+import { rotationCycler } from "./review/pp21/engine";
 import { cycleMuscleSeries, CATEGORY_NAMES } from "./cycleMuscleStats";
 
 // Cycle 1 = 2026-04-27..2026-05-04, cycle 2 = 2026-05-05..2026-05-12 (8-day
@@ -152,5 +154,39 @@ describe("cycleMuscleSeries", () => {
     );
     expect(r.cycles.map((c) => c.n)).toEqual([10, 11]);
     expect(r.cycles[1].start).toBe("2026-07-19");
+  });
+});
+
+describe("cycleMuscleSeries with PP21 rotations", () => {
+  const pp = [
+    {
+      ...wo("2026-10-28", [ex("Bench Press", [s(45, 5), s(40, 6, 2)])]),
+      name: "[LV] Push A",
+    },
+    {
+      ...wo("2026-10-29", [ex("Lat Pulldown", [s(60, 10)])]),
+      name: "[LV] Pull A",
+    },
+    {
+      ...wo("2026-11-03", [ex("Bench Press", [s(47.5, 5)])]),
+      name: "[LV] Push A",
+    },
+    // Max 7/5/3 workout: before PP21 starts, so in no rotation
+    wo("2026-10-26", [ex("Bench Press", [s(40, 8)])]),
+  ];
+  const cycler = rotationCycler({ workouts: pp, exercises: db }, pp21);
+
+  it("numbers rotations by session order and dates them", () => {
+    const r = cycleMuscleSeries(cycler, pp, db, "Push", "sets");
+    expect(r.cycles).toEqual([
+      { n: 1, start: "2026-10-28", end: "2026-10-29" },
+      { n: 2, start: "2026-11-03", end: "2026-11-03" },
+    ]);
+    expect(r.muscles).toEqual([{ name: "Chest", points: [2, 1] }]);
+  });
+
+  it("keeps rotation numbers when the chart is filtered to a range", () => {
+    const r = cycleMuscleSeries(cycler, pp.slice(2, 3), db, "Push", "sets");
+    expect(r.cycles.map((c) => c.n)).toEqual([2]);
   });
 });

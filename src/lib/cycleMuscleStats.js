@@ -1,8 +1,10 @@
 // src/lib/cycleMuscleStats.js
 // Per-cycle training stats for the muscles of one Push / Pull / Legs category,
-// for the Strength tab's per-cycle chart. A "cycle" is the program's
-// microcycle — date math comes from src/lib/review/cycles.js so re-anchored
-// cycles line up with the Cycle Review feature.
+// for the Strength tab's per-cycle chart. A "cycle" comes from a cycler:
+// { cycleOf(workout) -> n | null, range(n) -> { start, end } }. Pass a Max
+// 7/5/3-style config (with .cycle) to use its calendar cycles from
+// src/lib/review/cycles.js, or rotationCycler() from the PP21 engine for
+// Push·Pull rotations, so the chart lines up with the matching review.
 //
 // Weights are in kg (the storage invariant); tonnage is returned in kg and
 // converted to display units at the render boundary.
@@ -33,6 +35,14 @@ function exerciseValue(ex, metric) {
   return v;
 }
 
+function toCycler(config) {
+  if (typeof config.cycleOf === "function") return config;
+  return {
+    cycleOf: (w) => cycleForDate(config, w.date),
+    range: (n) => cycleDates(config, n),
+  };
+}
+
 // Per-cycle series for each muscle of `category` ("Push" | "Pull" | "Legs")
 // under `metric` ("sets" | "reps" | "tonnage"). Returns
 // { cycles: [{ n, start, end }], muscles: [{ name, points }] } with one point
@@ -46,6 +56,7 @@ export function cycleMuscleSeries(
   category,
   metric,
 ) {
+  const cycler = toCycler(config);
   const labels = MUSCLE_CATEGORIES[category] || [];
   const labelByLower = new Map(labels.map((l) => [l.toLowerCase(), l]));
 
@@ -60,7 +71,7 @@ export function cycleMuscleSeries(
   const perCycle = new Map();
   for (const w of workouts || []) {
     if (!w.date) continue;
-    const n = cycleForDate(config, w.date);
+    const n = cycler.cycleOf(w);
     if (n == null) continue;
     for (const ex of w.exercises || []) {
       const muscle = muscleByExercise.get(
@@ -82,7 +93,7 @@ export function cycleMuscleSeries(
 
   const cycles = [];
   for (let n = first; n <= last; n++) {
-    const { start, end } = cycleDates(config, n);
+    const { start, end } = cycler.range(n);
     cycles.push({ n, start, end });
   }
   const muscles = labels

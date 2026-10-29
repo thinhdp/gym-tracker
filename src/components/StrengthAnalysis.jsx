@@ -25,6 +25,8 @@ import {
 } from "../lib/strength";
 import { cycleMuscleSeries, CATEGORY_NAMES } from "../lib/cycleMuscleStats";
 import max753 from "../lib/review/programs/max753";
+import pp21 from "../lib/review/programs/pp21";
+import { rotationCycler } from "../lib/review/pp21/engine";
 
 const RANGES = [
   ["3M", "3M"],
@@ -43,6 +45,12 @@ const CYCLE_METRICS = [
   ["tonnage", "Tonnage"],
 ];
 const CYCLE_CATEGORIES = CATEGORY_NAMES.map((n) => [n, n]);
+// Per-cycle chart programs: PP21 rotations (from 28 Oct 2026) or the earlier
+// Max 7/5/3 8-day cycles (27 Apr - 27 Oct 2026).
+const CYCLE_PROGRAMS = [
+  ["pp21", "Push·Pull"],
+  ["max753", "Max 7/5/3"],
+];
 // Distinct, mid-ramp colors that read in both light and dark mode.
 const MUSCLE_COLORS = ["#534AB7", "#1D9E75", "#D85A30", "#378ADD", "#D4537E"];
 const LINE_COLOR = "#378ADD";
@@ -96,6 +104,7 @@ export default function StrengthAnalysis() {
   const [metric, setMetric] = useState("e1rm");
   const [cycleMetric, setCycleMetric] = useState("sets");
   const [cycleCategory, setCycleCategory] = useState("Push");
+  const [cycleProgram, setCycleProgram] = useState("pp21");
   // Seed the drill-down with a sensible default once, but keep the input fully
   // editable afterwards — binding the field to a fallback would repopulate it
   // the instant the user clears it, blocking both retyping and the dropdown.
@@ -149,18 +158,25 @@ export default function StrengthAnalysis() {
   );
 
   // Per-cycle stats for the muscles of the selected Push/Pull/Legs category,
-  // over the same range window. Cycle math follows the Max 7/5/3 program
-  // config (shared with Cycle Review).
+  // over the same range window. Cycles follow the selected program, shared
+  // with its review: PP21 rotations or Max 7/5/3 cycles.
+  const cycler = useMemo(
+    () =>
+      cycleProgram === "pp21"
+        ? rotationCycler({ workouts: wos, exercises: exercises || [] }, pp21)
+        : max753,
+    [cycleProgram, wos, exercises],
+  );
   const cycleData = useMemo(
     () =>
       cycleMuscleSeries(
-        max753,
+        cycler,
         curWindow,
         exercises || [],
         cycleCategory,
         cycleMetric,
       ),
-    [curWindow, exercises, cycleCategory, cycleMetric],
+    [cycler, curWindow, exercises, cycleCategory, cycleMetric],
   );
   const cycleSeries = cycleData.muscles.map((m, i) => ({
     name: m.name,
@@ -170,7 +186,9 @@ export default function StrengthAnalysis() {
         ? m.points.map((v) => toDisplayWeight(v, unit))
         : m.points,
   }));
-  const cycleLabels = cycleData.cycles.map((c) => `C${c.n}`);
+  const cycleLabels = cycleData.cycles.map(
+    (c) => `${cycleProgram === "pp21" ? "R" : "C"}${c.n}`,
+  );
 
   // Per-exercise progression for the selected lift.
   const series = useMemo(
@@ -324,7 +342,7 @@ export default function StrengthAnalysis() {
         </div>
       </div>
 
-      {/* Per-cycle muscles of a Push/Pull/Legs category (Max 7/5/3) */}
+      {/* Per-cycle muscles of a Push/Pull/Legs category (PP21 or Max 7/5/3) */}
       <div className="space-y-2 border-t dark:border-neutral-800 pt-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="text-sm font-medium">
@@ -342,17 +360,26 @@ export default function StrengthAnalysis() {
             onChange={setCycleMetric}
           />
         </div>
-        <Segmented
-          options={CYCLE_CATEGORIES}
-          value={cycleCategory}
-          onChange={setCycleCategory}
-        />
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <Segmented
+            options={CYCLE_PROGRAMS}
+            value={cycleProgram}
+            onChange={setCycleProgram}
+          />
+          <Segmented
+            options={CYCLE_CATEGORIES}
+            value={cycleCategory}
+            onChange={setCycleCategory}
+          />
+        </div>
         <div className="rounded-lg border dark:border-neutral-800 p-3 text-neutral-700 dark:text-neutral-300">
           {cycleData.cycles.length ? (
             <MultiLineChart series={cycleSeries} labels={cycleLabels} />
           ) : (
             <div className="text-sm text-neutral-500 dark:text-neutral-400">
-              No Max 7/5/3 cycles in this range.
+              {cycleProgram === "pp21"
+                ? "No Push·Pull rotations in this range."
+                : "No Max 7/5/3 cycles in this range."}
             </div>
           )}
         </div>

@@ -4,8 +4,11 @@
 // Started 28 Oct 2026, the day after Max 7/5/3 ended (see max753.js).
 //
 // THIS IS THE ONLY FILE TO CHANGE WHEN THE PROGRAM CHANGES: start weights,
-// steps, rep/RPE targets and thresholds live here, not in code. Exercise names
-// (+ aliases) must match the logged exerciseName (case/spacing ignored).
+// steps, rep/RPE targets and thresholds live here, not in code.
+// Matching: a workout is a session when its name contains a routineNames entry
+// as a whole phrase ("[LV] Push A" -> Push A). A logged exercise fills a slot
+// by name/alias, else by its catalog mainMuscle (one of the slot's
+// mainMuscles, app vocabulary), so any chest press can fill a chest slot.
 // The engine (src/lib/review/pp21/engine.js) reads this shape; rules and the
 // output contract are in docs/PP21-REVIEW.md. All weights are in kg.
 
@@ -19,7 +22,7 @@ export const pp21 = {
   sessions: {
     pushA: {
       name: "Push A",
-      routineNames: ["[PP21] Push A"],
+      routineNames: ["Push A"],
       exercises: [
         "bench",
         "squat",
@@ -32,7 +35,7 @@ export const pp21 = {
     },
     pullA: {
       name: "Pull A",
-      routineNames: ["[PP21] Pull A"],
+      routineNames: ["Pull A"],
       exercises: [
         "deadlift",
         "pullup",
@@ -45,7 +48,7 @@ export const pp21 = {
     },
     pushB: {
       name: "Push B",
-      routineNames: ["[PP21] Push B"],
+      routineNames: ["Push B"],
       exercises: [
         "inclineSmith",
         "legPress",
@@ -58,7 +61,7 @@ export const pp21 = {
     },
     pullB: {
       name: "Pull B",
-      routineNames: ["[PP21] Pull B"],
+      routineNames: ["Pull B"],
       exercises: [
         "pulldown",
         "gluteRaise",
@@ -73,6 +76,7 @@ export const pp21 = {
   exercises: {
     bench: {
       name: "Bench Press Barbell",
+      mainMuscles: ["Chest"],
       aliases: [],
       session: "pushA",
       scheme: "top_backoff",
@@ -94,6 +98,7 @@ export const pp21 = {
     },
     squat: {
       name: "Back Squat",
+      mainMuscles: ["Quads"],
       aliases: [],
       session: "pushA",
       scheme: "top_backoff",
@@ -114,6 +119,7 @@ export const pp21 = {
     },
     inclineDb: {
       name: "Incline Press Dumbbell",
+      mainMuscles: ["Chest"],
       aliases: ["Bench Press Dumbbell", "Incline DB Press"],
       session: "pushA",
       scheme: "double",
@@ -133,6 +139,7 @@ export const pp21 = {
     },
     legExt: {
       name: "Leg extension",
+      mainMuscles: ["Quads"],
       aliases: [],
       session: "pushA",
       scheme: "double",
@@ -152,6 +159,7 @@ export const pp21 = {
     },
     latRaiseDb: {
       name: "Lateral Raise Dumbbell",
+      mainMuscles: ["Shoulders (side)"],
       aliases: [],
       session: "pushA",
       scheme: "double",
@@ -171,6 +179,7 @@ export const pp21 = {
     },
     ohExt: {
       name: "Overhead Extension Cable",
+      mainMuscles: ["Triceps"],
       aliases: [],
       session: "pushA",
       scheme: "double",
@@ -190,6 +199,7 @@ export const pp21 = {
     },
     adductor: {
       name: "Adductor Machine",
+      mainMuscles: ["Adductors"],
       aliases: [],
       session: "pushA",
       scheme: "double",
@@ -209,6 +219,7 @@ export const pp21 = {
     },
     deadlift: {
       name: "Deadlift",
+      mainMuscles: ["Glutes, Hamstrings", "Lower Back"],
       aliases: [],
       session: "pullA",
       scheme: "top_backoff",
@@ -229,6 +240,7 @@ export const pp21 = {
     },
     pullup: {
       name: "Pull up",
+      mainMuscles: ["Back (Lats)", "Lats"],
       aliases: ["Weighted Pull-up", "Pull-up (wide grip)"],
       session: "pullA",
       scheme: "top_backoff",
@@ -250,6 +262,7 @@ export const pp21 = {
     },
     rowMachine: {
       name: "Seated Row Machine",
+      mainMuscles: ["Back"],
       aliases: ["Seated row machine pin loaded"],
       session: "pullA",
       scheme: "double",
@@ -269,6 +282,7 @@ export const pp21 = {
     },
     rearDelt: {
       name: "Rear delt raise machine",
+      mainMuscles: ["Shoulders (rear)"],
       aliases: [],
       session: "pullA",
       scheme: "double",
@@ -288,6 +302,7 @@ export const pp21 = {
     },
     bayesian: {
       name: "Bayesian Cable Curl",
+      mainMuscles: ["Biceps"],
       aliases: [],
       session: "pullA",
       scheme: "double",
@@ -307,6 +322,7 @@ export const pp21 = {
     },
     abductor: {
       name: "Hip Abduction Machine",
+      mainMuscles: ["Abductors"],
       aliases: [],
       session: "pullA",
       scheme: "double",
@@ -326,6 +342,7 @@ export const pp21 = {
     },
     seatedCalf: {
       name: "Seated Calf Raise Machine",
+      mainMuscles: ["Calves"],
       aliases: [],
       session: "pullA",
       scheme: "double",
@@ -345,6 +362,7 @@ export const pp21 = {
     },
     inclineSmith: {
       name: "Incline Smith",
+      mainMuscles: ["Chest"],
       aliases: ["Incline Smith Press", "Incline Bench Press Smith"],
       session: "pushB",
       scheme: "top_backoff",
@@ -365,6 +383,7 @@ export const pp21 = {
     },
     legPress: {
       name: "Leg press",
+      mainMuscles: ["Quads"],
       aliases: [],
       session: "pushB",
       scheme: "double",
@@ -384,6 +403,7 @@ export const pp21 = {
     },
     flyMachine: {
       name: "Chest Fly Machine",
+      mainMuscles: ["Chest"],
       aliases: [],
       session: "pushB",
       scheme: "double",
@@ -403,6 +423,7 @@ export const pp21 = {
     },
     shoulderPress: {
       name: "Shoulder press",
+      mainMuscles: ["Shoulders", "Shoulders (front)"],
       aliases: [],
       session: "pushB",
       scheme: "double",
@@ -423,6 +444,7 @@ export const pp21 = {
     },
     latRaiseCable: {
       name: "Lateral Raise Cable",
+      mainMuscles: ["Shoulders (side)"],
       aliases: [],
       session: "pushB",
       scheme: "double",
@@ -442,6 +464,7 @@ export const pp21 = {
     },
     pushdown: {
       name: "Triceps Pushdown",
+      mainMuscles: ["Triceps"],
       aliases: [],
       session: "pushB",
       scheme: "double",
@@ -461,6 +484,7 @@ export const pp21 = {
     },
     standingCalf: {
       name: "Standing Calf Raise Barbell",
+      mainMuscles: ["Calves"],
       aliases: [],
       session: "pushB",
       scheme: "double",
@@ -480,6 +504,7 @@ export const pp21 = {
     },
     pulldown: {
       name: "Lat Pulldown",
+      mainMuscles: ["Back (Lats)", "Lats"],
       aliases: ["Front pulldown"],
       session: "pullB",
       scheme: "double",
@@ -499,6 +524,7 @@ export const pp21 = {
     },
     gluteRaise: {
       name: "Glute raise",
+      mainMuscles: ["Glutes"],
       aliases: [],
       session: "pullB",
       scheme: "double",
@@ -518,6 +544,7 @@ export const pp21 = {
     },
     cableRow: {
       name: "Seated Row Cable",
+      mainMuscles: ["Back"],
       aliases: [],
       session: "pullB",
       scheme: "double",
@@ -537,6 +564,7 @@ export const pp21 = {
     },
     legCurl: {
       name: "Seated Leg Curl",
+      mainMuscles: ["Hamstrings"],
       aliases: [],
       session: "pullB",
       scheme: "double",
@@ -556,6 +584,7 @@ export const pp21 = {
     },
     facePull: {
       name: "Face pull",
+      mainMuscles: ["Shoulders (rear)"],
       aliases: [],
       session: "pullB",
       scheme: "double",
@@ -575,6 +604,7 @@ export const pp21 = {
     },
     preacher: {
       name: "Preacher curl",
+      mainMuscles: ["Biceps"],
       aliases: [],
       session: "pullB",
       scheme: "double",
@@ -594,6 +624,7 @@ export const pp21 = {
     },
     lowHighFly: {
       name: "Low to High Cable Fly",
+      mainMuscles: ["Chest"],
       aliases: [],
       session: "pullB",
       scheme: "double",

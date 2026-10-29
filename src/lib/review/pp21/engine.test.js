@@ -113,7 +113,7 @@ describe("reviewProgram: sessions, rotations, global calls", () => {
   });
   it("prescribes 1 set per exercise at RPE 7 during a deload", () => {
     const plan = nextSessionPlan(r, pp21);
-    expect(plan.routineName).toBe("[PP21] Push A");
+    expect(plan.routineName).toBe("Push A");
     expect(plan.deload).toBe(true);
     for (const e of plan.exercises) expect(e.sets).toHaveLength(1);
   });
@@ -158,5 +158,156 @@ describe("reviewRotation (cycle by cycle)", () => {
   });
   it("returns null for an unknown rotation", () => {
     expect(reviewRotation(fixture, pp21, 9)).toBeNull();
+  });
+});
+
+// Real-log shape: the routine is "[LV] Push A", a chest press machine fills
+// the incline DB slot (both Chest), and the abductor (planned on Pull A) replaced the
+// adductor because the machine was taken.
+describe("matching by name phrase and main muscle", () => {
+  const catalog = [
+    { name: "Bench Press Barbell", mainMuscle: "Chest" },
+    { name: "Chest Press Machine", mainMuscle: "Chest" },
+    { name: "Leg extension", mainMuscle: "Quads" },
+    { name: "Lateral Raise Dumbbell", mainMuscle: "Shoulders (side)" },
+    { name: "Overhead Extension Cable", mainMuscle: "Triceps" },
+    { name: "Back Squat", mainMuscle: "Quads" },
+    { name: "Hip Abduction Machine", mainMuscle: "Abductors" },
+    { name: "Adductor Machine", mainMuscle: "Adductors" },
+    { name: "Deadlift", mainMuscle: "Glutes, Hamstrings" },
+    { name: "Biceps Curl Dumbbell", mainMuscle: "Biceps" },
+  ];
+  const e = (exerciseName, ...sets) => ({
+    exerciseName,
+    sets: sets.map(([weight, reps], i) => ({ set: i + 1, weight, reps })),
+    rpe: 9,
+    feedback: "",
+  });
+  const pushA = {
+    id: "w1",
+    date: "2026-10-28",
+    name: "[LV] Push A",
+    exercises: [
+      e("Bench Press Barbell", [45, 5], [40, 6]),
+      e("Back Squat", [95, 6], [85, 10]),
+      e("Chest Press Machine", [50, 9], [50, 8]),
+      e("Leg extension", [70, 15], [70, 13]),
+      e("Lateral Raise Dumbbell", [10, 20], [10, 20]),
+      e("Overhead Extension Cable", [32.5, 15], [32.5, 13]),
+      e("Hip Abduction Machine", [95, 20], [95, 20]),
+      e("Biceps Curl Dumbbell", [12, 12]),
+    ],
+  };
+  const pullA = {
+    id: "w2",
+    date: "2026-10-29",
+    name: "[LV] Pull A",
+    exercises: [
+      e("Deadlift", [120, 5], [110, 6]),
+      e("Adductor Machine", [40, 12], [40, 11]),
+    ],
+  };
+  const one = { workouts: [pushA], exercises: catalog };
+  const two = { workouts: [pushA, pullA], exercises: catalog };
+  const byId = (rv, id) => rv.exercises.find((x) => x.exId === id);
+
+  it("matches a session when its name contains the routine phrase", () => {
+    const rv = reviewProgram(one, pp21);
+    expect(rv.sessions[0].sessionId).toBe("pushA");
+    expect(rv.sessions[0].matchedBy).toBe("routineName");
+    const pushAB = { ...pushA, name: "Push AB" };
+    expect(
+      reviewProgram({ workouts: [pushAB], exercises: catalog }, pp21)
+        .sessions[0].matchedBy,
+    ).not.toBe("routineName");
+  });
+
+  it("fills a slot by main muscle when the name differs", () => {
+    const rv = reviewProgram(one, pp21);
+    expect(byId(rv, "inclineDb").loggedAs).toBe("Chest Press Machine");
+    expect(byId(rv, "inclineDb").last.top).toEqual({
+      weight: 50,
+      reps: 9,
+      partial: false,
+    });
+    expect(byId(rv, "bench").loggedAs).toBeNull();
+    const codes = rv.sessions[0].flags.map((f) => f.code);
+    expect(codes).toContain("SUBSTITUTED");
+  });
+
+  it("prefers this session's muscle slot over another day's exact name", () => {
+    // the [LV] Push A routine puts Low to High Cable Fly (Pull B's exercise)
+    // in the incline DB slot: it fills Push A's chest slot, not Pull B's
+    const fly = {
+      ...pushA,
+      exercises: [
+        e("Bench Press Barbell", [45, 5], [40, 6]),
+        e("Low to High Cable Fly", [15, 12], [15, 12]),
+      ],
+    };
+    const catalogFly = [
+      ...catalog,
+      { name: "Low to High Cable Fly", mainMuscle: "Chest" },
+    ];
+    const rv = reviewProgram({ workouts: [fly], exercises: catalogFly }, pp21);
+    expect(byId(rv, "inclineDb").loggedAs).toBe("Low to High Cable Fly");
+    expect(byId(rv, "lowHighFly").exposures).toBe(0);
+  });
+
+  it("keeps muscle matching within the session", () => {
+    // the curl (Biceps) is a Pull-day muscle: an extra, not a Bayesian exposure
+    const rv = reviewProgram(one, pp21);
+    expect(rv.sessions[0].extras).toEqual(["Biceps Curl Dumbbell"]);
+    expect(byId(rv, "bayesian").exposures).toBe(0);
+  });
+
+  it("credits an exercise moved from another day to its own slot", () => {
+    const rv = reviewProgram(one, pp21);
+    expect(byId(rv, "abductor").exposures).toBe(1);
+    expect(byId(rv, "abductor").decision).toBe("ADD");
+    const flags = rv.sessions[0].flags;
+    expect(flags.find((f) => f.code === "MOVED").message).toMatch(
+      /Hip Abduction Machine \(Pull A\)/,
+    );
+    // adductor isn't missing yet: Pull A can still pick it up
+    expect(flags.find((f) => f.code === "NOT_YET_DONE").message).toMatch(
+      /Adductor Machine/,
+    );
+    expect(flags.some((f) => f.code === "MISSING_EXERCISES")).toBe(false);
+  });
+
+  it("plans the swap into the next session", () => {
+    const plan = nextSessionPlan(reviewProgram(one, pp21), pp21);
+    expect(plan.sessionId).toBe("pullA");
+    const abd = plan.exercises.find((x) => x.exId === "abductor");
+    expect(abd.doneEarlier).toBe(true);
+    expect(abd.sets).toEqual([]);
+    const add = plan.exercises.find((x) => x.exId === "adductor");
+    expect(add.carriedFrom).toBe("Push A");
+  });
+
+  it("clears the pending note once the swap is done", () => {
+    const rv = reviewProgram(two, pp21);
+    expect(byId(rv, "adductor").exposures).toBe(1);
+    const pushFlags = rv.sessions[0].flags.map((f) => f.code);
+    expect(pushFlags).not.toContain("NOT_YET_DONE");
+    expect(pushFlags).not.toContain("MISSING_EXERCISES");
+  });
+
+  it("restarts progression when a different exercise fills the slot", () => {
+    const later = {
+      ...pushA,
+      id: "w3",
+      date: "2026-11-02",
+      exercises: [e("Incline Press Dumbbell", [22.5, 8], [22.5, 8])],
+    };
+    const rv = reviewProgram(
+      { workouts: [pushA, pullA, later], exercises: catalog },
+      pp21,
+    );
+    const step = byId(rv, "inclineDb").history[1];
+    expect(step.progressed).toBeNull();
+    expect(step.flags.map((f) => f.code)).toContain("SWITCHED");
+    expect(byId(rv, "inclineDb").loggedAs).toBeNull();
   });
 });
