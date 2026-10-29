@@ -128,6 +128,40 @@ describe("reviewProgram: sessions, rotations, global calls", () => {
   });
 });
 
+describe("schedule checks", () => {
+  const w = (id, date, name) => ({ id, date, name, exercises: [] });
+  it("flags 3+ days in a row, including a run that ends the log", () => {
+    const rv = reviewProgram(
+      {
+        workouts: [
+          w("a", "2026-10-28", "Push A"),
+          w("b", "2026-10-29", "Pull A"),
+          w("c", "2026-10-30", "Push B"),
+        ],
+      },
+      pp21,
+    );
+    expect(rv.global.schedule.longStreaks).toEqual([
+      "2026-10-28 → 2026-10-30 (3 days)",
+    ]);
+  });
+  it("flags gaps over 2 rest days", () => {
+    const rv = reviewProgram(
+      {
+        workouts: [
+          w("a", "2026-10-28", "Push A"),
+          w("b", "2026-11-01", "Pull A"),
+        ],
+      },
+      pp21,
+    );
+    expect(rv.global.schedule.longGaps).toEqual([
+      "2026-10-28 → 2026-11-01 (3 rest days)",
+    ]);
+    expect(rv.global.schedule.longStreaks).toEqual([]);
+  });
+});
+
 describe("reviewRotation (cycle by cycle)", () => {
   it("lists rotations newest first", () => {
     expect(loggedRotations(fixture, pp21).map((x) => x.rotation)).toEqual([

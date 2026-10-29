@@ -974,28 +974,29 @@ export function reviewProgram(data, p, opts = {}) {
   );
   const longStreaks = [],
     longGaps = [];
+  const endRun = (start, end) => {
+    if (end - start + 1 > th.maxConsecutiveTrainingDays)
+      longStreaks.push(
+        `${fromDay(start)} → ${fromDay(end)} (${end - start + 1} days)`,
+      );
+  };
   let runStart = days[0],
     prev = days[0];
-  for (let i = 1; i <= days.length; i++) {
+  for (let i = 1; i < days.length; i++) {
     const d = days[i];
-    if (d !== undefined && d === prev + 1) {
+    if (d === prev + 1) {
       prev = d;
       continue;
     }
-    if (
-      prev !== undefined &&
-      prev - runStart + 1 > th.maxConsecutiveTrainingDays
-    )
-      longStreaks.push(
-        `${fromDay(runStart)} → ${fromDay(prev)} (${prev - runStart + 1} days)`,
-      );
-    if (d !== undefined && d - prev - 1 > th.maxGapDays)
+    endRun(runStart, prev);
+    if (d - prev - 1 > th.maxGapDays)
       longGaps.push(
         `${fromDay(prev)} → ${fromDay(d)} (${d - prev - 1} rest days)`,
       );
     runStart = d;
     prev = d;
   }
+  if (days.length) endRun(runStart, prev);
 
   const gFlags = [];
   if (deloadReasons.length)
