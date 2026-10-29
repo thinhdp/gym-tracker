@@ -30,7 +30,7 @@ persisted). Several earlier top-level tabs were consolidated: **Progress** merge
 the old Weight + Summary views (Bodyweight / Strength toggle), **Calendar** folds
 into Workouts as a List/Calendar toggle, and **Notepad** + data export/import +
 preferences live under **More**. **Home** is a dashboard (greeting, streak,
-today's plan, week stats, recent activity). Legacy persisted `tab` values
+today's workout or the PP21 next session, week stats, recent activity). Legacy persisted `tab` values
 (`calendar`/`weight`/`summary`/`notepad`) are mapped onto the new destinations in
 `App.jsx` so returning users never land on a blank screen.
 
@@ -95,6 +95,7 @@ gym-tracker/
     │       ├── programs/max753.js  # Max 7/5/3 config (27 Apr – 27 Oct 2026)
     │       ├── programs/pp21.js    # Push·Pull 2-1 config (from 28 Oct 2026)
     │       ├── pp21/engine.js      # PP21 engine: per-exercise decisions, rotation + global calls
+    │       ├── pp21/nextSession.js # Home next-session card: upcoming session + workout to start
     │       ├── cycles.js           # Cycle boundary detection from workout history
     │       ├── tonnage.js          # Per-cycle tonnage aggregation + trend
     │       ├── bodyweight.js       # Bodyweight evaluation over a cycle window
@@ -105,6 +106,8 @@ gym-tracker/
     │       └── buildReview.js      # Top-level orchestrator → ReviewResult
     └── components/
         ├── Home.jsx                 # Home dashboard (Home tab)
+        ├── NextSessionCard.jsx      # Home: PP21 next session (date, rest/deload banners, chips, Start)
+        ├── DecisionChip.jsx         # PP21 decision pill (ADD/HOLD/REDUCE/RESET/SWAP/START)
         ├── WorkoutsTab.jsx          # Workouts tab shell: List/Calendar toggle + Start
         ├── Progress.jsx             # Progress tab shell: Bodyweight/Strength toggle
         ├── MoreMenu.jsx             # More tab: prefs (theme), Notepad, Push·Pull + Max 7/5/3 reviews, data export/import
@@ -159,6 +162,7 @@ main.jsx
                 └── otherwise: <active view> + BottomNav
                     │
                     ├── [tab="home"]      Home            (dashboard; uses homeStats.js)
+                    │   └── NextSessionCard   (PP21 next session when nothing logged today)
                     │
                     ├── [tab="workouts"]  WorkoutsTab     (Segmented: List | Calendar)
                     │   ├── (list) WorkoutPlanner

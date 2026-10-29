@@ -9,6 +9,7 @@ import {
   workoutVolume,
   latestBodyweight,
 } from "../lib/homeStats";
+import NextSessionCard from "./NextSessionCard";
 
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -34,7 +35,7 @@ function StatTile({ value, label }) {
 }
 
 export default function Home() {
-  const { workouts, setTab, unit, startSession, startEmptyWorkout } = useApp();
+  const { workouts, setTab, unit, startSession } = useApp();
   // Captured once at mount: a stable "now" keeps the memos below from
   // recomputing every render (the wall-clock day doesn't change mid-session).
   const now = useMemo(() => new Date(), []);
@@ -87,55 +88,30 @@ export default function Home() {
         )}
       </div>
 
-      {/* Today's plan */}
-      <div className="rounded-2xl border bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
-        <div className="text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-          Today
+      {/* Today's workout if one is logged, else the PP21 next session */}
+      {todays.length ? (
+        <div className="rounded-2xl border bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            Today
+          </div>
+          <div className="mt-0.5 font-semibold text-neutral-900 dark:text-neutral-100">
+            {todays[0].name?.trim() || "Workout"}
+          </div>
+          <div className="text-xs text-neutral-500 dark:text-neutral-400">
+            {todays[0].exercises?.length || 0} exercises ·{" "}
+            {Math.round(workoutVolume(todays[0])).toLocaleString()} kg
+          </div>
+          <button
+            type="button"
+            onClick={() => startSession(todays[0].id)}
+            className="mt-3 w-full rounded-xl bg-blue-600 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
+          >
+            Start workout
+          </button>
         </div>
-        {todays.length ? (
-          <>
-            <div className="mt-0.5 font-semibold text-neutral-900 dark:text-neutral-100">
-              {todays[0].name?.trim() || "Workout"}
-            </div>
-            <div className="text-xs text-neutral-500 dark:text-neutral-400">
-              {todays[0].exercises?.length || 0} exercises ·{" "}
-              {Math.round(workoutVolume(todays[0])).toLocaleString()} kg
-            </div>
-            <button
-              type="button"
-              onClick={() => startSession(todays[0].id)}
-              className="mt-3 w-full rounded-xl bg-blue-600 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
-            >
-              Start workout
-            </button>
-          </>
-        ) : (
-          <>
-            <div className="mt-0.5 font-semibold text-neutral-900 dark:text-neutral-100">
-              No workout logged yet
-            </div>
-            <div className="text-xs text-neutral-500 dark:text-neutral-400">
-              Plan today&apos;s session to get started.
-            </div>
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={startEmptyWorkout}
-                className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
-              >
-                Start workout
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab("workouts")}
-                className="flex-1 rounded-xl border py-2.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
-              >
-                Plan ahead
-              </button>
-            </div>
-          </>
-        )}
-      </div>
+      ) : (
+        <NextSessionCard today={todayYmd} />
+      )}
 
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-2">

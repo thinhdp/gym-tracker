@@ -221,9 +221,10 @@ the state as it stood then:
 - Exercises by session: the decision made in that rotation with its reasons and flags, stall dots (●●○), and the next prescription.
 - Rotation checks: regressed compounds, fatigue signals, rotations since deload, chest days per 7, direct sets per muscle.
 
+**Home next-session card** (`src/components/NextSessionCard.jsx`, helpers in `src/lib/review/pp21/nextSession.js`): replaces Home's Today card when nothing is logged today. It shows the session name, its date ("Today", or the planned date on a rest day with a rest-day banner) and a deload banner when `activeNow`. Each exercise shows its decision chip, the prescribed sets and the first reason. **Start** adds a workout named after the session's routine name, dated today. Weights come from `sets`, reps start blank with `targetReps` as the placeholder, exercises already done this rotation are left out, and optional ones are kept (shown as optional in the live session). Start stays available on a rest day.
+
 **Not built yet** (from the original suggestions):
 
-1. **Next-session card** (home): session name, date, a rest-day badge, and a deload banner when `activeNow`. Each exercise shows its decision chip (ADD green, HOLD grey, REDUCE / RESET amber, SWAP red), the weights, target reps and the first reason. Tapping **Start** prefills the routine from `routineSets`.
 2. **Post-workout summary**: run the review after saving. Show what changed for each exercise logged today, plus any session flags.
 3. **Exercise detail**: `history` as a timeline of decisions, with the stall counter shown as dots (●●○).
 4. **Rotation strip**: one row per rotation with sessions done, regressed compounds and fatigue count.
