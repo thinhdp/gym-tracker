@@ -18,13 +18,11 @@ describe("Home", () => {
     ).toBeInTheDocument();
   });
 
-  it("offers to start or plan a workout when none is logged today", () => {
+  it("shows the PP21 next-session card when no workout is logged today", () => {
     renderHome();
+    expect(screen.getByText(/Next session/i)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Start workout/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Plan ahead/i }),
+      screen.getByRole("button", { name: /Start Push A/i }),
     ).toBeInTheDocument();
   });
 

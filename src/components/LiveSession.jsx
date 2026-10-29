@@ -345,6 +345,11 @@ export default function LiveSession() {
                 >
                   {current.exerciseName}
                 </button>
+                {current.optional && (
+                  <span className="shrink-0 text-xs text-neutral-400">
+                    optional
+                  </span>
+                )}
               </div>
               <div className="mb-3 -mt-2 text-xs text-neutral-500 dark:text-neutral-400">
                 {currentReps} {currentReps === 1 ? "rep" : "reps"} so far

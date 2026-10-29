@@ -75,6 +75,13 @@ export function AppProvider({ children }) {
     setWorkouts((prev) => [w, ...prev]);
     startSession(w.id);
   };
+  // Add a ready-made workout (e.g. Home's PP21 next session) and start it.
+  const startWorkout = (w) => {
+    setWorkouts((prev) =>
+      [w, ...prev].sort((a, b) => (a.date < b.date ? 1 : -1)),
+    );
+    startSession(w.id);
+  };
   const endSession = () => setSession(null);
 
   const saveRoutine = (routine) => setRoutines((prev) => [routine, ...prev]);
@@ -166,6 +173,7 @@ export function AppProvider({ children }) {
         setSession,
         startSession,
         startEmptyWorkout,
+        startWorkout,
         endSession,
         routines,
         setRoutines,

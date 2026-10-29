@@ -3,8 +3,11 @@
 // Pull A + Deadlift -> Rest -> Push B + Leg press -> Pull B + Glute/Curl -> Rest.
 // Started 28 Oct 2026, the day after Max 7/5/3 ended (see max753.js).
 //
-// THIS IS THE ONLY FILE TO CHANGE WHEN THE PROGRAM CHANGES: start weights,
-// steps, rep/RPE targets and thresholds live here, not in code.
+// THIS IS THE ONLY FILE TO CHANGE WHEN THE PROGRAM CHANGES: steps, rep/RPE
+// targets and thresholds live here, not in code. There are no fixed start
+// weights: an exercise's first prescription is estimated from the lifter's
+// best recent set of it, or left blank to pick (see startPrescription in the
+// engine).
 // Matching: a workout is a session when its name contains a routineNames entry
 // as a whole phrase ("[LV] Push A" -> Push A). A logged exercise fills a slot
 // by name/alias, else by its catalog mainMuscle (one of the slot's
@@ -86,10 +89,6 @@ export const pp21 = {
         backoff: [8, 9],
       },
       step: 2.5,
-      start: {
-        top: 45,
-        backoff: 40,
-      },
       muscles: ["chest_mid", "front_delt", "triceps"],
       compound: true,
       rules: ["shoulder"],
@@ -108,10 +107,6 @@ export const pp21 = {
         backoff: [8, 9],
       },
       step: 5,
-      start: {
-        top: 95,
-        backoff: 85,
-      },
       muscles: ["quads", "glutes"],
       compound: true,
       rules: ["lowerBack"],
@@ -129,9 +124,6 @@ export const pp21 = {
         set2: 9.5,
       },
       step: 2.5,
-      start: {
-        weight: 20,
-      },
       muscles: ["chest_upper", "front_delt"],
       compound: true,
       rules: ["shoulder"],
@@ -149,9 +141,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 2.5,
-      start: {
-        weight: 70,
-      },
       muscles: ["quads"],
       compound: false,
       rules: [],
@@ -169,9 +158,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 2.5,
-      start: {
-        weight: 10,
-      },
       muscles: ["side_delt"],
       compound: false,
       rules: [],
@@ -189,9 +175,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 1.25,
-      start: {
-        weight: 30,
-      },
       muscles: ["triceps"],
       compound: false,
       rules: ["elbow"],
@@ -209,9 +192,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 3.5,
-      start: {
-        weight: 37.5,
-      },
       muscles: ["adductors"],
       compound: false,
       rules: [],
@@ -229,10 +209,6 @@ export const pp21 = {
         backoff: [8, 8],
       },
       step: 5,
-      start: {
-        top: 95,
-        backoff: 85,
-      },
       muscles: ["hamstrings", "glutes", "back"],
       compound: true,
       rules: ["lowerBack"],
@@ -250,10 +226,6 @@ export const pp21 = {
         backoff: [9, 9],
       },
       step: 2.5,
-      start: {
-        top: 7.5,
-        backoff: 0,
-      },
       muscles: ["lats", "biceps"],
       compound: true,
       rules: [],
@@ -272,9 +244,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 5,
-      start: {
-        weight: 120,
-      },
       muscles: ["mid_back", "lats"],
       compound: true,
       rules: [],
@@ -292,9 +261,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 2.5,
-      start: {
-        weight: 47.5,
-      },
       muscles: ["rear_delt"],
       compound: false,
       rules: [],
@@ -312,9 +278,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 1.25,
-      start: {
-        weight: 15,
-      },
       muscles: ["biceps"],
       compound: false,
       rules: [],
@@ -332,9 +295,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 2.5,
-      start: {
-        weight: 86,
-      },
       muscles: ["abductors", "glutes"],
       compound: false,
       rules: [],
@@ -352,9 +312,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 2.5,
-      start: {
-        weight: 50,
-      },
       muscles: ["calves"],
       compound: false,
       rules: [],
@@ -372,10 +329,6 @@ export const pp21 = {
         backoff: [8, 9],
       },
       step: 2.5,
-      start: {
-        top: 45,
-        backoff: 40,
-      },
       muscles: ["chest_upper", "front_delt", "triceps"],
       compound: true,
       rules: ["shoulder"],
@@ -393,9 +346,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 10,
-      start: {
-        weight: 260,
-      },
       muscles: ["quads", "glutes"],
       compound: true,
       rules: ["lowerBack"],
@@ -413,9 +363,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 2.5,
-      start: {
-        weight: 55,
-      },
       muscles: ["chest_mid"],
       compound: false,
       rules: [],
@@ -433,9 +380,6 @@ export const pp21 = {
         set2: 9,
       },
       step: 2.5,
-      start: {
-        weight: 30,
-      },
       muscles: ["front_delt", "triceps"],
       compound: true,
       rules: ["shoulder"],
@@ -454,9 +398,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 1.25,
-      start: {
-        weight: 12.5,
-      },
       muscles: ["side_delt"],
       compound: false,
       rules: [],
@@ -474,9 +415,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 1.25,
-      start: {
-        weight: 26.25,
-      },
       muscles: ["triceps"],
       compound: false,
       rules: ["elbow"],
@@ -494,9 +432,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 2.5,
-      start: {
-        weight: 47.5,
-      },
       muscles: ["calves"],
       compound: false,
       rules: [],
@@ -514,9 +449,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 2.5,
-      start: {
-        weight: 67.5,
-      },
       muscles: ["lats"],
       compound: true,
       rules: [],
@@ -534,9 +466,6 @@ export const pp21 = {
         set2: 9.5,
       },
       step: 5,
-      start: {
-        weight: 140,
-      },
       muscles: ["glutes"],
       compound: true,
       rules: ["form"],
@@ -554,9 +483,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 2.5,
-      start: {
-        weight: 72.5,
-      },
       muscles: ["mid_back"],
       compound: false,
       rules: [],
@@ -574,9 +500,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 2.5,
-      start: {
-        weight: 60,
-      },
       muscles: ["hamstrings"],
       compound: false,
       rules: ["lowerBack"],
@@ -594,9 +517,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 1.25,
-      start: {
-        weight: 27.5,
-      },
       muscles: ["rear_delt"],
       compound: false,
       rules: [],
@@ -614,9 +534,6 @@ export const pp21 = {
         set2: 10,
       },
       step: 1,
-      start: {
-        weight: 20,
-      },
       muscles: ["biceps"],
       compound: false,
       rules: [],
@@ -634,9 +551,6 @@ export const pp21 = {
         set2: 8,
       },
       step: 1.25,
-      start: {
-        weight: 8.75,
-      },
       muscles: ["chest_upper"],
       compound: false,
       rules: [],
@@ -653,6 +567,7 @@ export const pp21 = {
     fatigueSignalsForEarlyDeload: 3,
     backoffPct: 0.9,
     backoffTolerance: [0.85, 0.95],
+    seedSafetyPct: 0.05,
     warmupBelowPctOfTop: 0.8,
     maxWorkingSets: 14,
     maxWorkingSetsWithOptional: 16,

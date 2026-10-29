@@ -44,6 +44,12 @@ sets[]: { set, weight, reps, targetReps? }
 
 Only workouts dated on or after `startDate` (2026-10-28) are reviewed. Older Max 7/5/3 sessions (which ended 2026-10-27) are ignored.
 
+**Start weights (`START`).** The config has no fixed start weights. Until an exercise is logged in the program, its first prescription comes from the lifter's own history:
+
+- **Recent best set.** The engine looks at any workout in the 8 weeks up to the review date, including ones before `startDate`, matched by the slot's name or aliases. If nothing falls in that window, it falls back to the most recent session of the exercise ever, and the reason says how many weeks ago that was. It takes the set with the highest Epley e1RM, ignoring sets over 20 reps. The start weight is what fits the first target reps at the low end of the RPE target, treating reps plus reps-in-reserve as a rep max. That figure is cut by `seedSafetyPct` (5%) and floored to the step. Example: bench 50×6 gives an e1RM of 60. A top set of 5 @ RPE 8 is about a 7RM, so 60 ÷ 1.233 × 0.95 = 46.2, giving 45 kg, with a 40 kg back-off.
+- **Bodyweight lifts** (`backoffMode: "bodyweight"`, i.e. pull-ups) use the heaviest added weight that reached the bottom of the rep range, or 0 (bodyweight).
+- **No history at all.** The weights are `null`, and the lifter picks a weight for the target reps and RPE ("Pick a weight" on the Home card, `?` in the review). From the first logged session on, the normal rules take over.
+
 ---
 
 ## 2. Pipeline
@@ -221,9 +227,10 @@ the state as it stood then:
 - Exercises by session: the decision made in that rotation with its reasons and flags, stall dots (●●○), and the next prescription.
 - Rotation checks: regressed compounds, fatigue signals, rotations since deload, chest days per 7, direct sets per muscle.
 
+**Home next-session card** (`src/components/NextSessionCard.jsx`, helpers in `src/lib/review/pp21/nextSession.js`): replaces Home's Today card when nothing is logged today. It shows the session name, its date ("Today", or the planned date on a rest day with a rest-day banner) and a deload banner when `activeNow`. Each exercise shows its decision chip, the prescribed sets and the first reason. **Start** adds a workout named after the session's routine name, dated today. Weights come from `sets` (a `null` start weight shows "Pick a weight: reps @ RPE" and starts at 0 for the lifter to fill in), reps start blank with `targetReps` as the placeholder, exercises already done this rotation are left out, and optional ones are kept (shown as optional in the live session). Start stays available on a rest day.
+
 **Not built yet** (from the original suggestions):
 
-1. **Next-session card** (home): session name, date, a rest-day badge, and a deload banner when `activeNow`. Each exercise shows its decision chip (ADD green, HOLD grey, REDUCE / RESET amber, SWAP red), the weights, target reps and the first reason. Tapping **Start** prefills the routine from `routineSets`.
 2. **Post-workout summary**: run the review after saving. Show what changed for each exercise logged today, plus any session flags.
 3. **Exercise detail**: `history` as a timeline of decisions, with the stall counter shown as dots (●●○).
 4. **Rotation strip**: one row per rotation with sessions done, regressed compounds and fatigue count.
@@ -244,7 +251,7 @@ Run the review on every save. It's pure and cheap: it replays at most a few hund
 | RPE missing                                        | Decision from reps only, `confidence: low`.                                                                                                                                         |
 | Myo-reps / extra sets                              | Only the first 2 working sets drive the decision. Extras are flagged.                                                                                                               |
 | Weight change by the user against the prescription | The review evaluates what was actually lifted. A heavier weight that hits the range simply moves on.                                                                                |
-| Config change (new start weights, steps)           | Takes effect for `START` and future steps. History replays with the current config.                                                                                                 |
+| Config change (steps, rep/RPE targets)             | Takes effect for `START` and future steps. History replays with the current config.                                                                                                 |
 
 ---
 

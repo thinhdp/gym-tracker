@@ -372,3 +372,123 @@ describe("matching by name phrase and main muscle", () => {
     expect(byId(rv, "inclineDb").loggedAs).toBeNull();
   });
 });
+
+describe("start prescription (no in-program sessions yet)", () => {
+  const log = (date, exerciseName, sets) => ({
+    id: `${date}-${exerciseName}`,
+    date,
+    name: "Old program",
+    exercises: [
+      {
+        exerciseName,
+        sets: sets.map(([weight, reps], i) => ({ set: i + 1, weight, reps })),
+      },
+    ],
+  });
+  const start = (workouts, id) =>
+    reviewProgram({ workouts, exercises: [] }, pp21).exercises.find(
+      (e) => e.exId === id,
+    );
+
+  it("leaves the weight blank with no history", () => {
+    const x = start([], "bench");
+    expect(x.decision).toBe("START");
+    expect(x.next.routineSets.map((s) => s.weight)).toEqual([null, null]);
+    expect(x.next.routineSets.map((s) => s.targetReps)).toEqual([5, 7]);
+    expect(x.reasons[0]).toMatch(/Pick a weight for 5 reps/);
+  });
+
+  it("estimates a top set + back-off from the best recent set", () => {
+    // 50×6 -> e1RM 60; 5 reps @ RPE 8 ≈ a 7RM = 48.6, -5% = 46.2 -> 45
+    const x = start(
+      [
+        log("2026-10-20", "Bench Press Barbell", [
+          [40, 10],
+          [50, 6],
+        ]),
+      ],
+      "bench",
+    );
+    expect(x.next.routineSets.map((s) => s.weight)).toEqual([45, 40]);
+    expect(x.reasons[0]).toBe(
+      "Estimated from your best recent set (50×6 on 2026-10-20).",
+    );
+  });
+
+  it("estimates a double-progression weight and matches aliases", () => {
+    // 70×12 -> e1RM 98; 10 reps @ RPE 9 ≈ an 11RM = 71.7, -5% = 68.1 -> 67.5
+    const legExt = start(
+      [log("2026-10-20", "Leg extension", [[70, 12]])],
+      "legExt",
+    );
+    expect(legExt.next.routineSets.map((s) => s.weight)).toEqual([67.5, 67.5]);
+    // "Incline DB Press" is an alias of the inclineDb slot
+    const incline = start(
+      [log("2026-10-20", "Incline DB Press", [[24, 10]])],
+      "inclineDb",
+    );
+    expect(incline.next.routineSets[0].weight).toBeGreaterThan(0);
+  });
+
+  it("prefers the last 8 weeks over a heavier older set", () => {
+    const x = start(
+      [
+        log("2026-08-01", "Bench Press Barbell", [[60, 6]]),
+        log("2026-10-20", "Bench Press Barbell", [[50, 6]]),
+      ],
+      "bench",
+    );
+    expect(x.next.routineSets[0].weight).toBe(45);
+  });
+
+  it("falls back to the last session ever when nothing is recent", () => {
+    // 45×6 on 1 Aug, 12 weeks before the 24 Oct review date -> 40 kg
+    const x = start(
+      [
+        log("2026-07-01", "Incline Smith", [[50, 6]]),
+        log("2026-08-01", "Incline Smith", [[45, 6]]),
+        log("2026-10-24", "Leg extension", [[70, 12]]),
+      ],
+      "inclineSmith",
+    );
+    expect(x.next.routineSets.map((s) => s.weight)).toEqual([40, 35]);
+    expect(x.reasons[0]).toBe(
+      "Estimated from your last session of it (45×6 on 2026-08-01, 12 weeks ago).",
+    );
+  });
+
+  it("counts sets up to 20 reps", () => {
+    // 45×20 -> e1RM 75; 12 reps @ RPE 9 ≈ a 13RM = 52.3, -5% = 49.7 -> 47.5
+    const x = start(
+      [log("2026-10-20", "Standing Calf Raise Barbell", [[45, 20]])],
+      "standingCalf",
+    );
+    expect(x.next.routineSets[0].weight).toBe(47.5);
+    const tooMany = start(
+      [log("2026-10-20", "Standing Calf Raise Barbell", [[45, 25]])],
+      "standingCalf",
+    );
+    expect(tooMany.next.routineSets[0].weight).toBeNull();
+  });
+
+  it("uses added weight for pull-ups, bodyweight when none was added", () => {
+    const weighted = start(
+      [
+        log("2026-10-20", "Pull up", [
+          [5, 8],
+          [10, 3],
+        ]),
+      ],
+      "pullup",
+    );
+    // 10×3 is under the 5-rep floor, so 5 kg is the heaviest qualifying set
+    expect(weighted.next.routineSets.map((s) => s.weight)).toEqual([5, 0]);
+    const bw = start([log("2026-10-20", "Pull up", [[0, 8]])], "pullup");
+    expect(bw.next.routineSets.map((s) => s.weight)).toEqual([0, 0]);
+  });
+
+  it("stops using the estimate once the exercise is logged in the program", () => {
+    // fixture's pre-start Chest Fly Machine 55×11 doesn't override real sessions
+    expect(ex("flyMachine").decision).not.toBe("START");
+  });
+});

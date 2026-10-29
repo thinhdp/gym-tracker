@@ -7,21 +7,12 @@
 
 import React, { useMemo, useState } from "react";
 import { useApp } from "../context/AppContext";
-import { toDisplayWeight } from "../lib/units";
 import pp21 from "../lib/review/programs/pp21";
 import { loggedRotations, reviewRotation } from "../lib/review/pp21/engine";
+import { setsLabel } from "../lib/review/pp21/nextSession";
+import Chip from "./DecisionChip";
 
 const program = pp21;
-
-const DECISION_BG = {
-  ADD: "bg-green-600",
-  HOLD: "bg-neutral-500",
-  REDUCE: "bg-amber-600",
-  RESET: "bg-amber-600",
-  SWAP: "bg-red-600",
-  START: "bg-blue-600",
-  DELOAD_DONE: "bg-blue-600",
-};
 
 const SEVERITY_TEXT = {
   alert: "text-red-600 dark:text-red-400",
@@ -37,26 +28,6 @@ const short = (ymd) => {
 };
 
 const sessionName = (id) => program.sessions[id]?.name ?? "Unplanned";
-
-function Chip({ decision }) {
-  return (
-    <span
-      className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white ${DECISION_BG[decision] || "bg-neutral-500"}`}
-    >
-      {decision === "DELOAD_DONE" ? "DELOAD" : decision}
-    </span>
-  );
-}
-
-// "47.5×5 · 42.5×7" for routine sets; 0 kg on a back-off is bodyweight.
-function setsLabel(sets, unit) {
-  return sets
-    .map(
-      (s) =>
-        `${s.weight === 0 ? "BW" : toDisplayWeight(s.weight, unit)}×${s.targetReps}`,
-    )
-    .join(" · ");
-}
 
 function StallDots({ count }) {
   const max = program.thresholds.stallExposures;
