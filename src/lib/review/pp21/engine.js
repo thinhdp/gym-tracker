@@ -199,6 +199,33 @@ function normalise(data, p, asOf) {
     });
 }
 
+// Saved workouts carry a date but no time, and ids are random, so two
+// sessions on one day (e.g. Pull A + Push B) have no recorded order. Order each
+// same-day group to continue the session order from the previous workout;
+// unplanned workouts go last.
+function orderSameDay(ws, p) {
+  const n = p.sessionOrder.length;
+  const out = [];
+  let lastPos = -1;
+  for (let i = 0; i < ws.length; ) {
+    let j = i;
+    while (j < ws.length && ws[j].w.date === ws[i].w.date) j++;
+    const day = ws.slice(i, j);
+    const dist = (nw) => {
+      const pos = p.sessionOrder.indexOf(nw.sessionId);
+      return pos === -1 ? Infinity : (pos - lastPos - 1 + n) % n;
+    };
+    day.sort((a, b) => dist(a) - dist(b));
+    for (const nw of day) {
+      const pos = p.sessionOrder.indexOf(nw.sessionId);
+      if (pos !== -1) lastPos = pos;
+      out.push(nw);
+    }
+    i = j;
+  }
+  return out;
+}
+
 /* ── step 2: rotations ── */
 
 // A new rotation starts whenever the session order wraps (e.g. Pull B -> Push
@@ -694,7 +721,7 @@ export function reviewProgram(data, p, opts = {}) {
       .sort()
       .pop() ?? p.startDate;
   const asOf = opts.asOf ?? lastLogged;
-  const ws = normalise(data, p, asOf);
+  const ws = orderSameDay(normalise(data, p, asOf), p);
   const rot = assignRotations(ws, p);
 
   // exposures

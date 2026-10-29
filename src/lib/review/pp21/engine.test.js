@@ -128,6 +128,33 @@ describe("reviewProgram: sessions, rotations, global calls", () => {
   });
 });
 
+describe("two sessions on one day", () => {
+  const w = (id, date, name) => ({ id, date, name, exercises: [] });
+  it("keeps the session order whatever the ids say", () => {
+    // ids sort Push B before Pull A; dates alone can't order them
+    const rv = reviewProgram(
+      {
+        workouts: [
+          w("z", "2026-10-28", "Push A"),
+          w("b", "2026-10-31", "Pull A"),
+          w("a", "2026-10-31", "Push B"),
+          w("c", "2026-11-01", "Pull B"),
+          w("d", "2026-11-04", "Push A"),
+        ],
+      },
+      pp21,
+    );
+    expect(rv.sessions.map((s) => [s.sessionId, s.rotation])).toEqual([
+      ["pushA", 1],
+      ["pullA", 1],
+      ["pushB", 1],
+      ["pullB", 1],
+      ["pushA", 2],
+    ]);
+    expect(rv.rotations[0].complete).toBe(true);
+  });
+});
+
 describe("schedule checks", () => {
   const w = (id, date, name) => ({ id, date, name, exercises: [] });
   it("flags 3+ days in a row, including a run that ends the log", () => {
