@@ -91,8 +91,10 @@ gym-tracker/
     │   ├── homeStats.js          # Home dashboard: volume/streak/week helpers
     │   ├── theme.js              # resolveDark / applyTheme (light|dark|system)
     │   ├── liveSession.js        # Live-session done-map + clock helpers
-    │   └── review/              # Offline Max 7/5/3 cycle-analysis engine
-    │       ├── programs/max753.js  # Swappable program config (exercises, sets, rep targets)
+    │   └── review/              # Offline program-review engines (Max 7/5/3, then PP21)
+    │       ├── programs/max753.js  # Max 7/5/3 config (27 Apr – 27 Oct 2026)
+    │       ├── programs/pp21.js    # Push·Pull 2-1 config (from 28 Oct 2026)
+    │       ├── pp21/engine.js      # PP21 engine: per-exercise decisions, rotation + global calls
     │       ├── cycles.js           # Cycle boundary detection from workout history
     │       ├── tonnage.js          # Per-cycle tonnage aggregation + trend
     │       ├── bodyweight.js       # Bodyweight evaluation over a cycle window
@@ -105,8 +107,9 @@ gym-tracker/
         ├── Home.jsx                 # Home dashboard (Home tab)
         ├── WorkoutsTab.jsx          # Workouts tab shell: List/Calendar toggle + Start
         ├── Progress.jsx             # Progress tab shell: Bodyweight/Strength toggle
-        ├── MoreMenu.jsx             # More tab: prefs (theme), Notepad, Cycle Review, data export/import
-        ├── CycleReview.jsx          # Cycle Review sub-screen: per-exercise decisions, tonnage/BW trends, next-cycle plan + downloadable one-pager
+        ├── MoreMenu.jsx             # More tab: prefs (theme), Notepad, Push·Pull + Max 7/5/3 reviews, data export/import
+        ├── PushPullReview.jsx       # Push·Pull Review sub-screen: rotation picker, decisions, session/rotation checks, next session
+        ├── CycleReview.jsx          # Max 7/5/3 Review sub-screen: per-exercise decisions, tonnage/BW trends, next-cycle plan + downloadable one-pager
         ├── LiveSession.jsx          # Full-screen set-by-set live workout logger
         ├── WorkoutPlanner.jsx       # "Plan / Log Workout" form (Workouts tab)
         ├── WorkoutHistory.jsx       # List of past workouts (Workouts tab)
@@ -179,7 +182,8 @@ main.jsx
                     │   ├── ExerciseRow → ComboInput
                     │   └── ExerciseHistoryModal
                     │
-                    └── [tab="more"]      MoreMenu        (theme; Notepad; CycleReview; DataManagementMenu)
+                    └── [tab="more"]      MoreMenu        (theme; Notepad; PushPullReview; CycleReview; DataManagementMenu)
+                                              ├── PushPullReview (rotation picker, decisions, checks, next session)
                                               └── CycleReview  (cycle picker, decisions, tonnage/BW, plan, one-pager download)
 ```
 
@@ -394,8 +398,16 @@ volume-by-muscle trends over a selected time range.
 `workouts` + `weightLogs` and computes a `ReviewResult` per 8-day cycle:
 per-exercise progression decisions, tonnage trend, bodyweight evaluation, a
 narrative (wins/concerns), and a next-cycle plan (grouped by session or block).
-The program config is swappable (`programs/max753.js`). The review is computed on
-the fly — it **persists nothing and adds no localStorage keys**.
+The program config is swappable (`programs/max753.js`). Max 7/5/3 ended on
+27 Oct 2026 (`cycle.endDate`); later workouts belong to no Max 7/5/3 cycle.
+
+From 28 Oct 2026 the **Push·Pull 2-1 (PP21)** program is reviewed by
+`src/lib/review/pp21/engine.js` against `programs/pp21.js`. It replays every
+exercise from the start date and reviews rotation by rotation (one Push A →
+Pull A → Push B → Pull B pass). Rules are in [docs/PP21-REVIEW.md](docs/PP21-REVIEW.md).
+
+Both reviews are computed on the fly. They **persist nothing and add no
+localStorage keys**.
 
 ## Unit handling (kg / lb)
 

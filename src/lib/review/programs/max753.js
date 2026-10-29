@@ -18,8 +18,11 @@ export const max753 = {
   // stretches to the day before. Cycle 10 ran long (tiredness/injury,
   // 8-16 Jul), so cycle 11 re-anchors to 19 Jul. Cycle 16 ran long
   // (fatigue/burnout, 28 Aug-5 Sep), so cycle 17 re-anchors to 6 Sep.
+  // endDate: the program stopped on 27 Oct (Push·Pull 2-1 took over on 28
+  // Oct, see programs/pp21.js), so cycle 23 is cut short at 24-27 Oct.
   cycle: {
     startDate: "2026-04-27",
+    endDate: "2026-10-27",
     lengthDays: 8,
     expectedSessions: 6,
     anchors: [
@@ -53,7 +56,7 @@ export const max753 = {
     {
       id: "lean-bulk",
       from: "2026-06-01",
-      to: "2026-12-31",
+      to: "2026-10-27",
       bias: "normal",
       bodyweight: { minPct: 0.25, maxPct: 0.5, tooFastPct: 0.7 },
     },

@@ -1,5 +1,6 @@
 // src/components/CycleReview.jsx
-// More -> Cycle Review: an offline Max 7/5/3 cycle review + next-cycle plan.
+// More -> Max 7/5/3 Review: an offline Max 7/5/3 cycle review + next-cycle plan.
+// The program ended 27 Oct 2026; Push·Pull 2-1 is reviewed in PushPullReview.
 // Reads live workouts (AppContext) and bodyweight logs (localStorage), runs the
 // pure review engine, and renders the structured result with a downloadable
 // HTML one-pager. No data is mutated here.
@@ -74,7 +75,7 @@ export default function CycleReview() {
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
-          Cycle Review
+          Max 7/5/3 Review
         </h1>
         <button
           type="button"

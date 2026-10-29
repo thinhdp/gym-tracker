@@ -101,13 +101,34 @@ describe("cycle anchors (cycle 16 ran long, cycle 17 re-anchored to 6 Sep)", () 
   });
 });
 
+describe("program end (Max 7/5/3 stopped 27 Oct, PP21 from 28 Oct)", () => {
+  it("cuts the last cycle short at the end date", () => {
+    expect(cycleDates(max753, 23)).toEqual({
+      start: "2026-10-24",
+      end: "2026-10-27",
+    });
+    expect(cycleForDate(max753, "2026-10-27")).toBe(23);
+  });
+  it("puts dates after the end in no cycle", () => {
+    expect(cycleForDate(max753, "2026-10-28")).toBeNull();
+    expect(loggedCycles(max753, [wo("2026-10-27"), wo("2026-11-02")])).toEqual([
+      23,
+    ]);
+  });
+  it("still finds the last cycle when newer workouts exist", () => {
+    expect(
+      mostRecentCompletedCycle(max753, [wo("2026-10-26"), wo("2026-11-02")]),
+    ).toBe(23);
+  });
+});
+
 describe("phaseForDate / phaseForCycle", () => {
   it("classifies dates into calendar phases", () => {
     expect(phaseForDate(max753, "2026-05-01")).toBe("cut");
     expect(phaseForDate(max753, "2026-05-26")).toBe("maintenance");
     expect(phaseForDate(max753, "2026-06-10")).toBe("lean-bulk");
-    expect(phaseForDate(max753, "2026-12-31")).toBe("lean-bulk");
-    expect(phaseForDate(max753, "2027-01-01")).toBe("post-program");
+    expect(phaseForDate(max753, "2026-10-27")).toBe("lean-bulk");
+    expect(phaseForDate(max753, "2026-10-28")).toBe("post-program");
     expect(phaseForDate(max753, "2026-04-20")).toBe("pre-program");
   });
   it("uses majority days for a cycle, later phase breaking ties", () => {

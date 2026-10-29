@@ -1,6 +1,8 @@
 // src/lib/review/cycles.js
 // Cycle + phase date math for the review engine. A "cycle" is the program's
 // microcycle (config.cycle.lengthDays); cycle 1 starts at config.cycle.startDate.
+// An optional config.cycle.endDate ends the program: later dates belong to no
+// cycle, and the cycle containing it is cut short there.
 // Dates are "YYYY-MM-DD" strings; we parse to local-midnight Dates so day diffs
 // are DST-safe, and rely on lexical ordering of zero-padded YMD for comparisons.
 
@@ -41,6 +43,7 @@ function segments(config) {
 export function cycleForDate(config, dateStr) {
   const d = parseYMD(dateStr);
   if (!d) return null;
+  if (config.cycle.endDate && dateStr > config.cycle.endDate) return null;
   const segs = segments(config);
   let seg = null;
   for (const s of segs) {
@@ -66,6 +69,8 @@ export function cycleDates(config, n) {
   let e = addDays(s, config.cycle.lengthDays - 1);
   const next = segs[i + 1];
   if (next && n === next.cycle - 1) e = addDays(parseYMD(next.startDate), -1);
+  const endDate = parseYMD(config.cycle.endDate);
+  if (endDate && e > endDate) e = endDate;
   return { start: ymd(s), end: ymd(e) };
 }
 
@@ -119,7 +124,9 @@ export function phaseForCycle(config, n) {
 export function mostRecentCompletedCycle(config, workouts, today = null) {
   const dates = (workouts || []).map((w) => w.date).filter(Boolean);
   if (!dates.length) return null;
-  const ref = today || dates.reduce((a, b) => (a > b ? a : b));
+  let ref = today || dates.reduce((a, b) => (a > b ? a : b));
+  const endDate = config.cycle.endDate;
+  if (endDate && ref > endDate) ref = endDate;
   let n = cycleForDate(config, ref);
   if (n == null) return null;
   while (n >= 1) {

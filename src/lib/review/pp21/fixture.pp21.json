@@ -1,0 +1,2019 @@
+{
+  "schema": "mgym.v1",
+  "unit": "kg",
+  "workouts": [
+    {
+      "id": "fx1",
+      "date": "2026-10-28",
+      "name": "[PP21] Push A",
+      "exercises": [
+        {
+          "exerciseName": "Bench Press Barbell",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 20,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 30,
+              "reps": 5
+            },
+            {
+              "set": 3,
+              "weight": 45,
+              "reps": 6
+            },
+            {
+              "set": 4,
+              "weight": 40,
+              "reps": 8
+            }
+          ],
+          "rpe": 8.5,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Back Squat",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 60,
+              "reps": 5
+            },
+            {
+              "set": 2,
+              "weight": 95,
+              "reps": 7
+            },
+            {
+              "set": 3,
+              "weight": 85,
+              "reps": 9
+            }
+          ],
+          "rpe": 8.5,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Bench Press Dumbbell",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 20,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 20,
+              "reps": 9
+            }
+          ],
+          "rpe": 9.5,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Leg extension",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 70,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 70,
+              "reps": 11
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Lateral Raise Dumbbell",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 10,
+              "reps": 18
+            },
+            {
+              "set": 2,
+              "weight": 10,
+              "reps": 16
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Overhead Extension Cable",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 30,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 30,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Adductor Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 37.5,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 37.5,
+              "reps": 12
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx2",
+      "date": "2026-10-29",
+      "name": "[PP21] Pull A",
+      "exercises": [
+        {
+          "exerciseName": "Deadlift",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 60,
+              "reps": 5
+            },
+            {
+              "set": 2,
+              "weight": 95,
+              "reps": 6
+            },
+            {
+              "set": 3,
+              "weight": 85,
+              "reps": 8
+            }
+          ],
+          "rpe": 8,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Pull up",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 7.5,
+              "reps": 8
+            },
+            {
+              "set": 2,
+              "weight": 0,
+              "reps": 10
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Row Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 120,
+              "reps": 11
+            },
+            {
+              "set": 2,
+              "weight": 120,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Rear delt raise machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 47.5,
+              "reps": 16
+            },
+            {
+              "set": 2,
+              "weight": 47.5,
+              "reps": 14
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Bayesian Cable Curl",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 15,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 15,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Hip Abduction Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 86,
+              "reps": 18
+            },
+            {
+              "set": 2,
+              "weight": 86,
+              "reps": 16
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Calf Raise Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 50,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 50,
+              "reps": 11
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Crunch",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 0,
+              "reps": 15
+            },
+            {
+              "set": 2,
+              "weight": 0,
+              "reps": 15
+            }
+          ],
+          "rpe": null,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx3",
+      "date": "2026-10-31",
+      "name": "[PP21] Push B",
+      "exercises": [
+        {
+          "exerciseName": "Incline Smith",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 45,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 40,
+              "reps": 12
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Leg press",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 260,
+              "reps": 14
+            },
+            {
+              "set": 2,
+              "weight": 260,
+              "reps": 12
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Chest Fly Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 55,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 55,
+              "reps": 11
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Shoulder press",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 30,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 30,
+              "reps": 11
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Lateral Raise Cable",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 12.5,
+              "reps": 16
+            },
+            {
+              "set": 2,
+              "weight": 12.5,
+              "reps": 14
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Triceps Pushdown",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 26.25,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 26.25,
+              "reps": 11
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx4",
+      "date": "2026-11-01",
+      "name": "[PP21] Pull B",
+      "exercises": [
+        {
+          "exerciseName": "Lat Pulldown",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 67.5,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 67.5,
+              "reps": 9
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Glute raise",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 140,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 140,
+              "reps": 9
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Row Cable",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 72.5,
+              "reps": 11
+            },
+            {
+              "set": 2,
+              "weight": 72.5,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Leg Curl",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 60,
+              "reps": 14
+            },
+            {
+              "set": 2,
+              "weight": 60,
+              "reps": 12
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Face pull",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 27.5,
+              "reps": 17
+            },
+            {
+              "set": 2,
+              "weight": 27.5,
+              "reps": 15
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Preacher curl",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 20,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 20,
+              "reps": 9
+            }
+          ],
+          "rpe": null,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Low to High Cable Fly",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 8.75,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 8.75,
+              "reps": 12
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx5",
+      "date": "2026-11-03",
+      "name": "[PP21] Push A",
+      "exercises": [
+        {
+          "exerciseName": "Bench Press Barbell",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 20,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 30,
+              "reps": 5
+            },
+            {
+              "set": 3,
+              "weight": 45,
+              "reps": 7
+            },
+            {
+              "set": 4,
+              "weight": 40,
+              "reps": 9
+            }
+          ],
+          "rpe": 8.5,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Back Squat",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 60,
+              "reps": 5
+            },
+            {
+              "set": 2,
+              "weight": 95,
+              "reps": 8
+            },
+            {
+              "set": 3,
+              "weight": 85,
+              "reps": 10
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Bench Press Dumbbell",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 20,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 20,
+              "reps": 9
+            }
+          ],
+          "rpe": 9.5,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Leg extension",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 70,
+              "reps": 14
+            },
+            {
+              "set": 2,
+              "weight": 70,
+              "reps": 12
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Lateral Raise Dumbbell",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 10,
+              "reps": 20
+            },
+            {
+              "set": 2,
+              "weight": 10,
+              "reps": 20
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Overhead Extension Cable",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 30,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 30,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Adductor Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 37.5,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 37.5,
+              "reps": 12
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx6",
+      "date": "2026-11-04",
+      "name": "[PP21] Pull A",
+      "exercises": [
+        {
+          "exerciseName": "Deadlift",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 60,
+              "reps": 5
+            },
+            {
+              "set": 2,
+              "weight": 100,
+              "reps": 5
+            },
+            {
+              "set": 3,
+              "weight": 90,
+              "reps": 7
+            }
+          ],
+          "rpe": 8.5,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Pull up",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 10,
+              "reps": 6
+            },
+            {
+              "set": 2,
+              "weight": 0,
+              "reps": 9
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Row Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 120,
+              "reps": 11
+            },
+            {
+              "set": 2,
+              "weight": 120,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Rear delt raise machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 47.5,
+              "reps": 16
+            },
+            {
+              "set": 2,
+              "weight": 47.5,
+              "reps": 14
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Bayesian Cable Curl",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 15,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 15,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Hip Abduction Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 86,
+              "reps": 18
+            },
+            {
+              "set": 2,
+              "weight": 86,
+              "reps": 16
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx7",
+      "date": "2026-11-06",
+      "name": "[PP21] Push B",
+      "exercises": [
+        {
+          "exerciseName": "Incline Smith",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 47.5,
+              "reps": 8
+            },
+            {
+              "set": 2,
+              "weight": 42.5,
+              "reps": 12
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Leg press",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 260,
+              "reps": 15
+            },
+            {
+              "set": 2,
+              "weight": 260,
+              "reps": 13
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Chest Fly Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 55,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 55,
+              "reps": 11
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Shoulder press",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 30,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 30,
+              "reps": 12
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Lateral Raise Cable",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 12.5,
+              "reps": 16
+            },
+            {
+              "set": 2,
+              "weight": 12.5,
+              "reps": 14
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Triceps Pushdown",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 26.25,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 26.25,
+              "reps": 11
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx8",
+      "date": "2026-11-07",
+      "name": "[PP21] Pull B",
+      "exercises": [
+        {
+          "exerciseName": "Lat Pulldown",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 67.5,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 67.5,
+              "reps": 9
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Glute raise",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 140,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 140,
+              "reps": 12
+            }
+          ],
+          "rpe": 9,
+          "feedback": "have to cheat a bit"
+        },
+        {
+          "exerciseName": "Seated Row Cable",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 72.5,
+              "reps": 11
+            },
+            {
+              "set": 2,
+              "weight": 72.5,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Leg Curl",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 60,
+              "reps": 14
+            },
+            {
+              "set": 2,
+              "weight": 60,
+              "reps": 12
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Preacher curl",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 20,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 20,
+              "reps": 9
+            }
+          ],
+          "rpe": null,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Low to High Cable Fly",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 8.75,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 8.75,
+              "reps": 12
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx9",
+      "date": "2026-11-09",
+      "name": "[PP21] Push A",
+      "exercises": [
+        {
+          "exerciseName": "Bench Press Barbell",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 20,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 30,
+              "reps": 5
+            },
+            {
+              "set": 3,
+              "weight": 45,
+              "reps": 8
+            },
+            {
+              "set": 4,
+              "weight": 40,
+              "reps": 10
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Back Squat",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 60,
+              "reps": 5
+            },
+            {
+              "set": 2,
+              "weight": 100,
+              "reps": 6
+            },
+            {
+              "set": 3,
+              "weight": 90,
+              "reps": 8
+            }
+          ],
+          "rpe": 9,
+          "feedback": "Lower back felt tight"
+        },
+        {
+          "exerciseName": "Bench Press Dumbbell",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 20,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 20,
+              "reps": 9
+            }
+          ],
+          "rpe": 9.5,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Leg extension",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 70,
+              "reps": 15
+            },
+            {
+              "set": 2,
+              "weight": 70,
+              "reps": 13
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Lateral Raise Dumbbell",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 12.5,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 12.5,
+              "reps": 11
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Overhead Extension Cable",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 30,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 30,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Adductor Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 37.5,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 37.5,
+              "reps": 12
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx10",
+      "date": "2026-11-10",
+      "name": "",
+      "exercises": [
+        {
+          "exerciseName": "Deadlift",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 60,
+              "reps": 5
+            },
+            {
+              "set": 2,
+              "weight": 100,
+              "reps": 5
+            },
+            {
+              "set": 3,
+              "weight": 90,
+              "reps": 6
+            }
+          ],
+          "rpe": 9,
+          "feedback": "Super tired"
+        },
+        {
+          "exerciseName": "Pull up",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 10,
+              "reps": 7
+            },
+            {
+              "set": 2,
+              "weight": 0,
+              "reps": 10
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Row Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 120,
+              "reps": 11
+            },
+            {
+              "set": 2,
+              "weight": 120,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Rear delt raise machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 47.5,
+              "reps": 16
+            },
+            {
+              "set": 2,
+              "weight": 47.5,
+              "reps": 14
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Bayesian Cable Curl",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 15,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 15,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Hip Abduction Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 86,
+              "reps": 18
+            },
+            {
+              "set": 2,
+              "weight": 86,
+              "reps": 16
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Calf Raise Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 50,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 50,
+              "reps": 11
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx11",
+      "date": "2026-11-12",
+      "name": "[PP21] Push B",
+      "exercises": [
+        {
+          "exerciseName": "Incline Smith",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 47.5,
+              "reps": 9
+            },
+            {
+              "set": 2,
+              "weight": 42.5,
+              "reps": 12
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Leg press",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 260,
+              "reps": 15
+            },
+            {
+              "set": 2,
+              "weight": 260,
+              "reps": 15
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Chest Fly Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 55,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 55,
+              "reps": 11
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Shoulder press",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 32.5,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 32.5,
+              "reps": 9
+            }
+          ],
+          "rpe": 9.5,
+          "feedback": "Shoulder pain on last reps"
+        },
+        {
+          "exerciseName": "Lateral Raise Cable",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 12.5,
+              "reps": 16
+            },
+            {
+              "set": 2,
+              "weight": 12.5,
+              "reps": 14
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Triceps Pushdown",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 26.25,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 26.25,
+              "reps": 11
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx12",
+      "date": "2026-11-13",
+      "name": "[PP21] Pull B",
+      "exercises": [
+        {
+          "exerciseName": "Lat Pulldown",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 67.5,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 67.5,
+              "reps": 9
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Glute raise",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 140,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 140,
+              "reps": 11
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Row Cable",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 72.5,
+              "reps": 11
+            },
+            {
+              "set": 2,
+              "weight": 72.5,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Leg Curl",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 60,
+              "reps": 14
+            },
+            {
+              "set": 2,
+              "weight": 60,
+              "reps": 12
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Face pull",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 27.5,
+              "reps": 17
+            },
+            {
+              "set": 2,
+              "weight": 27.5,
+              "reps": 15
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Preacher curl",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 20,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 20,
+              "reps": 9
+            }
+          ],
+          "rpe": null,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Low to High Cable Fly",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 8.75,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 8.75,
+              "reps": 12
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx13",
+      "date": "2026-11-15",
+      "name": "[PP21] Push A",
+      "exercises": [
+        {
+          "exerciseName": "Bench Press Barbell",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 20,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 30,
+              "reps": 5
+            },
+            {
+              "set": 3,
+              "weight": 47.5,
+              "reps": 5
+            },
+            {
+              "set": 4,
+              "weight": 42.5,
+              "reps": 7
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Back Squat",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 60,
+              "reps": 5
+            },
+            {
+              "set": 2,
+              "weight": 100,
+              "reps": 7
+            }
+          ],
+          "rpe": 8.5,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Bench Press Dumbbell",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 20,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 20,
+              "reps": 9
+            }
+          ],
+          "rpe": 9.5,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Leg extension",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 70,
+              "reps": 15
+            },
+            {
+              "set": 2,
+              "weight": 70,
+              "reps": 15
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Lateral Raise Dumbbell",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 12.5,
+              "reps": 14
+            },
+            {
+              "set": 2,
+              "weight": 12.5,
+              "reps": 12
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Overhead Extension Cable",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 30,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 30,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Adductor Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 37.5,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 37.5,
+              "reps": 12
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx14",
+      "date": "2026-11-16",
+      "name": "[PP21] Pull A",
+      "exercises": [
+        {
+          "exerciseName": "Deadlift",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 60,
+              "reps": 5
+            },
+            {
+              "set": 2,
+              "weight": 100,
+              "reps": 3
+            },
+            {
+              "set": 3,
+              "weight": 90,
+              "reps": 5
+            }
+          ],
+          "rpe": 9.5,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Pull up",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 10,
+              "reps": 8
+            },
+            {
+              "set": 2,
+              "weight": 0,
+              "reps": 10
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Row Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 120,
+              "reps": 11
+            },
+            {
+              "set": 2,
+              "weight": 120,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Rear delt raise machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 47.5,
+              "reps": 16
+            },
+            {
+              "set": 2,
+              "weight": 47.5,
+              "reps": 14
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Bayesian Cable Curl",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 15,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 15,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Hip Abduction Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 86,
+              "reps": 18
+            },
+            {
+              "set": 2,
+              "weight": 86,
+              "reps": 16
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx15",
+      "date": "2026-11-18",
+      "name": "[PP21] Push B",
+      "exercises": [
+        {
+          "exerciseName": "Incline Smith",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 47.5,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 42.5,
+              "reps": 12
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Leg press",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 270,
+              "reps": 11
+            },
+            {
+              "set": 2,
+              "weight": 270,
+              "reps": 9
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Chest Fly Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 55,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 55,
+              "reps": 11
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Shoulder press",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 27.5,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 27.5,
+              "reps": 10
+            }
+          ],
+          "rpe": 9,
+          "feedback": "shoulder pain again"
+        },
+        {
+          "exerciseName": "Lateral Raise Cable",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 12.5,
+              "reps": 16
+            },
+            {
+              "set": 2,
+              "weight": 12.5,
+              "reps": 14
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Triceps Pushdown",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 26.25,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 26.25,
+              "reps": 11
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "fx16",
+      "date": "2026-11-19",
+      "name": "[PP21] Pull B",
+      "exercises": [
+        {
+          "exerciseName": "Lat Pulldown",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 67.5,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 67.5,
+              "reps": 9
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Glute raise",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 140,
+              "reps": 12
+            },
+            {
+              "set": 2,
+              "weight": 140,
+              "reps": 12
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Row Cable",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 72.5,
+              "reps": 11
+            },
+            {
+              "set": 2,
+              "weight": 72.5,
+              "reps": 10
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Seated Leg Curl",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 60,
+              "reps": 14
+            },
+            {
+              "set": 2,
+              "weight": 60,
+              "reps": 12
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Face pull",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 27.5,
+              "reps": 17
+            },
+            {
+              "set": 2,
+              "weight": 27.5,
+              "reps": 15
+            }
+          ],
+          "rpe": 10,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Preacher curl",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 20,
+              "reps": 10
+            },
+            {
+              "set": 2,
+              "weight": 20,
+              "reps": 9
+            }
+          ],
+          "rpe": null,
+          "feedback": ""
+        },
+        {
+          "exerciseName": "Low to High Cable Fly",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 8.75,
+              "reps": 13
+            },
+            {
+              "set": 2,
+              "weight": 8.75,
+              "reps": 12
+            }
+          ],
+          "rpe": 9,
+          "feedback": ""
+        }
+      ]
+    },
+    {
+      "id": "old1",
+      "date": "2026-10-26",
+      "name": "[Max753] Upper 2",
+      "exercises": [
+        {
+          "exerciseName": "Chest Fly Machine",
+          "sets": [
+            {
+              "set": 1,
+              "weight": 55,
+              "reps": 11
+            },
+            {
+              "set": 2,
+              "weight": 55,
+              "reps": 11
+            }
+          ],
+          "rpe": 9.5,
+          "feedback": ""
+        }
+      ]
+    }
+  ]
+}

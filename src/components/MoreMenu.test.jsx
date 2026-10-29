@@ -7,6 +7,7 @@ import MoreMenu from "./MoreMenu";
 vi.mock("./Notepad", () => ({ default: () => <div>NOTEPAD</div> }));
 vi.mock("./DataManagementMenu", () => ({ default: () => <div>DATA</div> }));
 vi.mock("./CycleReview", () => ({ default: () => <div>CYCLE_REVIEW</div> }));
+vi.mock("./PushPullReview", () => ({ default: () => <div>PP_REVIEW</div> }));
 
 const renderMore = () =>
   render(
@@ -37,11 +38,22 @@ describe("MoreMenu", () => {
     expect(screen.getByRole("heading", { name: "More" })).toBeInTheDocument();
   });
 
-  it("opens the cycle review as a sub-screen and returns", async () => {
+  it("opens the Max 7/5/3 review as a sub-screen and returns", async () => {
     const user = userEvent.setup();
     renderMore();
-    await user.click(screen.getByRole("button", { name: /Cycle Review/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Max 7\/5\/3 Review/i }),
+    );
     expect(screen.getByText("CYCLE_REVIEW")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /More/ }));
+    expect(screen.getByRole("heading", { name: "More" })).toBeInTheDocument();
+  });
+
+  it("opens the Push·Pull review as a sub-screen and returns", async () => {
+    const user = userEvent.setup();
+    renderMore();
+    await user.click(screen.getByRole("button", { name: /Push·Pull Review/i }));
+    expect(screen.getByText("PP_REVIEW")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /More/ }));
     expect(screen.getByRole("heading", { name: "More" })).toBeInTheDocument();
   });
