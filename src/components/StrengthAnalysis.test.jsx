@@ -83,6 +83,7 @@ describe("StrengthAnalysis", () => {
     const user = userEvent.setup();
     const { container } = render(<StrengthAnalysis />);
     expect(screen.getByText("Per cycle by muscle")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Max 7/5/3" }));
     // Default category is Push and only Quads is logged → empty state.
     expect(
       screen.getByText(/no max 7\/5\/3 cycles in this range/i),
@@ -100,10 +101,16 @@ describe("StrengthAnalysis", () => {
     expect(screen.getByText("(kg)")).toBeInTheDocument();
   });
 
-  it("shows the cycle-chart empty state when no logged muscle is in a category", () => {
+  it("shows the cycle-chart empty state when no logged muscle is in a category", async () => {
     mockApp.exercises = [{ name: "Plank", mainMuscle: "Abs" }];
     mockApp.workouts = [workout(daysAgo(5), [ex("Plank", [set(0, 30)])])];
+    const user = userEvent.setup();
     render(<StrengthAnalysis />);
+    // Push·Pull rotations are the default program.
+    expect(
+      screen.getByText(/no push·pull rotations in this range/i),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Max 7/5/3" }));
     expect(
       screen.getByText(/no max 7\/5\/3 cycles in this range/i),
     ).toBeInTheDocument();

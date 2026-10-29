@@ -4,6 +4,7 @@ import Segmented from "./ui/Segmented";
 import { Input } from "./ui/Input";
 import Notepad from "./Notepad";
 import CycleReview from "./CycleReview";
+import PushPullReview from "./PushPullReview";
 import DataManagementMenu from "./DataManagementMenu";
 import LiftSourcesEditor from "./LiftSourcesEditor";
 import { loadLS, saveLS, K_PROFILE } from "../lib/storage";
@@ -82,6 +83,20 @@ export default function MoreMenu() {
           <span aria-hidden>←</span> More
         </button>
         <CycleReview />
+      </div>
+    );
+  }
+  if (view === "pushPullReview") {
+    return (
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setView("menu")}
+          className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400"
+        >
+          <span aria-hidden>←</span> More
+        </button>
+        <PushPullReview />
       </div>
     );
   }
@@ -229,13 +244,31 @@ export default function MoreMenu() {
           </button>
           <button
             type="button"
+            onClick={() => setView("pushPullReview")}
+            className="flex w-full items-center justify-between px-3 py-3 text-left transition hover:bg-neutral-50 dark:hover:bg-neutral-800"
+          >
+            <div>
+              <div className={rowText}>Push·Pull Review</div>
+              <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                Push·Pull 2-1 rotation review + next session (from 28 Oct)
+              </div>
+            </div>
+            <span
+              aria-hidden
+              className="text-neutral-400 dark:text-neutral-500"
+            >
+              ›
+            </span>
+          </button>
+          <button
+            type="button"
             onClick={() => setView("cycleReview")}
             className="flex w-full items-center justify-between px-3 py-3 text-left transition hover:bg-neutral-50 dark:hover:bg-neutral-800"
           >
             <div>
-              <div className={rowText}>Cycle Review</div>
+              <div className={rowText}>Max 7/5/3 Review</div>
               <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                Max 7/5/3 review + next-cycle plan
+                Past cycles, 27 Apr – 27 Oct
               </div>
             </div>
             <span
