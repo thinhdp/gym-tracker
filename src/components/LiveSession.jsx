@@ -240,7 +240,7 @@ export default function LiveSession() {
   };
   const setName = (name) => patchWorkout((w) => ({ ...w, name }));
 
-  const finish = () => {
+  const close = () => {
     // Drop an abandoned empty workout so it doesn't litter history.
     if (exs.length === 0) {
       setWorkouts((prev) => prev.filter((w) => w.id !== workout.id));
@@ -250,6 +250,35 @@ export default function LiveSession() {
 
   const completed = completedSets(workout);
   const total = totalSets(workout);
+  // The top-right button reads "Finish" only once every set has reps logged;
+  // until then it is an "Exit" that leaves the session with whatever is logged.
+  const allLogged = total > 0 && completed === total;
+
+  const finish = () => {
+    confirm({
+      title: "Finish workout?",
+      message: "All sets are logged. This closes the live session.",
+      confirmText: "Finish",
+      tone: "neutral",
+    }).then((ok) => ok && close());
+  };
+
+  const exit = () => {
+    confirm({
+      title: "Exit session?",
+      message:
+        total === 0
+          ? "Nothing is logged yet. The empty workout will be discarded."
+          : `Only ${completed} of ${total} sets are logged. The workout is kept as-is and the live session closes.`,
+      confirmText: "Exit",
+      tone: "destructive",
+    }).then((ok) => ok && close());
+  };
+
+  // Recommended reps from the exercise library, shown under the exercise name.
+  const currentRec = current
+    ? exercises.find((e) => e.name === current.exerciseName)?.recommendRep || ""
+    : "";
 
   const surface =
     "rounded-2xl border bg-white dark:border-neutral-800 dark:bg-neutral-900";
@@ -286,13 +315,23 @@ export default function LiveSession() {
           >
             Save as routine
           </button>
-          <button
-            type="button"
-            onClick={finish}
-            className="rounded-xl border border-blue-200 px-3 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 dark:hover:bg-neutral-800"
-          >
-            Finish
-          </button>
+          {allLogged ? (
+            <button
+              type="button"
+              onClick={finish}
+              className="rounded-xl border border-blue-200 px-3 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 dark:hover:bg-neutral-800"
+            >
+              Finish
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={exit}
+              className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-neutral-800"
+            >
+              Exit
+            </button>
+          )}
         </div>
       </div>
 
@@ -351,7 +390,14 @@ export default function LiveSession() {
                   </span>
                 )}
               </div>
-              <div className="mb-3 -mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+              {currentRec && (
+                <div className="mb-1 -mt-2 text-xs text-neutral-600 dark:text-neutral-300">
+                  Target: {currentRec}
+                </div>
+              )}
+              <div
+                className={`mb-3 text-xs text-neutral-500 dark:text-neutral-400 ${currentRec ? "" : "-mt-2"}`}
+              >
                 {currentReps} {currentReps === 1 ? "rep" : "reps"} so far
               </div>
               <div className="mb-3 flex items-center justify-end gap-1">
