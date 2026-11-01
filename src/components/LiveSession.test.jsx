@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AppProvider } from "../context/AppContext";
 import { ConfirmProvider } from "./ConfirmDialog";
-import { saveLS, K_WO, K_SESSION } from "../lib/storage";
+import { saveLS, K_EX, K_WO, K_SESSION } from "../lib/storage";
 import LiveSession from "./LiveSession";
 
 function renderLive() {
@@ -213,11 +213,70 @@ describe("LiveSession", () => {
     expect(screen.queryByText(/Set 1: 80 kg × 8/)).not.toBeInTheDocument();
   });
 
-  it("closes the session when finished", async () => {
+  it("closes the session when finished, after confirming", async () => {
     const user = userEvent.setup();
-    seedAndRender();
+    seedAndRender(); // the only set is logged → Finish
+    expect(
+      screen.queryByRole("button", { name: "Exit" }),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Finish" }));
+    // Still open until the dialog is confirmed.
+    expect(screen.getByText("Finish workout?")).toBeInTheDocument();
+    expect(screen.getByText("Bench")).toBeInTheDocument();
+    // The dialog's confirm button is the last "Finish" on screen.
+    await user.click(screen.getAllByRole("button", { name: "Finish" }).at(-1));
     expect(screen.queryByText("Bench")).not.toBeInTheDocument();
+  });
+
+  it("offers a red Exit instead of Finish while sets are still unlogged", async () => {
+    const user = userEvent.setup();
+    seedWithTargets(); // 0/2 logged
+    expect(
+      screen.queryByRole("button", { name: "Finish" }),
+    ).not.toBeInTheDocument();
+    const exitBtn = screen.getByRole("button", { name: "Exit" });
+    expect(exitBtn.className).toMatch(/text-red-600/);
+
+    await user.click(exitBtn);
+    expect(screen.getByText("Exit session?")).toBeInTheDocument();
+    expect(screen.getByText(/Only 0 of 2 sets are logged/)).toBeInTheDocument();
+    // Cancelling keeps the session open.
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByText("Bench")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Exit" }));
+    await user.click(screen.getAllByRole("button", { name: "Exit" }).at(-1));
+    expect(screen.queryByText("Bench")).not.toBeInTheDocument();
+  });
+
+  it("switches Exit to Finish once every set has reps", async () => {
+    const user = userEvent.setup();
+    seedWithTargets();
+    expect(screen.getByRole("button", { name: "Exit" })).toBeInTheDocument();
+    const [, firstReps, , secondReps] = screen.getAllByRole("spinbutton");
+    await user.type(firstReps, "9");
+    expect(screen.getByRole("button", { name: "Exit" })).toBeInTheDocument();
+    await user.type(secondReps, "8");
+    expect(screen.getByRole("button", { name: "Finish" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Exit" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the exercise's recommended reps under its name", () => {
+    saveLS(K_EX, [
+      { name: "Bench", recommendRep: "Top 5-8 @RPE 8-9 · Back-off max" },
+    ]);
+    seedAndRender();
+    expect(
+      screen.getByText("Target: Top 5-8 @RPE 8-9 · Back-off max"),
+    ).toBeInTheDocument();
+  });
+
+  it("omits the target line when the exercise has no recommendation", () => {
+    saveLS(K_EX, [{ name: "Bench", recommendRep: "" }]);
+    seedAndRender();
+    expect(screen.queryByText(/^Target:/)).not.toBeInTheDocument();
   });
 
   it("sizes the exercise-name button to its text, not the whole row", () => {
