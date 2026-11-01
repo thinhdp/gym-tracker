@@ -135,8 +135,10 @@ export default function DataManagementMenu() {
         className="hidden"
         onChange={onFileChange}
       />
+      {/* Opens upward: this menu sits at the bottom of the More page, so a
+          downward dropdown would be hidden behind the bottom nav. */}
       {open && (
-        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 border dark:border-neutral-800 rounded shadow z-10">
+        <div className="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-neutral-900 border dark:border-neutral-800 rounded shadow z-10">
           <Button
             variant="ghost"
             className="w-full justify-start px-4 py-2"
