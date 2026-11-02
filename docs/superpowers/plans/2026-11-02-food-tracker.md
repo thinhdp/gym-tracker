@@ -16,10 +16,10 @@ Tasks follow the backlog phases in `docs/superpowers/specs/2026-11-02-food-track
 
 | Backlog phase                                        | Plan tasks |
 | ---------------------------------------------------- | ---------- |
-| Phase 1 — shell, Today, Search, Targets, backup      | 1–8        |
-| Phase 2 — custom foods, saved meals, recent, offline | 9–11       |
-| Phase 3 — Trends and Home card                       | 12–13      |
-| Phase 4 — barcode                                    | 14         |
+| Phase 1 — shell, Today, Search, Targets, backup      | 1–8b       |
+| Phase 2 — custom foods, saved meals, recent, offline | 9–11b      |
+| Phase 3 — Trends and Home card                       | 12a–13     |
+| Phase 4 — barcode                                    | 14a, 14b   |
 | Phase 5 — polish and docs                            | 15         |
 
 ## Global Constraints
@@ -32,7 +32,9 @@ Tasks follow the backlog phases in `docs/superpowers/specs/2026-11-02-food-track
 - API client: no `Authorization` header; base URL from `import.meta.env.VITE_FOOD_API_BASE`; unset or `"fixture"` → fixture mode with a visible "demo data" badge in Search.
 - Recent list caps at 50 distinct foods keyed `kind:id`. Search cache: 7-day expiry, 200-query cap.
 - Backup: `food` field in the `mgym.v1` envelope holds `entries`, `targets`, `customFoods`, `savedMeals`, `recent`; `searchCache` and `tab` are excluded.
-- Every `src/food/lib/*.js` has a co-located `*.test.js`; components with logic have `*.test.jsx`. `npm run check` must pass before each commit (the husky pre-push hook is not installed in this clone, so run it by hand).
+- Every `src/food/lib/*.js` has a co-located `*.test.js`; components with logic have `*.test.jsx`. Each task runs its focused test files (`npx vitest run <files>`); `npm run check` (lint + format check + tests + build) runs once per execution part, before that part's PR and again after the rebase (the husky pre-push hook is not installed in this clone, so run it by hand).
+- One execution part per session and per PR (CLAUDE.md, Execution part sizing). A part ends with the gate, a PR, and a handoff section appended to this file.
+- A new stored key or shape updates `docs/DATA-MODEL.md` in the same PR (CLAUDE.md Feature path step 3): keys in Task 1, object shapes in Tasks 3 and 4, the backup `food` field in Task 8b.
 - Commit messages end with `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 
 ## Review Focus
@@ -41,11 +43,17 @@ Tasks follow the backlog phases in `docs/superpowers/specs/2026-11-02-food-track
 2. Deleting the only target row leaves the app with no target: Today shows plain totals and no bars, the Home card shows "Set up food tracking". Tests in Tasks 6, 7, 13.
 3. A corrupted `mgym.food.entries.v1` value (not an array) must not crash `FoodProvider`; it falls back to `[]`. Test in Task 3.
 4. A search request that returns after the user has typed more must not overwrite newer results (abort stale requests). Test in Task 5.
-5. Importing a backup that has no `food` field leaves existing food data untouched in both merge and replace mode. Test in Task 8.
+5. Importing a backup that has no `food` field leaves existing food data untouched in both merge and replace mode. Test in Task 8a.
+
+## Tasks
+
+Sizes and certainty follow CLAUDE.md "Execution part sizing". A stored key or shape, the backup envelope, shared context state, or more than one view makes a task L whatever its file count. Tasks that needed a lib test and a component test were XL and are split into a lib task and a view task.
 
 ---
 
-### Task 1: `/food` mode shell
+### Task 1: `/food` mode shell (L, certain)
+
+L: it defines the seven `mgym.food.*` keys and writes `mgym.food.tab`.
 
 **Files:**
 
@@ -55,6 +63,7 @@ Tasks follow the backlog phases in `docs/superpowers/specs/2026-11-02-food-track
 - Create: `src/food/FoodApp.jsx`
 - Create: `src/food/components/FoodBottomNav.jsx`
 - Test: `src/App.test.jsx`, `src/food/components/FoodBottomNav.test.jsx`
+- Modify: `docs/DATA-MODEL.md` (keys table: one row per `mgym.food.*` key; object shapes follow in Tasks 3 and 4)
 
 **Interfaces:**
 
@@ -85,17 +94,18 @@ it("isFoodPath matches /food and /food/ but not /foods", () => { expect(isFoodPa
 
 - [ ] **Step 5: Manual check:** `npm run dev`, open `http://localhost:5173/food` → food shell with four tabs; `http://localhost:5173/` → gym app unchanged.
 
-- [ ] **Step 6: Gate and commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-npm run check
-git add vercel.json src/App.jsx src/App.test.jsx src/food
+git add vercel.json src/App.jsx src/App.test.jsx src/food docs/DATA-MODEL.md
 git commit -m "feat(food): /food mode shell with its own bottom nav"
 ```
 
 ---
 
-### Task 2: Pure helpers: slots, macros, local dates, targets
+### Task 2: Pure helpers: slots, macros, local dates, targets (L, certain)
+
+Four S modules in one lib area, each with its own test; 4 points as one task.
 
 **Files:**
 
@@ -159,23 +169,25 @@ expect(
 
 - [ ] **Step 4: Run tests to verify they pass** — PASS.
 
-- [ ] **Step 5: Gate and commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-npm run check
 git add src/food/lib
 git commit -m "feat(food): slot, macro, local-date and target helpers"
 ```
 
 ---
 
-### Task 3: `FoodProvider` context
+### Task 3: `FoodProvider` context (L, certain)
+
+L: shared context state and the stored shapes of five keys.
 
 **Files:**
 
 - Create: `src/food/context/FoodContext.jsx`
 - Test: `src/food/context/FoodContext.test.jsx`
 - Modify: `src/food/FoodApp.jsx` (wrap content in `<FoodProvider>`)
+- Modify: `docs/DATA-MODEL.md` (object shapes for entries, targets, customFoods, savedMeals and recent, from spec §5.1–§5.6)
 
 **Interfaces:**
 
@@ -213,21 +225,23 @@ it("saveMealFromSlot copies that slot's entries and logSavedMeal creates new ent
 
 - [ ] **Step 4: Run tests to verify they pass** — PASS.
 
-- [ ] **Step 5: Gate and commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-npm run check
-git add src/food
+git add src/food docs/DATA-MODEL.md
 git commit -m "feat(food): FoodProvider with persisted entries, targets, custom foods, meals"
 ```
 
 ---
 
-### Task 4: API client, fixture, search cache
+### Task 4: API client, fixture, search cache (L, uncertain: item 5, `AbortController` and `AbortSignal.timeout` are new to this code)
+
+L: it writes the `mgym.food.searchCache.v1` shape. Uncertain because nothing in `src/` aborts a fetch today; the Fable session settles how the caller's signal and the 8 s timeout combine (`AbortSignal.any` where jsdom and the target browsers have it, else a manual listener) and Task 5 then reuses that mechanism.
 
 **Files:**
 
 - Create + Test: `src/food/lib/searchCache.js`, `searchCache.test.js`; `src/food/lib/foodApi.js`, `foodApi.test.js`; `src/food/lib/foodApiFixture.js`
+- Modify: `docs/DATA-MODEL.md` (searchCache shape, spec §5.7)
 
 **Interfaces:**
 
@@ -266,17 +280,18 @@ it("uses the fixture when base is empty or 'fixture'", async () => { const r = a
 
 - [ ] **Step 4: Run tests to verify they pass** — PASS.
 
-- [ ] **Step 5: Gate and commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-npm run check
-git add src/food/lib
+git add src/food/lib docs/DATA-MODEL.md
 git commit -m "feat(food): food API client with fixture mode and localStorage search cache"
 ```
 
 ---
 
-### Task 5: Search view and portion sheet
+### Task 5: Search view and portion sheet (L, certain once Part D merges)
+
+Six files; the per-request `AbortController` reuses the mechanism Task 4 settles.
 
 **Files:**
 
@@ -313,17 +328,16 @@ it("updates the computed kcal when grams change and disables Add for 0", ...);
 
 - [ ] **Step 4: Run tests to verify they pass** — PASS.
 
-- [ ] **Step 5: Gate and commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-npm run check
 git add src/food
 git commit -m "feat(food): search view with debounced API lookup and portion sheet"
 ```
 
 ---
 
-### Task 6: Today view
+### Task 6: Today view (L, certain)
 
 **Files:**
 
@@ -360,17 +374,18 @@ it("+ on a slot calls onAddTo with that slot id", ...);
 
 - [ ] **Step 4: Run tests to verify they pass** — PASS.
 
-- [ ] **Step 5: Gate and commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-npm run check
 git add src/food
 git commit -m "feat(food): Today view with macro bars, meal slots and entry editing"
 ```
 
 ---
 
-### Task 7: Settings and targets editor
+### Task 7: Settings and targets editor (M, certain)
+
+One view, four files, one test file.
 
 **Files:**
 
@@ -399,23 +414,22 @@ it("edit loads a history row into the form; delete removes it after confirm", ..
 
 - [ ] **Step 4: Run tests to verify they pass** — PASS.
 
-- [ ] **Step 5: Gate and commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-npm run check
 git add src/food
 git commit -m "feat(food): settings view with dated targets editor and history"
 ```
 
 ---
 
-### Task 8: Backup envelope and docs for phase 1
+### Task 8a: Food backup lib: normalise and merge (L, certain)
+
+L by the backup-envelope rule. Split from the menu wiring (Task 8b) because the two have test signals in different areas.
 
 **Files:**
 
 - Create + Test: `src/food/lib/normalize.js`, `normalize.test.js`; `src/food/lib/backupFood.js`, `backupFood.test.js`
-- Modify: `src/components/DataManagementMenu.jsx`, `src/components/DataManagementMenu.test.jsx`
-- Modify: `docs/DATA-MODEL.md`, `ARCHITECTURE.md`
 
 **Interfaces:**
 
@@ -424,7 +438,6 @@ git commit -m "feat(food): settings view with dated targets editor and history"
   - `normalize.js`: `normalizeEntry(e)` → entry or `null` (requires string `id`, `date` matching `/^\d{4}-\d{2}-\d{2}$/`, `slot` in `SLOT_IDS`, `grams > 0`, numeric `per100` four fields; coerces `name` to string, `createdAt` to number or `Date.now()`); `normalizeTarget(t)` (valid per `validateTarget`), `normalizeCustomFood(c)`, `normalizeSavedMeal(m)` (drops invalid items; meal with zero items → null), `normalizeRecent(r)`; `normalizeFoodData(raw)` → `{ entries, targets, customFoods, savedMeals, recent }` (missing lists → `[]`; never throws).
     `mergeFoodData(current, incoming)` → union by `id` (entries, customFoods, savedMeals), by `from` (targets), by `kind:id` keeping the newer `lastAt` (recent); existing rows win.
   - `backupFood.js`: `exportFoodData()` → the five lists via `loadLS`; `importFoodData(raw, mode)` → when `raw.food` is absent do nothing and return `false`; otherwise normalise, `replace` → `saveLS` each list, `merge` → `saveLS(mergeFoodData(current, incoming))`; return `true`.
-  - `DataManagementMenu`: export payload gains `food: exportFoodData()`; `onFileChange` calls `importFoodData(raw, modeRef.current)` after the existing imports.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -435,27 +448,60 @@ it("merge keeps existing rows on id collision and unions by from for targets", .
 // backupFood
 it("importFoodData returns false and writes nothing when raw.food is absent (merge and replace)", ...);
 it("replace overwrites each list; merge unions", ...);
-// DataManagementMenu.test.jsx (add)
-it("export payload includes food with the five lists", ...);
 ```
 
-- [ ] **Step 2: Run tests to verify they fail** — FAIL.
+- [ ] **Step 2: Run tests to verify they fail** — `npx vitest run src/food/lib` — FAIL.
 
-- [ ] **Step 3: Implement; update docs:** `docs/DATA-MODEL.md` gets a "Food tracker" section (keys table rows for the seven `mgym.food.*` keys, object shapes from spec §5, backup `food` field and merge rules); `ARCHITECTURE.md` gets the two-mode routing paragraph, `src/food/` in the directory tree, and `FoodApp` in the component hierarchy.
+- [ ] **Step 3: Implement the two modules.**
 
-- [ ] **Step 4: Run tests to verify they pass** — `npm test` — PASS.
+- [ ] **Step 4: Run tests to verify they pass** — PASS.
 
-- [ ] **Step 5: Gate and commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-npm run check
-git add src/food/lib src/components/DataManagementMenu.jsx src/components/DataManagementMenu.test.jsx docs/DATA-MODEL.md ARCHITECTURE.md
+git add src/food/lib
+git commit -m "feat(food): normalise and merge food data for backup import"
+```
+
+---
+
+### Task 8b: Backup menu wiring and phase 1 docs (M, certain)
+
+**Files:**
+
+- Modify: `src/components/DataManagementMenu.jsx`, `src/components/DataManagementMenu.test.jsx`
+- Modify: `docs/DATA-MODEL.md`, `ARCHITECTURE.md`
+
+**Interfaces:**
+
+- Consumes: `exportFoodData`, `importFoodData` (Task 8a).
+- Produces: `DataManagementMenu`: export payload gains `food: exportFoodData()`; `onFileChange` calls `importFoodData(raw, modeRef.current)` after the existing imports.
+
+- [ ] **Step 1: Write the failing test** in `DataManagementMenu.test.jsx`
+
+```jsx
+it("export payload includes food with the five lists", ...);
+it("import with no food field leaves stored food data untouched", ...);
+```
+
+- [ ] **Step 2: Run tests to verify they fail** — `npx vitest run src/components/DataManagementMenu.test.jsx` — FAIL.
+
+- [ ] **Step 3: Implement; update docs:** `docs/DATA-MODEL.md` "Food tracker" section gains the backup `food` field and merge rules (keys and shapes were added in Tasks 1, 3 and 4); `ARCHITECTURE.md` gets the two-mode routing paragraph, `src/food/` in the directory tree, and `FoodApp` in the component hierarchy.
+
+- [ ] **Step 4: Run tests to verify they pass** — PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/components/DataManagementMenu.jsx src/components/DataManagementMenu.test.jsx docs/DATA-MODEL.md ARCHITECTURE.md
 git commit -m "feat(food): include food data in the mgym.v1 backup; document the food mode"
 ```
 
 ---
 
-### Task 9: Custom foods
+### Task 9: Custom foods (L, certain)
+
+L: it edits two views (Search and Settings).
 
 **Files:**
 
@@ -483,17 +529,18 @@ it("editing a custom food does not change an existing entry's per100", ...); // 
 
 - [ ] **Step 4: Run tests to verify they pass** — PASS.
 
-- [ ] **Step 5: Gate and commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-npm run check
 git add src/food
 git commit -m "feat(food): custom foods with manual per-100g values"
 ```
 
 ---
 
-### Task 10: Saved meals
+### Task 10: Saved meals (L, certain)
+
+L: two new `FoodProvider` actions (shared state) and four views.
 
 **Files:**
 
@@ -514,57 +561,70 @@ it("logging a meal copies its items into the chosen date and slot with fresh ids
 it("rename and delete in Settings", ...);
 ```
 
-- [ ] **Step 2–5:** fail → implement → pass → `npm run check` → commit `feat(food): saved meals`.
+- [ ] **Step 2–5:** fail → implement → pass → commit `feat(food): saved meals`.
 
 ---
 
-### Task 11: Recent foods, one-tap re-log, undo toast, offline states
+### Task 11a: Recent list helper (S, certain)
 
 **Files:**
 
 - Create + Test: `src/food/lib/recent.js`, `recent.test.js`
+
+**Interfaces:**
+
+- Produces: `RECENT_MAX = 50`; `recentKey(food)` → `${food.kind}:${food.id}`; `touchRecent(list, item)` → new list with the item (`{ food, name, per100, portions, lastGrams, lastPortionLabel, lastAt }`) at index 0, previous same-key row removed, trimmed to 50.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+it("touchRecent moves an existing food to the front, caps at 50, keys by kind:id", ...);
+```
+
+- [ ] **Step 2–5:** fail → implement → pass → commit `feat(food): recent list helper`.
+
+---
+
+### Task 11b: Recent row, one-tap re-log, undo toast, offline states (L, certain)
+
+L: it writes the `mgym.food.recent.v1` shape through `FoodProvider` and edits two views.
+
+**Files:**
+
 - Create: `src/food/components/RecentRow.jsx`, `src/food/components/Toast.jsx`
 - Test: `RecentRow.test.jsx`, `SearchView.test.jsx` (offline cases)
 - Modify: `FoodContext.jsx` (`touchRecent` real implementation; `addEntry` calls it), `TodayView.jsx` (mount `RecentRow`), `SearchView.jsx` (offline: disable input, hide scan, show Recent/Saved/Custom shortcuts)
 
 **Interfaces:**
 
+- Consumes: `touchRecent`, `recentKey` (Task 11a).
 - Produces:
-  - `recent.js`: `RECENT_MAX = 50`; `recentKey(food)` → `${food.kind}:${food.id}`; `touchRecent(list, item)` → new list with the item (`{ food, name, per100, portions, lastGrams, lastPortionLabel, lastAt }`) at index 0, previous same-key row removed, trimmed to 50.
   - `RecentRow` props `{ date, onOpen }`: horizontal chips `"<name> · <lastGrams> g"`; tap → `addEntry` at `lastGrams` into `slotForTime()` and show `Toast` "Logged <name>" with Undo (3 s) that calls `deleteEntry`; the chip's "…" calls `onOpen(recentItem)` which opens `PortionSheet` prefilled.
   - `Toast` props `{ message, actionLabel, onAction, onDone, durationMs = 3000 }`.
   - `SearchView` offline: `navigator.onLine === false` or a `FoodApiError("offline")` sets `offline` state → input disabled with the note; shortcuts rendered below.
 
 - [ ] **Step 1: Write the failing tests**
 
-```js
-it("touchRecent moves an existing food to the front, caps at 50, keys by kind:id", ...);
-```
-
 ```jsx
 it("tapping a recent chip logs lastGrams into the time-of-day slot and Undo removes it", ...); // vi.useFakeTimers for the 3 s window; vi.setSystemTime for slot
 it("offline shows the note, disables the input and lists recent foods", ...); // Object.defineProperty(navigator, "onLine", { value: false, configurable: true })
 ```
 
-- [ ] **Step 2–5:** fail → implement → pass → `npm run check` → commit `feat(food): recent foods, undo toast and offline states`.
+- [ ] **Step 2–5:** fail → implement → pass → commit `feat(food): recent foods, undo toast and offline states`.
 
 ---
 
-### Task 12: Trends
+### Task 12a: Weekly intake helper (S, certain)
 
 **Files:**
 
 - Create + Test: `src/food/lib/trends.js`, `trends.test.js`
-- Create: `src/food/components/TrendsView.jsx`
-- Test: `TrendsView.test.jsx` (mock Recharts with `withFixedResponsiveContainer` as `StrengthStandards.test.jsx` does)
-- Modify: `FoodApp.jsx` (`trends` tab)
 
 **Interfaces:**
 
-- Consumes: `startOfWeekMonday`, `weekKey`, `weekLabel` (`src/lib/dateUtils.js`); `averageWeightInRange` (`src/lib/weightUtils.js`); `K_WEIGHT_LOGS`; `sumMacros`, `entryMacros`.
+- Consumes: `startOfWeekMonday`, `weekKey`, `weekLabel` (`src/lib/dateUtils.js`); `averageWeightInRange` (`src/lib/weightUtils.js`); `sumMacros`, `entryMacros`.
 - Produces:
   - `trends.js`: `weeklyIntake(entries, weightLogs, { weeks, today })` → array oldest→newest of `{ key, label, from, to, loggedDays, avg: { kcal, protein, carb, fat } | null, bodyweight: number | null, bodyweightDelta: number | null }`. `weeks` is `4 | 12 | null` (null = from the first entry's week to today). `avg` divides by `loggedDays` (days in the week with ≥ 1 entry); `loggedDays === 0` → `avg: null`. `bodyweightDelta` = this week's avg minus the previous week's avg when both exist.
-  - `TrendsView`: `Segmented` range (4w / 12w / All) and metric (Calories / Protein / Carbs / Fat); Recharts `ComposedChart` with `Bar` for the metric average and `Line` on a right `YAxis` for bodyweight; `XAxis` label `"<label> (<loggedDays>/7)"`; below, a table of the same rows.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -574,15 +634,37 @@ it("returns avg null for a week with no entries and joins weekly bodyweight aver
 it("weeks: 4 yields exactly four buckets ending with today's week", ...);
 ```
 
+- [ ] **Step 2–5:** fail → implement → pass → commit `feat(food): weekly intake helper`.
+
+---
+
+### Task 12b: Trends view (M, certain)
+
+**Files:**
+
+- Create: `src/food/components/TrendsView.jsx`
+- Test: `TrendsView.test.jsx` (mock Recharts with `withFixedResponsiveContainer` as `StrengthStandards.test.jsx` does)
+- Modify: `FoodApp.jsx` (`trends` tab)
+
+**Interfaces:**
+
+- Consumes: `weeklyIntake` (Task 12a); `K_WEIGHT_LOGS`; `useFood().entries`.
+- Produces:
+  - `TrendsView`: `Segmented` range (4w / 12w / All) and metric (Calories / Protein / Carbs / Fat); Recharts `ComposedChart` with `Bar` for the metric average and `Line` on a right `YAxis` for bodyweight; `XAxis` label `"<label> (<loggedDays>/7)"`; below, a table of the same rows.
+
+- [ ] **Step 1: Write the failing test**
+
 ```jsx
 it("renders one bar per week and switches metric with the segmented control", ...);
 ```
 
-- [ ] **Step 2–5:** fail → implement → pass → `npm run check` → commit `feat(food): weekly intake trends beside bodyweight`.
+- [ ] **Step 2–5:** fail → implement → pass → commit `feat(food): weekly intake trends beside bodyweight`.
 
 ---
 
-### Task 13: Gym Home card
+### Task 13: Gym Home card (M, certain)
+
+One gym-side view; it reads two food keys and writes none.
 
 **Files:**
 
@@ -603,36 +685,27 @@ it("ignores entries from other days", ...);
 it("shows the set-up prompt without a target", ...);
 ```
 
-- [ ] **Step 2–5:** fail → implement → pass → `npm run check` → commit `feat(home): food summary card`.
+- [ ] **Step 2–5:** fail → implement → pass → commit `feat(home): food summary card`.
 
 ---
 
-### Task 14: Barcode scanning
+### Task 14a: Barcode detector helper (S, uncertain: item 5, new dependency `@zxing/browser` and the `BarcodeDetector` API)
 
 **Files:**
 
 - Create + Test: `src/food/lib/barcode.js`, `barcode.test.js`
-- Create: `src/food/components/BarcodeScanner.jsx`
-- Test: `BarcodeScanner.test.jsx` (manual-code path and permission-denied path only)
-- Modify: `SearchView.jsx` (camera button; scan → `lookupBarcode` → `PortionSheet`; `not_found` → `CustomFoodForm` with `initial.barcode`), `FoodApp.jsx` (pass `onScan`)
 - Modify: `package.json` (dependency `@zxing/browser` and its peer `@zxing/library`)
 
 **Interfaces:**
 
 - Produces:
   - `barcode.js`: `BARCODE_FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e"]`; `pickStrategy(win = window)` → `"native"` when `"BarcodeDetector" in win`, else `"zxing"`; `createDetector(strategy)` → `Promise<{ detectOnce(videoEl): Promise<string|null>, stop() }>`; the zxing branch does `await import("@zxing/browser")` and uses `BrowserMultiFormatReader.decodeOnceFromVideoElement`; `isValidBarcode(code)` → `/^\d{8,14}$/`.
-  - `BarcodeScanner` props `{ onDetected, onCancel }`: requests `navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })`, shows `<video>`, loops `detectOnce` until a valid code → `onDetected(code)`; permission denied or no `mediaDevices` → shows "Camera unavailable" plus a manual code `Input` and Use button (validated with `isValidBarcode`). Stops tracks on unmount.
 
 - [ ] **Step 1: Write the failing tests**
 
 ```js
 it("pickStrategy returns native when BarcodeDetector exists, else zxing", ...);
 it("isValidBarcode accepts 8–14 digits only", ...);
-```
-
-```jsx
-it("falls back to the manual code field when getUserMedia rejects and submits a valid code", ...);
-it("search view: scanned code → lookupBarcode → portion sheet; not_found → custom food form with barcode prefilled", ...); // mock foodApi.lookupBarcode
 ```
 
 - [ ] **Step 2: Run tests to verify they fail** — FAIL.
@@ -643,19 +716,56 @@ Run: `npm install @zxing/browser @zxing/library` (current 0.1.x / 0.21.x). Confi
 
 - [ ] **Step 4: Run tests to verify they pass** — PASS.
 
-- [ ] **Step 5: Manual check on devices** — `npm run dev -- --host`, open `/food` on an Android phone (Chrome, native path) and an iPhone (Safari, zxing path): scan a packaged product; confirm the portion sheet opens or the custom-food form appears with the code. Record the outcome in the commit body.
-
-- [ ] **Step 6: Gate and commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-npm run check
-git add package.json package-lock.json src/food
+git add package.json package-lock.json src/food/lib
+git commit -m "feat(food): barcode detector helper with native and zxing strategies"
+```
+
+---
+
+### Task 14b: Barcode scanner and search wiring (L, uncertain: item 4, the camera path has no automated test; item 5, `getUserMedia` is new to this code)
+
+**Files:**
+
+- Create: `src/food/components/BarcodeScanner.jsx`
+- Test: `BarcodeScanner.test.jsx` (manual-code path and permission-denied path only)
+- Modify: `SearchView.jsx` (camera button; scan → `lookupBarcode` → `PortionSheet`; `not_found` → `CustomFoodForm` with `initial.barcode`), `FoodApp.jsx` (pass `onScan`)
+
+**Interfaces:**
+
+- Consumes: `createDetector`, `pickStrategy`, `isValidBarcode` (Task 14a); `lookupBarcode` (Task 4); `CustomFoodForm` (Task 9).
+- Produces:
+  - `BarcodeScanner` props `{ onDetected, onCancel }`: requests `navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })`, shows `<video>`, loops `detectOnce` until a valid code → `onDetected(code)`; permission denied or no `mediaDevices` → shows "Camera unavailable" plus a manual code `Input` and Use button (validated with `isValidBarcode`). Stops tracks on unmount.
+
+- [ ] **Step 1: Write the failing tests**
+
+```jsx
+it("falls back to the manual code field when getUserMedia rejects and submits a valid code", ...);
+it("search view: scanned code → lookupBarcode → portion sheet; not_found → custom food form with barcode prefilled", ...); // mock foodApi.lookupBarcode
+```
+
+- [ ] **Step 2: Run tests to verify they fail** — FAIL.
+
+- [ ] **Step 3: Implement and wire.**
+
+- [ ] **Step 4: Run tests to verify they pass** — PASS.
+
+- [ ] **Step 5: Manual check on devices** — `npm run dev -- --host`, open `/food` on an Android phone (Chrome, native path) and an iPhone (Safari, zxing path): scan a packaged product; confirm the portion sheet opens or the custom-food form appears with the code. Record the outcome in the commit body.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/food
 git commit -m "feat(food): barcode scanning with native detector and zxing fallback"
 ```
 
 ---
 
-### Task 15: Polish, docs, finish
+### Task 15: Empty states and final docs (M, certain)
+
+Two one-line empty states in views that share no state in this task, plus prose; sized M, not L.
 
 **Files:**
 
@@ -667,16 +777,70 @@ git commit -m "feat(food): barcode scanning with native detector and zxing fallb
 
 - [ ] **Step 2: Update the docs listed above.**
 
-- [ ] **Step 3: Full gate**
-
-Run: `npm run check`
-Expected: lint, format, tests, build all green.
-
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
 git add src/food src/components README.md docs ARCHITECTURE.md CONTRIBUTING.md
 git commit -m "feat(food): empty states and documentation"
 ```
 
-- [ ] **Step 5: Hand off** per `superpowers:finishing-a-development-branch` and the repo's `git-workflow` skill (`git fetch origin && git rebase origin/main`, re-run `npm run check`, `git push --force-with-lease -u origin feat/food-tracker`). Do not push or open a PR without the product owner's go-ahead. Set `VITE_FOOD_API_BASE` in the gym-tracker Vercel project to the deployed API URL before the production deploy.
+---
+
+## Execution parts
+
+| Part | Points                | Certainty (task: failed item)                                                                      | Orchestrator | Needs         | Wave | Critical path | Gate |
+| ---- | --------------------- | -------------------------------------------------------------------------------------------------- | ------------ | ------------- | ---- | ------------- | ---- |
+| A    | 4 (Task 1)            | certain                                                                                            | Opus 5.5     | —             | 1    | yes           | no   |
+| B    | 5 (Tasks 2, 11a)      | certain                                                                                            | Opus 5.5     | —             | 1    | no            | no   |
+| C    | 4 (Task 3)            | certain                                                                                            | Opus 5.5     | A, B          | 2    | yes           | no   |
+| D    | 4 (Task 4)            | uncertain (Task 4: item 5, fetch abort and timeout are new mechanisms)                             | Fable        | A             | 2    | no            | no   |
+| E    | 6 (Tasks 8a, 8b)      | certain                                                                                            | Opus 5.5     | A, B          | 2    | no            | no   |
+| F    | 6 (Tasks 5, 7)        | certain once D merges                                                                              | Opus 5.5     | B, C, D       | 3    | yes           | no   |
+| G    | 7 (Tasks 6, 12a, 12b) | certain                                                                                            | Opus 5.5     | B, C          | 4    | no            | no   |
+| H    | 6 (Tasks 9, 13)       | certain                                                                                            | Opus 5.5     | A, B, F       | 4    | yes           | no   |
+| I    | 4 (Task 10)           | certain                                                                                            | Opus 5.5     | C, F, G, H    | 5    | no            | no   |
+| J    | 5 (Tasks 14a, 14b)    | uncertain (14a: item 5, new dependency; 14b: item 4, camera path untested; item 5, `getUserMedia`) | Fable        | D, F, H       | 6    | no            | no   |
+| K    | 6 (Tasks 11b, 15)     | certain                                                                                            | Opus 5.5     | B, C, F, G, H | 7    | yes           | no   |
+
+57 points in eleven parts. No part has a user gate; the design gate was the spec. Task 14b's phone check is acceptance of a built feature, not an open choice, so Part J stays in phase order rather than moving to the front. D and J hold the uncertain tasks and stay apart under the one-label rule. Reviews: Tasks 1, 3, 4, 8a, 10 and 11b (stored keys and shapes, backup envelope, `FoodProvider` state) and the whole-branch pass of Part K get `opus55-reviewer-deep`.
+
+Issues: phase 1 (#85–#94) is A–G; phase 2 (#95–#98) is H, I and K; phase 3 (#99–#101) is G and H; phase 4 (#102–#105) is J; phase 5 (#106–#108) is K.
+
+### Part dependencies and parallel runs
+
+| Part | Needs merged first | Consumes                                                                                  | Shares files with parts it does not need                                                      |
+| ---- | ------------------ | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| A    | —                  | —                                                                                         | `FoodApp.jsx` with C, F, G, J (each wires one tab or prop); `docs/DATA-MODEL.md` with C, D, E |
+| B    | —                  | —                                                                                         | none (new files only)                                                                         |
+| C    | A, B               | A: keys; B: `upsertTarget`, `deleteTarget`                                                | `FoodApp.jsx` with F, G, J; `FoodContext.jsx` with I, K; `docs/DATA-MODEL.md` with D, E       |
+| D    | A                  | A: `K_FOOD_SEARCH_CACHE`                                                                  | `docs/DATA-MODEL.md` with C, E                                                                |
+| E    | A, B               | A: keys; B: `SLOT_IDS`, `validateTarget`                                                  | `docs/DATA-MODEL.md` with C, D; `ARCHITECTURE.md` with K                                      |
+| F    | B, C, D            | C: `useFood`; D: `searchFoods`, `isFixtureMode`, `FoodApiError`; B: slots, macros, dates  | `FoodApp.jsx` with G, J; `SearchView.jsx` with H, I, J, K; `SettingsView.jsx` with H, I       |
+| G    | B, C               | C: `useFood`; B: macros, dates, targets                                                   | `FoodApp.jsx` with F, J; `TodayView.jsx`, `MealSlot.jsx` with I, K                            |
+| H    | A, B, F            | F: `SearchView`, `SettingsView`; A, B: keys and helpers for the Home card                 | `SearchView.jsx`, `SettingsView.jsx` with I, J, K                                             |
+| I    | C, F, G, H         | G: `MealSlot`, `TodayView`; F, H: `SearchView`, `SettingsView`; C: `FoodProvider`         | `TodayView.jsx`, `SearchView.jsx` with K; `FoodContext.jsx` with K                            |
+| J    | D, F, H            | D: `lookupBarcode`; F: `SearchView`, `PortionSheet`; H: `CustomFoodForm`                  | `SearchView.jsx`, `FoodApp.jsx` with K and G                                                  |
+| K    | B, C, F, G, H      | B: `touchRecent`; C: `FoodProvider`; G: `TodayView`; F, H: `SearchView`, `CustomFoodForm` | —                                                                                             |
+
+```
+A (Opus: shell, keys) ──┬─> C (Opus: FoodProvider) ──┬─> F (Opus: Search + Settings) ──┬─> H (Opus: custom foods + Home card) ──┬─> I (Opus: saved meals)
+                        │                            │                                 │                                       ├─> J (Fable: barcode)
+                        ├─> D (Fable: API client) ───┘                                 └─> G (Opus: Today + Trends) ───────────┴─> K (Opus: recent, offline, empty states, docs)
+                        └─> E (Opus: backup)
+B (Opus: pure helpers) ─┘  (B feeds C, E, F, G, H, K)
+```
+
+A and B run at the same time; B is the clean parallel (new files only). After A and B merge, C, D and E run at the same time; they share only `docs/DATA-MODEL.md` (each adds its own rows, so rebases are trivial). F waits for C and D. G and H run at the same time in wave 4; G follows F only because both wire `FoodApp.jsx`. Waves 5 to 7 are serialized by `SearchView.jsx`, `TodayView.jsx` and `FoodApp.jsx`, not by needs: I, J and K all edit `SearchView.jsx`, so they run one after another; J before K so that Task 15's final docs describe the scanner. Default order: A, B, C, D, E, F, G, H, I, J, K. Seven waves; the longest needs chain is A → C → F → H → K (five parts).
+
+Every part handoff records its cost (session tokens, fix rounds, wall time) in this file.
+
+### Part finish (every part; not a sized task)
+
+The former Task 15 "finish" steps assumed one long-lived branch. The workflow is one PR per part, so each part ends with:
+
+- [ ] **Gate:** `npm run check`, once before the PR and once more after `git fetch origin && git rebase origin/main` (git-workflow skill).
+- [ ] **Review:** each task gets an `opus55-reviewer` pass; the tasks named above and Part K's whole-branch pass get `opus55-reviewer-deep`. Part K's whole-branch review confirms every spec §3–§9 item maps to a commit.
+- [ ] **PR** via `superpowers:finishing-a-development-branch`; the owner merges. Close the part's issues with the merge SHA.
+- [ ] **Handoff:** append a `## Part <X> handoff` section to this file: shipped commits, cost (session tokens, fix rounds, wall time), rulings, follow-ups, unchecked steps moved into a named later part.
+
+Before the first production deploy that includes Part F, set `VITE_FOOD_API_BASE` in the gym-tracker Vercel project to the deployed API URL (macro-calculator Part G handoff). Until then the app runs in fixture mode.
