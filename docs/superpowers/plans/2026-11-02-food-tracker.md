@@ -10,6 +10,18 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-02-food-tracker-design.md` (backlog: `docs/superpowers/specs/2026-11-02-food-tracker-backlog.md`)
 
+## Phase mapping
+
+Tasks follow the backlog phases in `docs/superpowers/specs/2026-11-02-food-tracker-backlog.md`. Each phase is a usable slice on its own.
+
+| Backlog phase                                        | Plan tasks |
+| ---------------------------------------------------- | ---------- |
+| Phase 1 — shell, Today, Search, Targets, backup      | 1–8        |
+| Phase 2 — custom foods, saved meals, recent, offline | 9–11       |
+| Phase 3 — Trends and Home card                       | 12–13      |
+| Phase 4 — barcode                                    | 14         |
+| Phase 5 — polish and docs                            | 15         |
+
 ## Global Constraints
 
 - No TypeScript, no CSS files, no new state mechanism; reuse `ui/` primitives, `useConfirm()`, `loadLS`/`saveLS`. Never call `localStorage` directly.
