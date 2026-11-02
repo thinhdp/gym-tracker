@@ -1,3 +1,6 @@
 node_modules
 dist
 .superpowers/
+
+# Claude Code worktrees (EnterWorktree, one per execution part)
+.claude/worktrees/
