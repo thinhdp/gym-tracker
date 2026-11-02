@@ -81,7 +81,7 @@ an Agent dispatch.
 | `opus55-reviewer`      | Opus 5.5   | low    | Per-task reviews and verify passes on ordinary-risk work                                                                                                                                                                                                           |
 | `opus55-reviewer-deep` | Opus 5.5   | medium | Data-model, backup-envelope, unit-conversion and AppContext work, and whole-branch final reviews                                                                                                                                                                   |
 | `sonnet55-fixer`       | Sonnet 5.5 | medium | Default for S and M tasks with a clear test signal: known root cause or spec, named files, a test command that proves it. On a server error, re-dispatch the same prompt to `opus55-implementer`. Bad work is not a failure; it goes through the normal fix rounds |
-| `haiku-scout`          | Haiku 4.5  | low    | Evidence gathering: search, file and log summaries, call-site lists                                                                                                                                                                                                |
+| `haiku-scout`          | Haiku 5.5  | low    | Evidence gathering: search, file and log summaries, call-site lists                                                                                                                                                                                                |
 
 Fable runs at the session effort set in the app: medium for ordinary part-execution
 sessions, high for sessions that are mostly diagnosis or spec and plan design. The
