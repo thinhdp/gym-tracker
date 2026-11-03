@@ -8,18 +8,50 @@ import {
   todayLocal,
 } from "../lib/localDate";
 import { sumMacros } from "../lib/macros";
-import { SLOTS } from "../lib/slots";
+import { SLOTS, slotLabel } from "../lib/slots";
 import { targetForDate } from "../lib/targets";
 import EntryEditSheet from "./EntryEditSheet";
 import MacroBars from "./MacroBars";
 import MealSlot from "./MealSlot";
 import SavedMealsPanel from "./SavedMealsPanel";
+import SaveMealSheet from "./SaveMealSheet";
+
+/** Small sheet with the two saved-meal actions for one slot. */
+function SlotMenu({ slot, canSave, onSave, onLog, onClose }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${slotLabel(slot)} options`}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
+    >
+      <div className="w-full max-w-md space-y-3 rounded-t-2xl bg-white p-4 sm:rounded-2xl dark:bg-neutral-900 dark:text-neutral-100">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="font-semibold">{slotLabel(slot)}</h2>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+        {canSave && (
+          <Button type="button" className="w-full" onClick={onSave}>
+            Save as meal
+          </Button>
+        )}
+        <Button type="button" className="w-full" onClick={onLog}>
+          Log saved meal
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 /** One day's log: date navigation, macro bars and the six meal slots. */
 export default function TodayView({ date, onChangeDate, onAddTo }) {
   const { entries, targets, updateEntry, deleteEntry } = useFood();
   const [editing, setEditing] = useState(null);
+  const [menuSlot, setMenuSlot] = useState(null);
   const [mealsSlot, setMealsSlot] = useState(null);
+  const [saveSlot, setSaveSlot] = useState(null);
 
   const dayEntries = entries.filter((entry) => entry.date === date);
 
@@ -70,9 +102,33 @@ export default function TodayView({ date, onChangeDate, onAddTo }) {
             .sort((a, b) => a.createdAt - b.createdAt)}
           onAdd={onAddTo}
           onEdit={setEditing}
-          onMenu={setMealsSlot}
+          onMenu={setMenuSlot}
         />
       ))}
+
+      {menuSlot && (
+        <SlotMenu
+          slot={menuSlot}
+          canSave={dayEntries.some((entry) => entry.slot === menuSlot)}
+          onSave={() => {
+            setSaveSlot(menuSlot);
+            setMenuSlot(null);
+          }}
+          onLog={() => {
+            setMealsSlot(menuSlot);
+            setMenuSlot(null);
+          }}
+          onClose={() => setMenuSlot(null)}
+        />
+      )}
+
+      {saveSlot && (
+        <SaveMealSheet
+          date={date}
+          slot={saveSlot}
+          onClose={() => setSaveSlot(null)}
+        />
+      )}
 
       {mealsSlot && (
         <SavedMealsPanel

@@ -594,7 +594,7 @@ describe("SearchView", () => {
       expect(stored[0].date).toBe("2026-10-20");
     });
 
-    it("Save as meal closes the panel and stays on Search", async () => {
+    it("offers no Save as meal field from Search, even when the slot has entries", async () => {
       saveLS(K_FOOD_ENTRIES, [
         {
           id: "e1",
@@ -607,18 +607,11 @@ describe("SearchView", () => {
           createdAt: 1,
         },
       ]);
-      const { user, onLogged } = setup();
+      const { user } = setup();
       await open(user);
-      await user.type(
-        within(panel()).getByLabelText("Save as meal"),
-        "Usual lunch",
-      );
-      await user.click(within(panel()).getByRole("button", { name: "Save" }));
-
-      expect(screen.queryByRole("dialog")).toBeNull();
-      expect(onLogged).not.toHaveBeenCalled();
-      expect(box()).toBeVisible();
-      expect(loadLS(K_FOOD_MEALS)).toHaveLength(1);
+      expect(panel()).toBeVisible();
+      expect(screen.queryByLabelText("Save as meal")).toBeNull();
+      expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
     });
 
     it("Close does not call onLogged", async () => {

@@ -1,6 +1,4 @@
-import { useState } from "react";
 import { Button } from "../../components/ui/Button";
-import { Input } from "../../components/ui/Input";
 import { useFood } from "../context/FoodContext";
 import { formatDayHeader } from "../lib/localDate";
 import { sumMacros } from "../lib/macros";
@@ -12,24 +10,13 @@ const mealSummary = (meal) => {
   return `${items} · ${sumMacros(meal.items).kcal} kcal`;
 };
 
-/** Bottom sheet that logs a saved meal into one slot, or saves that slot as a meal. */
+/** Bottom sheet that logs a saved meal into one slot. */
 export default function SavedMealsPanel({ date, slot, onLogged, onClose }) {
-  const { entries, savedMeals, saveMealFromSlot, logSavedMeal } = useFood();
-  const [name, setName] = useState("");
-
-  const trimmed = name.trim();
-  const slotHasEntries = entries.some(
-    (entry) => entry.date === date && entry.slot === slot,
-  );
+  const { savedMeals, logSavedMeal } = useFood();
 
   const log = (meal) => {
     logSavedMeal(meal.id, date, slot);
     onLogged();
-  };
-
-  const save = () => {
-    saveMealFromSlot(trimmed, date, slot);
-    onClose();
   };
 
   return (
@@ -73,27 +60,6 @@ export default function SavedMealsPanel({ date, slot, onLogged, onClose }) {
                 </span>
               </button>
             ))}
-          </div>
-        )}
-
-        {slotHasEntries && (
-          <div className="flex items-end gap-2">
-            <label className="block min-w-0 flex-1 text-sm">
-              <span className="mb-1 block">Save as meal</span>
-              <Input
-                placeholder="Meal name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </label>
-            <Button
-              type="button"
-              variant="primary"
-              disabled={trimmed === ""}
-              onClick={save}
-            >
-              Save
-            </Button>
           </div>
         )}
       </div>

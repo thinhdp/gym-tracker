@@ -60,9 +60,6 @@ function setup(props = {}) {
   return { onLogged, onClose, user };
 }
 
-const nameInput = () => screen.getByLabelText("Save as meal");
-const saveButton = () => screen.getByRole("button", { name: "Save" });
-
 describe("SavedMealsPanel", () => {
   it("states the slot and the day in its header", () => {
     setup({ slot: "snack2" });
@@ -115,93 +112,18 @@ describe("SavedMealsPanel", () => {
     expect(new Set(ids).size).toBe(2);
   });
 
-  it("Save as meal creates a meal from the slot's entries", async () => {
-    saveLS(K_FOOD_ENTRIES, [
-      entry("rice", { portionLabel: "1 bowl", grams: 200 }),
-      entry("egg", { grams: 50 }),
-      entry("other-slot", { slot: "dinner" }),
-      entry("other-day", { date: "2026-11-02" }),
-    ]);
-    const { user, onLogged, onClose } = setup();
-    await user.type(nameInput(), "  Usual lunch  ");
-    await user.click(saveButton());
-
-    const stored = loadLS(K_FOOD_MEALS);
-    expect(stored).toHaveLength(1);
-    expect(stored[0].name).toBe("Usual lunch");
-    expect(stored[0].items).toEqual([
-      {
-        name: "rice",
-        grams: 200,
-        per100: PER100,
-        food: { kind: "db", id: "food-rice" },
-        portionLabel: "1 bowl",
-      },
-      {
-        name: "egg",
-        grams: 50,
-        per100: PER100,
-        food: { kind: "db", id: "food-egg" },
-      },
-    ]);
-    expect(onClose).toHaveBeenCalledTimes(1);
-    expect(onLogged).not.toHaveBeenCalled();
-    expect(loadLS(K_FOOD_ENTRIES)).toHaveLength(4);
-  });
-
-  it("a blank or whitespace name blocks Save", async () => {
-    saveLS(K_FOOD_ENTRIES, [entry("rice")]);
-    const { user, onClose } = setup();
-    expect(saveButton()).toBeDisabled();
-    await user.type(nameInput(), "   ");
-    expect(saveButton()).toBeDisabled();
-    await user.click(saveButton());
-
-    expect(loadLS(K_FOOD_MEALS)).toEqual([]);
-    expect(onClose).not.toHaveBeenCalled();
-  });
-
-  it("a duplicate name inserts a new meal and leaves the old one", async () => {
-    saveLS(K_FOOD_MEALS, [MEAL]);
-    saveLS(K_FOOD_ENTRIES, [entry("soup")]);
-    const { user } = setup();
-    await user.type(nameInput(), MEAL.name);
-    await user.click(saveButton());
-
-    const stored = loadLS(K_FOOD_MEALS);
-    expect(stored).toHaveLength(2);
-    expect(stored[0]).toEqual(MEAL);
-    expect(stored[1].name).toBe(MEAL.name);
-    expect(stored[1].id).not.toBe(MEAL.id);
-    expect(stored[1].items.map((row) => row.name)).toEqual(["soup"]);
-  });
-
-  it("an empty meal list shows one line, and Save as meal still shows with entries", () => {
+  it("an empty meal list shows one line and no Save as meal field", () => {
     saveLS(K_FOOD_ENTRIES, [entry("rice")]);
     setup();
     expect(screen.getByText("No saved meals yet")).toBeVisible();
-    expect(nameInput()).toBeVisible();
-    expect(saveButton()).toBeVisible();
-  });
-
-  it("hides Save as meal when only another slot or day has entries", () => {
-    saveLS(K_FOOD_MEALS, [MEAL]);
-    saveLS(K_FOOD_ENTRIES, [
-      entry("other-slot", { slot: "dinner" }),
-      entry("other-day", { date: "2026-11-02" }),
-    ]);
-    setup();
     expect(screen.queryByLabelText("Save as meal")).toBeNull();
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
-    expect(screen.queryByText("No saved meals yet")).toBeNull();
-    expect(screen.getByRole("button", { name: /Rice bowl/ })).toBeVisible();
   });
 
   it("Close calls onClose and writes nothing", async () => {
     saveLS(K_FOOD_MEALS, [MEAL]);
     saveLS(K_FOOD_ENTRIES, [entry("rice")]);
     const { user, onLogged, onClose } = setup();
-    await user.type(nameInput(), "Unsaved");
     await user.click(screen.getByRole("button", { name: "Close" }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
