@@ -54,6 +54,11 @@ describe("CustomFoodForm", () => {
     expect(loadLS(K_FOOD_CUSTOM)).toEqual([]);
   });
 
+  it("does not show the macros-too-large message on a new empty form", () => {
+    setup();
+    expect(screen.queryByText(/Macros are too large/)).toBeNull();
+  });
+
   describe("saving", () => {
     it("computes kcal from macros when left blank and saves to mgym.food.customFoods.v1", async () => {
       const { user, onSaved } = setup();

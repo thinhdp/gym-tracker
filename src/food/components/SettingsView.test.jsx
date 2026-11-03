@@ -96,6 +96,20 @@ describe("SettingsView custom foods", () => {
     expect(screen.getByRole("link", { name: "Back to Gym" })).toBeVisible();
   });
 
+  it("shows 0 kcal / 100 g for a custom food with 0 kcal", () => {
+    saveLS(K_FOOD_CUSTOM, [{ ...BAR, per100: { ...BAR.per100, kcal: 0 } }]);
+    setup();
+    expect(within(section()).getByText("0 kcal / 100 g")).toBeVisible();
+  });
+
+  it("a stored row with an empty per100 renders no undefined text", () => {
+    saveLS(K_FOOD_CUSTOM, [{ id: "a", name: "Empty", per100: {} }]);
+    setup();
+    const row = within(section()).getByRole("listitem");
+    expect(within(row).getByText("Empty")).toBeVisible();
+    expect(row.textContent).not.toMatch(/undefined/);
+  });
+
   it("edit opens the form on that food and updates the row", async () => {
     saveLS(K_FOOD_CUSTOM, [BAR, SOUP]);
     const user = setup();
@@ -149,6 +163,17 @@ describe("SettingsView custom foods", () => {
     expect(screen.queryByText("Oat bar")).toBeNull();
     expect(loadLS(K_FOOD_CUSTOM)).toEqual([SOUP]);
     expect(loadLS(K_FOOD_ENTRIES)).toEqual([ENTRY]);
+  });
+
+  it("the delete confirm is destructive and names the food", async () => {
+    saveLS(K_FOOD_CUSTOM, [BAR]);
+    const user = setup();
+    await user.click(screen.getByRole("button", { name: "Delete Oat bar" }));
+
+    expect(screen.getByText(/^Oat bar will be removed\./)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Delete" })).toHaveClass(
+      "bg-red-600",
+    );
   });
 
   it("cancelling the confirm keeps the row", async () => {

@@ -16,7 +16,7 @@ const TARGET = {
 const entry = (date, kcal, protein = 0) => ({
   id: `${date}-${kcal}`,
   date,
-  meal: "lunch",
+  slot: "lunch",
   grams: 100,
   per100: { kcal, protein, carb: 0, fat: 0 },
 });
@@ -37,6 +37,7 @@ describe("FoodSummaryCard", () => {
     expect(screen.getByText("500 / 2000 kcal")).toBeInTheDocument();
     expect(screen.getByText("Protein 40 / 150 g")).toBeInTheDocument();
     expect(screen.getByRole("link")).toHaveAttribute("href", "/food");
+    expect(screen.getByText("›")).toBeInTheDocument();
   });
 
   it("ignores entries from other days", () => {
@@ -82,7 +83,7 @@ describe("FoodSummaryCard", () => {
   });
 
   it.each([
-    [1700, "bg-blue-600", "85%"],
+    [1799, "bg-blue-600", "89.95%"],
     [1800, "bg-amber-500", "90%"],
     [2000, "bg-amber-500", "100%"],
     [2020, "bg-red-600", "100%"],
@@ -95,7 +96,7 @@ describe("FoodSummaryCard", () => {
     expect(bar.style.width).toBe(width);
   });
 
-  it("counts an entry logged just after local midnight for that local day", () => {
+  it("counts stored rows dated for the local day just after local midnight", () => {
     // UTC+7: 00:30 local is still the previous day in UTC, so a UTC-derived
     // today would pick the wrong date regardless of the machine's zone.
     process.env.TZ = "Asia/Ho_Chi_Minh";
@@ -109,5 +110,23 @@ describe("FoodSummaryCard", () => {
     ]);
     render(<FoodSummaryCard />);
     expect(screen.getByText("400 / 2000 kcal")).toBeInTheDocument();
+  });
+
+  it("counts an entry dated today late in the local day", () => {
+    process.env.TZ = "Asia/Ho_Chi_Minh";
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 5, 15, 23, 59, 30));
+    saveLS(K_FOOD_TARGETS, [TARGET]);
+    saveLS(K_FOOD_ENTRIES, [
+      entry("2026-06-14", 900),
+      entry("2026-06-15", 400),
+      entry("2026-06-16", 700),
+    ]);
+    render(<FoodSummaryCard />);
+    expect(screen.getByText("400 / 2000 kcal")).toBeInTheDocument();
+  });
+
+  it("is back on the machine zone after the UTC+7 tests", () => {
+    expect(process.env.TZ).toBe(ORIGINAL_TZ);
   });
 });
