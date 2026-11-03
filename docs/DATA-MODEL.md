@@ -14,6 +14,7 @@ versioned, and that is the only versioning.
 | -------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | `mgym.exercises.v1`        | `AppContext` (`K_EX`)             | `Exercise[]`                                                                             | the 76-entry seed `src/data/exercises_seed.json` |
 | `mgym.workouts.v1`         | `AppContext` (`K_WO`)             | `Workout[]`                                                                              | `[]`                                             |
+| `mgym.routines.v1`         | `AppContext` (`K_ROUTINES`)       | `Routine[]` (built by `routineFromWorkout`, `src/lib/routines.js`)                       | `[]`                                             |
 | `mgym.unit`                | `AppContext` (`K_UNIT`)           | `"kg"` \| `"lb"` (toggle UI hidden; effectively `"kg"`)                                  | `"kg"`                                           |
 | `mgym.tab`                 | `AppContext` (`K_TAB`)            | active tab: `home`/`workouts`/`progress`/`exercises`/`more` (legacy values remapped)     | `"workouts"`                                     |
 | `mgym.theme`               | `AppContext` (`K_THEME`)          | `"system"` \| `"light"` \| `"dark"`                                                      | `"system"`                                       |
@@ -273,6 +274,9 @@ they are **not** persisted. See `src/lib/strength.js`, `src/lib/metrics.js`, and
   "workouts": [
     /* Workout[] */
   ],
+  "routines": [
+    /* Routine[] */
+  ],
   "unit": "kg",
   "tab": "workouts",
   "note": "…",
@@ -285,10 +289,10 @@ they are **not** persisted. See `src/lib/strength.js`, `src/lib/metrics.js`, and
 | ------------------------------------------------------ | ------------------- | ------------------------------------------------------------------------ |
 | `schema`                                               | `string`            | Format tag `"mgym.v1"`. Not validated on import.                         |
 | `exportedAt`                                           | `string` (ISO 8601) | When generated.                                                          |
-| `exercises` / `workouts`                               | arrays              | Validated via `normalizeData()` on import.                               |
+| `exercises` / `workouts` / `routines`                  | arrays              | Validated via `normalizeData()` on import.                               |
 | `unit` / `tab` / `note` / `weightLogs` / `weeklyNotes` | misc                | Restored **directly** to localStorage on import, **without** validation. |
 
-On import, exercises/workouts go through `normalizeData()` then **merge** or
+On import, exercises/workouts/routines go through `normalizeData()` then **merge** or
 **replace** (rules in
 [ARCHITECTURE.md → Export / import](../ARCHITECTURE.md#export--import-backup));
 the remaining fields are written straight back to their keys.
