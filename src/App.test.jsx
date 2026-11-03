@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import { ConfirmProvider } from "./components/ConfirmDialog";
-import { loadLS, saveLS, K_SESSION, K_WO } from "./lib/storage";
+import { loadLS, saveLS, K_SESSION, K_THEME, K_WO } from "./lib/storage";
 import App, { isFoodPath } from "./App";
 
 function renderApp() {
@@ -33,6 +33,7 @@ function seedLiveSession() {
 describe("App path routing", () => {
   afterEach(() => {
     window.history.pushState({}, "", "/");
+    document.documentElement.classList.remove("dark");
   });
 
   it("renders the food app at /food and the gym app at /", () => {
@@ -50,6 +51,16 @@ describe("App path routing", () => {
       screen.getByRole("navigation", { name: "Primary" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Food" })).toBeNull();
+  });
+
+  it("applies the stored theme at /food because FoodApp renders inside AppProvider", () => {
+    saveLS(K_THEME, "dark");
+    window.history.pushState({}, "", "/food");
+    renderApp();
+    expect(
+      screen.getByRole("navigation", { name: "Food" }),
+    ).toBeInTheDocument();
+    expect(document.documentElement).toHaveClass("dark");
   });
 
   it("renders the food app at /food even when a live session is stored", () => {
