@@ -314,6 +314,11 @@ date, non-positive grams, non-numeric per100), and never throws. Then:
 
 A backup without a `food` field leaves food data untouched in both modes.
 
+Merge rewrites no stored row, except a recent row replaced by a newer `lastAt`. The
+recent list is also de-duplicated and capped, which can remove stored rows.
+`normalizeFoodData` runs on incoming rows only. The detailed row rules are in
+`docs/superpowers/plans/2026-11-02-food-tracker-handoffs.md` (Part E rulings).
+
 ## 6. Screens
 
 The food app has its own four-tab bottom bar (`FoodBottomNav`), styled like the

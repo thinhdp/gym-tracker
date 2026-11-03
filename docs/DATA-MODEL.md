@@ -392,7 +392,14 @@ they are **not** persisted. See `src/lib/strength.js`, `src/lib/metrics.js`, and
   "tab": "workouts",
   "note": "…",
   "weightLogs": { "2026-06-01": 70.2 },
-  "weeklyNotes": { "weekly-note:2026-24": "…" }
+  "weeklyNotes": { "weekly-note:2026-24": "…" },
+  "food": {
+    "entries": [],
+    "targets": [],
+    "customFoods": [],
+    "savedMeals": [],
+    "recent": []
+  }
 }
 ```
 
@@ -402,11 +409,27 @@ they are **not** persisted. See `src/lib/strength.js`, `src/lib/metrics.js`, and
 | `exportedAt`                                           | `string` (ISO 8601) | When generated.                                                          |
 | `exercises` / `workouts` / `routines`                  | arrays              | Validated via `normalizeData()` on import.                               |
 | `unit` / `tab` / `note` / `weightLogs` / `weeklyNotes` | misc                | Restored **directly** to localStorage on import, **without** validation. |
+| `food`                                                 | object              | The five food lists. Validated via `normalizeFoodData()` on import.      |
 
 On import, exercises/workouts/routines go through `normalizeData()` then **merge** or
 **replace** (rules in
 [ARCHITECTURE.md → Export / import](../ARCHITECTURE.md#export--import-backup));
 the remaining fields are written straight back to their keys.
+
+`food` is the exception to that last line. It holds the five lists `entries`,
+`targets`, `customFoods`, `savedMeals` and `recent`; `mgym.food.searchCache.v1` and
+`mgym.food.tab` are excluded. `importFoodData()` (`src/food/lib/backupFood.js`)
+applies it as follows:
+
+- **Merge** adds incoming rows and rewrites no stored row, except a recent row
+  replaced by an incoming row with a newer `lastAt`. Targets are re-sorted by `from`.
+  Recent is re-sorted newest first and capped at 50, so the cap can remove the oldest
+  stored row or an old incoming row, and two stored recent rows for one food collapse
+  to one. A stored list that is not an array counts as `[]`.
+- **Replace** normalises the incoming lists and overwrites each one. A list missing
+  from `food` counts as `[]`, so `food: {}` empties all five lists.
+- A backup with no `food` field, or a `food` value that is not a plain object, leaves
+  food data untouched in both modes.
 
 The `mgym.theme` preference and the `mgym.session.v1` live session are **not**
 part of the backup payload — they are device-local UI state.

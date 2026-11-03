@@ -318,6 +318,7 @@ it("shows the demo data badge in fixture mode", ...);
 it("shows the rate-limited message on FoodApiError('rate_limited')", ...);
 it("opens the portion sheet on row tap and adds an entry to the preset slot", ...); // after Add, loadLS(K_FOOD_ENTRIES)[0].slot === "lunch" and per100 copied; onLogged called
 // PortionSheet
+it("logs a database food with food.kind \"db\" so the stored entry passes normalizeEntry", ...); // Part E handoff: a restore drops entries that fail it
 it("selects the default portion and sets grams from a chip", ...);
 it("updates the computed kcal when grams change and disables Add for 0", ...);
 ```
@@ -832,7 +833,7 @@ B (Opus: pure helpers) ─┘  (B feeds C, E, F, G, H, K)
 
 A and B run at the same time; B is the clean parallel (new files only). After A and B merge, C, D and E run at the same time; they share only `docs/DATA-MODEL.md` (each adds its own rows, so rebases are trivial). F waits for C and D. G and H run at the same time in wave 4; G follows F only because both wire `FoodApp.jsx`. Waves 5 to 7 are serialized by `SearchView.jsx`, `TodayView.jsx` and `FoodApp.jsx`, not by needs: I, J and K all edit `SearchView.jsx`, so they run one after another; J before K so that Task 15's final docs describe the scanner. Default order: A, B, C, D, E, F, G, H, I, J, K. Seven waves; the longest needs chain is A → C → F → H → K (five parts).
 
-Every part handoff records its cost (session tokens, fix rounds, wall time) in this file.
+Every part handoff records its cost (session tokens, fix rounds, wall time). Handoffs from Part D on are in `2026-11-02-food-tracker-handoffs.md`.
 
 ### Part finish (every part; not a sized task)
 

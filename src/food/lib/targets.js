@@ -2,7 +2,7 @@ const FROM_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const isLeapYear = (y) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 
-const isRealDate = (ymd) => {
+export const isRealDate = (ymd) => {
   const [y, m, d] = ymd.split("-").map(Number);
   if (m < 1 || m > 12 || d < 1) return false;
   const daysInMonth = [

@@ -16,6 +16,7 @@ import {
   mergeWorkouts,
   mergeRoutines,
 } from "../lib/backup";
+import { exportFoodData, importFoodData } from "../food/lib/backupFood";
 import { useApp } from "../context/AppContext";
 
 /**
@@ -65,6 +66,7 @@ export default function DataManagementMenu() {
       note,
       weightLogs,
       weeklyNotes,
+      food: exportFoodData(),
     };
     downloadJSON(`gym-tracker-backup-${todayStr()}.json`, payload);
     setOpen(false);
@@ -112,6 +114,7 @@ export default function DataManagementMenu() {
             saveLS(k, v);
           });
         }
+        importFoodData(raw, modeRef.current);
         alert("Import complete.");
       } catch (err) {
         console.error(err);

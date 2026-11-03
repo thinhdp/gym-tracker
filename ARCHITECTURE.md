@@ -41,6 +41,16 @@ Two things render **outside** this tabbed layout:
 - **Theme** — a light/dark/system preference applied by toggling the `dark` class
   on `<html>` (Tailwind class-based dark mode).
 
+**Two modes.** `App.jsx` picks the mode from `window.location.pathname`.
+`isFoodPath()` is true for `/food` and any path under `/food/`; `AppContent` then
+renders `FoodApp` in place of the gym UI, and this check comes before the
+live-session check. Every other path renders the gym UI described above. This is a
+path check, not a router: the `Gym` link in `FoodApp` is a plain `<a href="/">`, so
+leaving the food mode is a full page load. `FoodApp` wraps its content in `FoodProvider`
+(`src/food/context/FoodContext.jsx`), which owns the five stored food lists, and renders
+a placeholder heading per tab and its own four-tab `FoodBottomNav`; the active tab
+persists in `mgym.food.tab`.
+
 ## Tech stack and the role of each tool
 
 | Tool                     | Version (`package.json`) | Role                                                                                                                        |
@@ -71,12 +81,30 @@ gym-tracker/
 ├── postcss.config.js          # Tailwind + autoprefixer
 └── src/
     ├── main.jsx               # Entry: mounts <App/>
-    ├── App.jsx                # Wraps AppProvider; renders active view + BottomNav (or LiveSession)
+    ├── App.jsx                # Wraps AppProvider; renders active view + BottomNav (or LiveSession, or FoodApp on /food)
     ├── index.css              # Tailwind directives + a few base styles
     ├── context/
     │   └── AppContext.jsx     # Shared state (tab, unit, theme, exercises, workouts, session) + persistence
     ├── data/
     │   └── exercises_seed.json   # 76 default exercises (first-run seed)
+    ├── food/                  # Food mode, rendered on /food
+    │   ├── FoodApp.jsx           # Food mode shell: FoodProvider, tab heading, FoodBottomNav
+    │   ├── components/
+    │   │   └── FoodBottomNav.jsx    # Fixed 4-tab bottom navigation
+    │   ├── context/
+    │   │   └── FoodContext.jsx      # FoodProvider / useFood: the five stored food lists
+    │   └── lib/                  # Framework-free helpers
+    │       ├── keys.js              # Food localStorage keys
+    │       ├── backupFood.js        # exportFoodData / importFoodData for the backup
+    │       ├── foodApi.js           # Food search and barcode client
+    │       ├── foodApiFixture.js    # Fixture data when no API base is set
+    │       ├── searchCache.js       # Search cache: expiry and cap
+    │       ├── normalize.js         # normalizeFoodData / mergeFoodData for import
+    │       ├── localDate.js         # Local-date helpers
+    │       ├── macros.js            # Macro scaling + totals
+    │       ├── recent.js            # Recent-foods list helpers
+    │       ├── slots.js             # Meal slots
+    │       └── targets.js           # Target periods: lookup, edit, validation
     ├── lib/                   # Framework-free helpers
     │   ├── storage.js            # localStorage keys + load/save + id/date helpers
     │   ├── backup.js             # Export/import normalize + merge logic
@@ -154,6 +182,9 @@ main.jsx
     └── App
         └── AppProvider             (Context: tab, unit, theme, exercises, workouts, session)
             └── AppContent          (consumes useApp())
+                │
+                ├── food path? → FoodApp                 (replaces the gym UI; checked first)
+                │       └── FoodProvider → FoodBottomNav
                 │
                 ├── session active? → LiveSession        (full-screen; bottom nav hidden)
                 │       ├── WeightRepInputs / NumberInputAutoClear   (per-set inputs)
@@ -335,7 +366,8 @@ inventory is documented in
   "unit": "kg", "tab": "workouts",
   "note": "...",
   "weightLogs": { "2026-06-01": 70.2, ... },
-  "weeklyNotes": { "weekly-note:2026-24": "..." }
+  "weeklyNotes": { "weekly-note:2026-24": "..." },
+  "food": { "entries": [...], "targets": [...], "customFoods": [...], "savedMeals": [...], "recent": [...] }
 }
 ```
 
@@ -354,6 +386,15 @@ device-local UI state, not data worth migrating).
 The extra fields (`unit`, `tab`, `note`, `weightLogs`, `weeklyNotes`) are
 restored directly to their localStorage keys **without** going through
 `normalizeData` (only exercises/workouts are validated).
+
+`food` goes through `importFoodData` (`src/food/lib/backupFood.js`) after those
+fields. It holds the five lists; `mgym.food.searchCache.v1` and `mgym.food.tab` are
+excluded. A backup with no `food` field, or a `food` value that is not a plain object,
+leaves food data untouched in both modes. Merge adds incoming rows and keeps stored
+rows, except that a recent row is replaced by a newer `lastAt`, and the recent list is
+de-duplicated and capped at 50. Replace normalises the incoming lists and overwrites
+each one; a list missing from `food` counts as `[]`. Full rules:
+[docs/DATA-MODEL.md](docs/DATA-MODEL.md#backup--export-payload).
 
 ## Data flow: one full lifecycle
 
