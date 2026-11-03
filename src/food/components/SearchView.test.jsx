@@ -1437,6 +1437,35 @@ describe("SearchView", () => {
       expect(screen.getByText("newer result")).toBeInTheDocument();
     });
 
+    it("going offline then online does not show the no-match line while the re-run is in flight", async () => {
+      searchFoods.mockResolvedValueOnce([]);
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      expect(screen.getByText("No match. Create a custom food?")).toBeTruthy();
+
+      await fire("offline");
+      await fire("online");
+      expect(searchFoods).toHaveBeenCalledTimes(2);
+      expect(screen.queryByText("No match. Create a custom food?")).toBeNull();
+    });
+
+    it("a barcode lookup failing after a finished empty search shows the error without the no-match line", async () => {
+      searchFoods.mockResolvedValueOnce([]);
+      lookupBarcode.mockRejectedValueOnce(new FoodApiError("unavailable"));
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      expect(screen.getByText("No match. Create a custom food?")).toBeTruthy();
+
+      await enterCode(user);
+      expect(
+        screen.getByText("Search unavailable, try again"),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("No match. Create a custom food?")).toBeNull();
+    });
+
     it("typing during a re-run keeps its late results off the newer query", async () => {
       const rerun = deferred();
       searchFoods.mockRejectedValueOnce(new FoodApiError("offline"));

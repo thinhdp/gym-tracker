@@ -119,9 +119,7 @@ describe("TrendsView", () => {
     const { container } = setup([]);
     expect(screen.getByText("No food logged yet")).toBeInTheDocument();
     expect(screen.getByRole("table")).toBeInTheDocument();
-    expect(
-      container.querySelector(".recharts-surface"),
-    ).not.toBeNull();
+    expect(container.querySelector(".recharts-surface")).not.toBeNull();
   });
 
   it("hides the line once there is an entry", () => {
@@ -135,9 +133,7 @@ describe("TrendsView", () => {
     await user.click(screen.getByRole("button", { name: "All" }));
     expect(screen.getByText("No food logged yet")).toBeInTheDocument();
     expect(screen.queryByRole("table")).toBeNull();
-    expect(
-      container.querySelector(".recharts-surface"),
-    ).toBeNull();
+    expect(container.querySelector(".recharts-surface")).toBeNull();
     expect(
       screen.getByRole("button", { name: "Calories" }),
     ).toBeInTheDocument();
