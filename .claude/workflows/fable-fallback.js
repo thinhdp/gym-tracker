@@ -245,6 +245,20 @@ if (!task || task === "undefined") {
     error: "No task provided. Re-run with args = a task description string.",
   };
 }
+if (planTask) {
+  const problems = [];
+  if (typeof args.task !== "string" || args.task.trim() === "")
+    problems.push("args.task must be a non-empty string");
+  if (!["S", "M", "L"].includes(planTask.size))
+    problems.push("args.planTask.size must be one of S, M, L");
+  if (typeof planTask.has_test_signal !== "boolean")
+    problems.push("args.planTask.has_test_signal must be a boolean");
+  if (typeof planTask.high_risk !== "boolean")
+    problems.push("args.planTask.high_risk must be a boolean");
+  if (problems.length > 0) {
+    return { error: `Invalid plan-task args: ${problems.join("; ")}.` };
+  }
+}
 const reportDir = isObjectArgs
   ? (planTask?.reportDir ?? args.reportDir ?? null)
   : null;
@@ -395,8 +409,8 @@ const REVIEW_SCHEMA = {
   properties: {
     tests_pass: { type: "boolean" },
     test_output_summary: { type: "string" },
-    report_path: { type: "string" },
-    reviewed_head: { type: "string" },
+    report_path: { type: "string", minLength: 1 },
+    reviewed_head: { type: "string", minLength: 1 },
     findings: { type: "array", items: FINDINGS_ITEMS },
   },
 };
@@ -414,7 +428,7 @@ const review = await trackedAgent(
 Implementer's report:
 ${implementation}
 
-First record \`git rev-parse HEAD\` in reviewed_head. Run git diff to see the actual changes. Review standard (CLAUDE.md "Review dispatch standard"): verify claims against primary sources (the design spec under docs/superpowers/specs/, ARCHITECTURE.md, docs/DATA-MODEL.md, docs/TESTING.md, CONTRIBUTING.md, the tests), never against the implementer's report. Re-derive load-bearing work a different way and diff the results. Mutation-check every load-bearing guard: delete or invert it, confirm the tests fail, then revert; a test that still passes with the guard removed is a finding. Hunt the stale-read race (a value read before an await and used after it must be re-read after the await). Check the hard invariants in CLAUDE.md (weights stored in kg, no direct localStorage, useConfirm for destructive actions, no new libraries or CSS files). Report EVERY issue you find, including ones you are uncertain about or consider low-severity - do not filter for importance or confidence; a downstream step will do that. For each finding give: file:line, the defect, a concrete failure scenario, your confidence (high/medium/low), and estimated severity. Also confirm whether the tests actually pass by running the focused test file(s) in the foreground. Do not fix anything; revert any mutation-check edit before finishing.
+First record \`git rev-parse HEAD\` in reviewed_head. Run git diff against the commit before the implementer's work (git log will show it) so committed changes are included, to see the actual changes. Review standard (CLAUDE.md "Review dispatch standard"): verify claims against primary sources (the design spec under docs/superpowers/specs/, ARCHITECTURE.md, docs/DATA-MODEL.md, docs/TESTING.md, CONTRIBUTING.md, the tests), never against the implementer's report. Re-derive load-bearing work a different way and diff the results. Mutation-check every load-bearing guard: delete or invert it, confirm the tests fail, then revert; a test that still passes with the guard removed is a finding. Hunt the stale-read race (a value read before an await and used after it must be re-read after the await). Check the hard invariants in CLAUDE.md (weights stored in kg, no direct localStorage, useConfirm for destructive actions, no new libraries or CSS files). Report EVERY issue you find, including ones you are uncertain about or consider low-severity - do not filter for importance or confidence; a downstream step will do that. For each finding give: file:line, the defect, a concrete failure scenario, your confidence (high/medium/low), and estimated severity. Also confirm whether the tests actually pass by running the focused test file(s) in the foreground. Do not fix anything; revert any mutation-check edit before finishing.
 
 Report file: ${review1Where}`,
   {
@@ -435,6 +449,7 @@ const toFix = (review?.findings || []).filter(
 // if the controller wants one, is a fresh run of this workflow with the open findings as args.
 let fixReport = null;
 let fixRan = false;
+let fixError = null;
 if (!review?.tests_pass || toFix.length > 0) {
   log(`${toFix.length} finding(s) to fix; tests_pass=${review?.tests_pass}`);
   const fixImpl = { agentType: implementedBy, fallback: implementer.fallback };
@@ -465,30 +480,34 @@ Fix only these items - nothing else. Run the stated test command and report resu
       stopped: `Fix pass needs the user: ${fixStopped}`,
     };
   }
-  if (!fixRan) log("Fix pass failed (server) - no re-review");
+  if (!fixRan) {
+    fixError = `Fix pass failed (server failure) on ${[...new Set([fixImpl.agentType, fixImpl.fallback].filter(Boolean))].join(" and ")}.`;
+    log(`${fixError} No re-review.`);
+  }
 } else {
   log("Review clean and tests pass - no fix pass needed");
 }
 
 // Re-review of the fix commit(s) only, by the same reviewer agent type, after a fix pass ran.
-// No second fix pass: its non-low findings go to deferred_findings for the controller.
+// No second fix pass: its findings that pass the toFix filter go to deferred_findings for the controller.
 let rereview = null;
 let rereviewReportPath = null;
 if (fixRan) {
   const review1Path = review?.report_path || "";
+  // review-2.md goes next to review-1.md; never re-run `date +%F` (a run crossing midnight would split them).
   const dir = review1Path.includes("/")
     ? review1Path.slice(0, review1Path.lastIndexOf("/"))
-    : reportDir
-      ? reportDir.replace(/\/+$/, "")
-      : null;
-  const review2Where = dir
-    ? `Write your full re-review to the file ${dir}/review-2.md before returning and set report_path to that path.`
-    : `Run \`date +%F\` in the working directory, then write your full re-review to the file .superpowers/sdd/<that date>-workflow/review-2.md before returning, and set report_path to the path you wrote.`;
+    : review1Path
+      ? "."
+      : reportDir
+        ? reportDir.replace(/\/+$/, "")
+        : ".";
+  const review2Where = `Write your full re-review to the file ${dir}/review-2.md (the directory of the first review's report) before returning and set report_path to that path.`;
   const base = review?.reviewed_head || "";
   rereview = await trackedAgent(
     `Re-review the fix pass for this task: ${task}
 
-Review only the fix: run \`git diff ${base || "<the commit the first review covered>"}\` (from the commit the first review covered to HEAD and the working tree). Check it against the findings it was asked to fix, listed below, and report anything new the fix introduced. Do not re-review the original implementation beyond what the fix touched.
+Review only the fix: ${base ? "run \`git diff " + base + "\` (from the commit the first review covered to HEAD and the working tree)." : "the first review recorded no commit, so run git diff against the merge-base with origin/main (\`git diff $(git merge-base HEAD origin/main)\`)."} Check it against the findings it was asked to fix, listed below, and report anything new the fix introduced. Do not re-review the original implementation beyond what the fix touched.
 
 Findings the fix pass was asked to fix:
 ${JSON.stringify(toFix, null, 2)}
@@ -517,11 +536,15 @@ return {
   review_report_path: review?.report_path ?? null,
   deferred_findings: [
     ...(review?.findings || []).filter((f) => !toFix.includes(f)),
-    ...(rereview?.findings || []).filter((f) => f.severity !== "low"),
+    ...(rereview?.findings || []).filter(
+      (f) => f.severity !== "low" && f.confidence !== "low",
+    ),
   ],
   fixReport,
   rereview,
   rereview_report_path: rereviewReportPath,
+  rereview_tests_pass: rereview ? rereview.tests_pass === true : null,
+  ...(fixError ? { error: fixError } : {}),
   rulings,
   stage_usage,
 };
