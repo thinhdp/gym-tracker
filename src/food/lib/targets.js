@@ -1,15 +1,25 @@
 const FROM_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** True when a YYYY-MM-DD string is a real calendar date (local, not UTC). */
+const isLeapYear = (y) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+
 const isRealDate = (ymd) => {
   const [y, m, d] = ymd.split("-").map(Number);
-  const date = new Date(2000, 0, 1);
-  date.setFullYear(y, m - 1, d);
-  return (
-    date.getFullYear() === y &&
-    date.getMonth() === m - 1 &&
-    date.getDate() === d
-  );
+  if (m < 1 || m > 12 || d < 1) return false;
+  const daysInMonth = [
+    31,
+    isLeapYear(y) ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ];
+  return d <= daysInMonth[m - 1];
 };
 
 /** The row with the greatest `from <= ymd`, or null. Input may be unsorted. */

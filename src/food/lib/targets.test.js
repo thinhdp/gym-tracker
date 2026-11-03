@@ -197,6 +197,33 @@ describe("validateTarget", () => {
     ]);
   });
 
+  it("accepts a day that a zone skipped, in that zone", () => {
+    vi.stubEnv("TZ", "Pacific/Apia");
+    try {
+      expect(validateTarget({ ...valid, from: "2011-12-30" })).toEqual([]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("gives the same answer for consecutive dates in a zone with a midnight DST change", () => {
+    vi.stubEnv("TZ", "Asia/Gaza");
+    try {
+      expect(validateTarget({ ...valid, from: "2040-10-20" })).toEqual([]);
+      expect(validateTarget({ ...valid, from: "2040-10-21" })).toEqual([]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("accepts year 0099, rejects 1900-02-29 and accepts 2000-02-29", () => {
+    expect(validateTarget({ ...valid, from: "0099-01-01" })).toEqual([]);
+    expect(validateTarget({ ...valid, from: "1900-02-29" })).toEqual([
+      "from must be YYYY-MM-DD",
+    ]);
+    expect(validateTarget({ ...valid, from: "2000-02-29" })).toEqual([]);
+  });
+
   it("returns all five messages for null without throwing", () => {
     expect(validateTarget(null)).toEqual([
       "kcal must be above 0",
