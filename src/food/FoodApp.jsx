@@ -6,6 +6,7 @@ import FoodBottomNav from "./components/FoodBottomNav";
 import SearchView from "./components/SearchView";
 import SettingsView from "./components/SettingsView";
 import TodayView from "./components/TodayView";
+import TrendsView from "./components/TrendsView";
 import { FoodProvider } from "./context/FoodContext";
 
 // Heading per tab. A tab's view renders below it; tabs without one show only this.
@@ -69,6 +70,7 @@ export default function FoodApp() {
             onLogged={finishLog}
           />
         )}
+        {tab === "trends" && <TrendsView />}
         {tab === "settings" && <SettingsView />}
         <FoodBottomNav active={tab} onSelect={pickTab} />
       </div>

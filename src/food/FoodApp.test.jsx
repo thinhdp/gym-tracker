@@ -49,6 +49,13 @@ describe("FoodApp", () => {
     expect(loadLS(K_FOOD_TAB)).toBe("trends");
   });
 
+  it("renders the trends view on the Trends tab", async () => {
+    const user = userEvent.setup();
+    render(<FoodApp />);
+    await user.click(screen.getByRole("button", { name: "Trends" }));
+    expect(screen.getByRole("table")).toBeInTheDocument();
+  });
+
   it("restores a stored tab", () => {
     saveLS(K_FOOD_TAB, "settings");
     render(
