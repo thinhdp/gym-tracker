@@ -65,9 +65,13 @@ describe("MacroBars", () => {
       />,
     );
     const group = within(rowText());
+    expect(group.getByText("Calories")).toBeVisible();
     expect(group.getByText("500 kcal")).toBeVisible();
+    expect(group.getByText("Protein")).toBeVisible();
     expect(group.getByText("25.5 g")).toBeVisible();
+    expect(group.getByText("Carbs")).toBeVisible();
     expect(group.getByText("40 g")).toBeVisible();
+    expect(group.getByText("Fat")).toBeVisible();
     expect(group.getByText("10 g")).toBeVisible();
     for (const key of ["kcal", "protein", "carb", "fat"]) {
       expect(screen.queryByTestId(`macro-bar-${key}`)).toBeNull();

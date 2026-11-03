@@ -97,7 +97,7 @@ export default function TrendsView() {
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart
           data={data}
-          margin={{ top: 12, right: 4, bottom: 4, left: -8 }}
+          margin={{ top: 12, right: 4, bottom: 4, left: 12 }}
         >
           <CartesianGrid
             strokeDasharray="3 3"
@@ -111,7 +111,11 @@ export default function TrendsView() {
             tick={axisTick}
             tickLine={false}
             axisLine={{ stroke: "currentColor", opacity: 0.2 }}
-            interval={0}
+            interval="preserveStartEnd"
+            minTickGap={0}
+            angle={-45}
+            textAnchor="end"
+            height={64}
           />
           <YAxis
             yAxisId="intake"

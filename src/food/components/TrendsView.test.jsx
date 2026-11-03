@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { K_UNIT, K_WEIGHT_LOGS, saveLS } from "../../lib/storage";
 import { FoodProvider } from "../context/FoodContext";
 import { K_FOOD_ENTRIES } from "../lib/keys";
-import { addDays, todayLocal } from "../lib/localDate";
+import { addDays, localDateFromYmd, todayLocal } from "../lib/localDate";
 import { weeklyIntake } from "../lib/trends";
 import TrendsView from "./TrendsView";
 
@@ -146,12 +146,26 @@ describe("TrendsView chart internals", () => {
     const labels = ticks();
     expect(labels).toHaveLength(4);
     labels.forEach((t) => expect(t).not.toMatch(/\d{4}-\d{2}-\d{2}/));
-    expect(labels.map((t) => t.match(/\((\d)\/7\)$/)?.[1])).toEqual([
-      "0",
-      "0",
-      "0",
-      "2",
-    ]);
+    const expected = weeklyIntake([], {}, { weeks: 4 }).map((r, i) => {
+      const days = [0, 0, 0, 2][i];
+      const date = localDateFromYmd(r.from).toLocaleDateString(undefined, {
+        day: "numeric",
+        month: "short",
+      });
+      return `${date} (${days}/7)`;
+    });
+    expect(labels).toEqual(expected);
+  });
+
+  it("rotates the week tick labels", () => {
+    setup([entry("a", mondayOfWeek(0), kcal(1500))]);
+    const texts = [
+      ...document.querySelectorAll(".recharts-xAxis-tick-labels text"),
+    ];
+    expect(texts).toHaveLength(4);
+    texts.forEach((t) =>
+      expect(t.getAttribute("transform")).toContain("rotate(-45"),
+    );
   });
 
   it("maps Carbs and Fat to their own values", async () => {

@@ -38,7 +38,7 @@ export default function MacroBars({ totals, target }) {
               <div
                 data-testid={`macro-bar-${key}`}
                 className={`h-full rounded-full ${TONE_CLASSES[barTone(ratio)]}`}
-                style={{ width: `${Math.min(100, (ratio ?? 0) * 100)}%` }}
+                style={{ width: `${Math.min(100, ratio * 100)}%` }}
               />
             </div>
           </div>
