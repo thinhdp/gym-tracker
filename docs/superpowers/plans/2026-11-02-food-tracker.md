@@ -39,7 +39,7 @@ Tasks follow the backlog phases in `docs/superpowers/specs/2026-11-02-food-track
 
 ## Review Focus
 
-1. An entry logged at 23:30 in UTC+7 must land on that local day, not the next UTC day. Test in Task 2 (`localDate`) and Task 6 (TodayView uses it).
+1. An entry logged before 07:00 in UTC+7 must land on that local day, not the previous UTC day. Test in Task 2 (`localDate`) and Task 6 (TodayView uses it).
 2. Deleting the only target row leaves the app with no target: Today shows plain totals and no bars, the Home card shows "Set up food tracking". Tests in Tasks 6, 7, 13.
 3. A corrupted `mgym.food.entries.v1` value (not an array) must not crash `FoodProvider`; it falls back to `[]`. Test in Task 3.
 4. A search request that returns after the user has typed more must not overwrite newer results (abort stale requests). Test in Task 5.
@@ -893,4 +893,4 @@ Before the first production deploy that includes Part F, set `VITE_FOOD_API_BASE
 - Part G (Task 6): `barTone(null)` returns `ok`. `MacroBars` must hide bars itself when there is no target.
 - Part C and Part E: `targetForDate` throws on a null row, and `touchRecent` throws on a row with no `food`. Both rely on `FoodProvider` and `normalizeFoodData` to drop malformed rows. `addDays` returns `NaN-NaN-NaN` on a malformed date.
 
-**Follow-ups:** #116 (spec wording), #117 (`FROM_RE` anchors, impossible dates). No plan steps are left undone. Issue #86 stays open until Part A also merges, because it includes `keys.js`. Issue #97 stays open until Part K.
+**Follow-ups:** #116 and #117 were fixed in this PR. No plan steps are left undone. Issue #86 stays open until Part A also merges, because it includes `keys.js`. Issue #97 stays open until Part K.
