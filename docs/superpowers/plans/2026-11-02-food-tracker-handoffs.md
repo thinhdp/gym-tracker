@@ -174,3 +174,47 @@ Recent: a stored row is replaced when the incoming row for that food has a newer
 **Unchecked steps moved:** none.
 
 **Next:** Parts G and H can run once this PR merges; both need `FoodApp.jsx` or `SearchView.jsx` from this part. Default order is G, then H.
+
+## Part G handoff
+
+**Shipped:** Tasks 6, 12a and 12b. Commits on the branch before squash or merge: `d26c7c8` (Task 6), `eb3eddb` and `7add4b8` (Task 12a), `d0f14e1` and `36b0d00` (Task 12b), `4f52d30` (axis labels and test pins). New files: `TodayView`, `MacroBars`, `MealSlot`, `EntryRow`, `EntryEditSheet`, `TrendsView`, `lib/trends.js`, with tests. `localDateFromYmd` is now exported from `localDate.js`, which Task 12a's Files list does not name. #91, #99 and #100 close with this PR.
+
+**Cost:** $8.19 for the session up to this handoff, read from `get_session`. The per-model split was not measured: `session-cost.mjs` is not on this machine. 601,386 subagent tokens across 12 agents, in 3 workflow runs, 1 fix agent and 1 diff review. Fix rounds: 0 for Task 6, 1 for Task 12a, 1 for Task 12b, 1 controller round for the axis labels. Decision rounds: 1, before the first dispatch. About 48 minutes of agent time and about 60 minutes of wall time.
+
+**Verified in a browser:** a Playwright run on the dev server in fixture mode, with a viewport of 390 px, and label measurements at 360 and 390 px. On a past day, + on Lunch opened Search with Lunch selected, and the log stored on that past day in that slot. An edit to grams cleared `portionLabel`. Delete went through the confirm dialog. Trends drew bars, the line and the table. No console errors, and no horizontal page scroll.
+
+**Not verified:** the real food API; a real phone; dark mode; a time zone with daylight saving in the browser (unit tests cover it).
+
+**Rulings** (Opus orchestrator, with one advisor round, unless marked):
+
+- Rows in a slot sort by `createdAt` ascending; equal values keep stored order.
+- `EntryEditSheet` has no portion picker, which differs from spec 6.1: a stored entry has `portionLabel` but no `portions`. Saving changed grams clears `portionLabel`; unchanged grams leave it.
+- `presetSlot` resets after a log and on a bottom nav pick.
+- The slot "..." button is disabled until Part I passes `onMenu`.
+- A macro target of 0 shows `eaten / 0` with an empty bar and the ok tone.
+- The `h1` stays "Today" on a past day; the date line below it shows the day.
+- Trends buckets compare dates and use `from` as the React key, because `weekKey` can repeat across a daylight-saving change in zones that have one.
+- `bodyweightDelta` on the first row of a range uses the real previous week from `weightLogs`.
+- Bodyweight is raw, not converted (`docs/DATA-MODEL.md`, "Bodyweight log"), and labelled with the stored `mgym.unit`.
+- Range and metric are component state, so no stored key or `docs/DATA-MODEL.md` change is needed.
+- The axis tick is a short date plus `(n/7)`, not the plan's `<label> (n/7)`, which does not fit a phone. The table keeps the full label.
+- Next day has no upper limit, so a future day can be viewed and logged to (owner ruling: allow for now, change later in #137). Trends ignores entries after today's week.
+- Tick labels are angled, and Recharts drops some when they do not fit. In the longer ranges some weeks have no tick, so their logged-day count shows only in the table. Spec 6.3 can be read as each drawn label or each week; this takes the first reading. The owner's decision is tracked in #138. Measured with `interval={0}` at 390 px, 12 weeks overlapped.
+
+**Parked review findings** (real, low impact, deferred):
+
+- Task 6: unpinned `onLogged` reset (no route can show it today), the `Number.isFinite` half of the grams check, the sheet's day line; `MealSlot` with `onMenu` is untested until Part I. One test uses `fireEvent` against `docs/TESTING.md`, because `user.type` cannot enter "50.0" in a controlled number input; a comment says why. `EntryEditSheet`'s Save stays reachable by keyboard while the confirm dialog is open; confirming still deletes the right row.
+- Task 12a: the `todayLocal()` default and the `Array.isArray(entries)` guard are unpinned.
+- Task 12b: the weight axis `orientation`, the unit in the line name, and the chart's left margin, `textAnchor` and `height` are unpinned. Long locale labels such as Vietnamese may clip on the first tick (calculated, not run).
+- Tick thinning has no test: #135.
+
+**Notes for later parts:**
+
+- Part I: pass `onMenu` from `TodayView` to `MealSlot`. It receives the slot id, as `onAdd` does. Add a test that the button is enabled with `onMenu`.
+- Part K: add the Recent row to `TodayView` and empty states to `TrendsView` (All with no entries renders only the controls and an empty chart). A row with a null value is still a crash until #126 ships; `TodayView` and `weeklyIntake` read entries the same way.
+
+**Follow-ups:** #135, #137, #138, and #126, #129, #132, #133 from earlier parts. Plan size: the plan file is still over the 30 KB limit in CLAUDE.md; the owner has not decided whether to cut it.
+
+**Unchecked steps moved:** none.
+
+**Next:** Part H, then I, J and K in the plan's default order.
