@@ -127,3 +127,50 @@ Recent: a stored row is replaced when the incoming row for that food has a newer
 **Unchecked steps moved:** none.
 
 **Next:** Part F. The notes for later parts are under Part E rulings above.
+
+## Part F handoff
+
+**Shipped:** Tasks 5 and 7. Commits on the branch before squash or merge: `c6f9915` (Task 5), `724e8d4` (remount the portion sheet), `b571776` (Task 7), `51a85ed` and `ca63a88` (test pins). New files: `SearchView`, `SearchResultRow`, `PortionSheet`, `SettingsView`, `TargetsEditor`, with tests. `FoodApp` routes the search and settings tabs. #90, #92 and #106 close with this PR; Task 7 already delivers the edit and delete rows that #106 asks for.
+
+**Cost:** $10.66 for the session up to this handoff, read from `get_session`. The per-model split was not measured: `session-cost.mjs` is not on this machine. 631,875 subagent tokens across 12 agents, in 2 workflow runs, 1 test fix agent and 1 diff review. Fix rounds: 1 for Task 5, 1 for Task 7, 1 controller round for test gaps. Decision rounds: 2, against the limit of one per part (1 controller advisor call, 1 advisor call in the Task 5 workflow). About 40 minutes of wall time.
+
+**Verified in a browser:** a Playwright run on the dev server in fixture mode, at iPhone 13 size. Search autofocuses and shows the demo data badge. A search, portion sheet and Add stored an entry with `food.kind` `db` in the chosen slot and returned to Today. A target saved and deleted through the confirm dialog. No console errors, and no horizontal page scroll on the sheet or Settings.
+
+**Not verified:** the real food API, because the run used the fixture; a real phone.
+
+**Rulings** (Opus orchestrator, with one advisor round, unless marked):
+
+- Until Part G adds date state, `FoodApp` passes `date={todayLocal()}` at render. `presetSlot` state has no setter yet, and `SearchView` falls back to `slotForTime()`.
+- `PortionSheet` shows `date` as a day line. Its `onAdd` payload has no date; `SearchView` adds it.
+- Grams start at `defaultGrams`, else the default chip's grams, else empty. Typing a value that differs from the chip clears the chip, so `portionLabel` never disagrees with the grams.
+- The invalid grams outline sits on a wrapper, because `ui/Input` lets `className` replace its base classes. An untouched empty field also shows the outline (implementer's choice; spec section 8 does not settle it).
+- The slot `Segmented` uses `flex-wrap`. `ui/Segmented` is unchanged.
+- Custom foods match from two characters on normalised names, sit above API rows, and stay when the API call fails.
+- `not_found` and non-`FoodApiError` failures read as "Search unavailable, try again".
+- `TargetsEditor`: an empty field converts to `NaN`, so it blocks Save. The form prefills on mount and Applies from defaults to today, not the row's `from`. Messages show on a new empty form, as the plan states. `SettingsView` has no placeholder sections for Tasks 9 and 10.
+- `PortionSheet` is keyed by `source:id`, so choosing another row resets it (review fix).
+- Midnight (owner): an entry logs to the day shown, so no midnight handling is needed. A display left open overnight keeps showing the earlier day until the user changes it. #131 is closed with this ruling.
+- Commits use the Opus 5.5 trailer, because this session ran on Opus 5.5.
+
+**Parked review findings** (real, low impact, deferred):
+
+- Search: API rows from the previous query stay visible while a new query is pending, so a slow connection can show them for up to the 8 s timeout; `per100` values from the API are not checked; `defaultGrams` `null` would show as text (no caller yet); `FoodApp.test.jsx` wiring tests assume fixture mode; the `vi.stubGlobal("jest", ...)` workaround in `SearchView.test.jsx` is not in `docs/TESTING.md`.
+- Barcode: `PortionSheet` copies `food.barcode` into the ref on a text search, while spec 5.1 says it is present when reached by scan. Part J should settle this.
+- Unpinned by tests: the `Number.isFinite` check and macro clamp in `PortionSheet`, the `flex-wrap` class, the `presetSlot` prop, and source in the sheet key; in `TargetsEditor`, history row macro text, the form keeping protein, carb and fat after Save and Delete, and an unsorted stored list at component level.
+- `TargetsEditor`: the Save early return cannot run today; implied kcal can show Infinity for absurd input such as 1e308.
+
+**Notes for later parts:**
+
+- Part G: replace `date={todayLocal()}` with the new state and add the `presetSlot` setter. Search logs to that state's day, including a past day the user is viewing, and no midnight logic is added (#131, owner ruling). `onLogged` already switches to Today.
+- Part H: add the Custom foods section to `SettingsView` and pass custom rows as today; `SearchView` sets `source: "custom"` on them.
+- Part J: pass `onScan`; `PortionSheet` takes `defaultGrams` and keeps the rules above.
+- Part K: `SearchView` has no "no results" line yet (Task 15). The offline state is only the one error line (Task 11b).
+- #126 still applies: a stored `[null]` in targets crashes Settings during render, because `TargetsEditor` calls `targetForDate`.
+
+**Owner action before deploying:** set `VITE_FOOD_API_BASE` in the gym-tracker Vercel project to the deployed API URL (plan, "Part finish"). Until then production runs in fixture mode and shows the demo data badge. This session could not read the Vercel project, so whether it is already set is not known.
+
+**Follow-ups:** #132, #133, and #129 and #126 from earlier parts. Plan size: the plan file is still over the 30 KB limit in CLAUDE.md; the owner has not decided whether to cut it.
+
+**Unchecked steps moved:** none.
+
+**Next:** Parts G and H can run once this PR merges; both need `FoodApp.jsx` or `SearchView.jsx` from this part. Default order is G, then H.
