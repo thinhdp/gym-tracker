@@ -25,12 +25,13 @@ function DroppedRowsNote() {
     droppedRows === 1
       ? "1 damaged food row"
       : `${droppedRows} damaged food rows`;
+  const restore = droppedRows === 1 ? "it" : "them";
   return (
     <p
       role="status"
       className="mb-4 text-xs text-amber-700 dark:text-amber-400"
     >
-      {`Removed ${rows} from this device. A backup can restore them.`}
+      {`Removed ${rows} from this device. A backup can restore ${restore}.`}
     </p>
   );
 }

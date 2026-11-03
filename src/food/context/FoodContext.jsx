@@ -62,7 +62,7 @@ function useStoredList(key, initial) {
 
 /** Owns the food app's stored lists. */
 export function FoodProvider({ children }) {
-  // Lazy, so storage is read once. droppedRows does not change after load.
+  // Lazy, so storage is read at mount only. droppedRows does not change after load.
   const [{ lists, droppedRows }] = useState(loadLists);
   const [entries, updateEntries, latestEntries] = useStoredList(
     K_FOOD_ENTRIES,

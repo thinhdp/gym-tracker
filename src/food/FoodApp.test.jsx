@@ -104,7 +104,7 @@ describe("FoodApp", () => {
       saveLS(K_FOOD_ENTRIES, [null]);
       render(<FoodApp />);
       expect(screen.getByRole("status")).toHaveTextContent(
-        /^Removed 1 damaged food row from this device\. A backup can restore them\.$/,
+        /^Removed 1 damaged food row from this device\. A backup can restore it\.$/,
       );
     });
 
