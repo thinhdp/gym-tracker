@@ -437,6 +437,9 @@ applies it as follows:
   food data untouched in both modes.
 - An export reads storage as it is, so it includes a malformed row until `/food` has
   loaded once and removed it.
+- `FoodProvider` also normalises stored rows at `/food` load, which affects a later
+  merge. Spec section 5.9 of `docs/superpowers/specs/2026-11-02-food-tracker-design.md`
+  has the order.
 
 The `mgym.theme` preference and the `mgym.session.v1` live session are **not**
 part of the backup payload — they are device-local UI state.

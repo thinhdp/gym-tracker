@@ -328,9 +328,11 @@ read, so one shape rule covers load and import:
   field of the wrong type) is saved repaired. Valid rows the app wrote keep every value
   they hold. A stored non-array still loads as `[]` and is overwritten, as before.
 - A merge restore can still keep a malformed stored row. The next `/food` load removes
-  it. If the backup holds a valid row with the same key, a merge made before that load
-  keeps the malformed row and skips the valid one; a second merge after the load restores
-  the valid one.
+  it. For entries, targets, custom foods and saved meals, if the backup holds a valid
+  row with the same key, a merge made before that load keeps the malformed row and skips
+  the valid one; a second merge after the load adds the valid one. Recent rows follow
+  the newer `lastAt` and the cap instead. A row the load repaired keeps its key, so a
+  later merge does not replace it.
 - `FoodProvider` exposes `droppedRows`: for the lists stored as arrays, the number of
   rows in storage minus the number of rows after normalising, summed over the five
   lists. A duplicate counts as removed. A stored non-array counts as 0. A saved meal
@@ -434,8 +436,8 @@ gym `BottomNav`. The active tab persists in `mgym.food.tab`.
 
 `FoodProvider` (in `src/food/context/FoodContext.jsx`) owns `entries`,
 `targets`, `customFoods`, `savedMeals`, `recent`, each initialised lazily with
-`loadLS` and `normalizeFoodData` (section 5.9) and written back by a `useEffect` on
-change, the same pattern as `AppProvider`. It exposes `useFood()` with the lists,
+`loadLS` and `normalizeFoodData` (section 5.9) and written back by a `useEffect` at
+mount and on change, the same pattern as `AppProvider`. It exposes `useFood()` with the lists,
 `droppedRows` and these actions:
 `addEntry`, `updateEntry`, `deleteEntry`, `logSavedMeal`, `saveMealFromSlot`,
 `upsertCustomFood`, `deleteCustomFood`, `upsertTarget`, `deleteTarget`,
