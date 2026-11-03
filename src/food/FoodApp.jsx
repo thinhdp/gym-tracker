@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { loadLS, saveLS } from "../lib/storage";
 import { K_FOOD_TAB } from "./lib/keys";
+import { todayLocal } from "./lib/localDate";
 import FoodBottomNav from "./components/FoodBottomNav";
+import SearchView from "./components/SearchView";
 import { FoodProvider } from "./context/FoodContext";
 
-// Placeholder heading per tab. Later tasks swap these for views.
+// Heading per tab. A tab's view renders below it; tabs without one show only this.
 const HEADINGS = {
   today: "Today",
   search: "Search",
@@ -17,6 +19,9 @@ export default function FoodApp() {
     const stored = loadLS(K_FOOD_TAB, "today");
     return Object.keys(HEADINGS).includes(stored) ? stored : "today";
   });
+
+  // Today sets this in a later task, so Search opens on the tapped slot.
+  const [presetSlot] = useState(null);
 
   useEffect(() => saveLS(K_FOOD_TAB, tab), [tab]);
 
@@ -34,6 +39,13 @@ export default function FoodApp() {
             Gym
           </a>
         </header>
+        {tab === "search" && (
+          <SearchView
+            date={todayLocal()}
+            presetSlot={presetSlot}
+            onLogged={() => setTab("today")}
+          />
+        )}
         <FoodBottomNav active={tab} onSelect={setTab} />
       </div>
     </FoodProvider>

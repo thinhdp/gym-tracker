@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { loadLS, saveLS } from "../lib/storage";
 import { K_FOOD_ENTRIES, K_FOOD_TAB } from "./lib/keys";
+import { todayLocal } from "./lib/localDate";
 import FoodApp from "./FoodApp";
 
 function heading() {
@@ -83,5 +84,33 @@ describe("FoodApp", () => {
       "href",
       "/",
     );
+  });
+
+  it("renders the search view below the heading on the search tab only", async () => {
+    const user = userEvent.setup();
+    render(<FoodApp />);
+    expect(screen.queryByRole("searchbox")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Search" }));
+    expect(heading()).toHaveTextContent("Search");
+    expect(screen.getByRole("searchbox")).toBeInTheDocument();
+  });
+
+  it("logs today's date and switches to the today tab after Add", async () => {
+    saveLS(K_FOOD_TAB, "search");
+    const user = userEvent.setup();
+    render(<FoodApp />);
+
+    await user.type(screen.getByRole("searchbox"), "banana");
+    await user.click(await screen.findByRole("button", { name: /banana/ }));
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(heading()).toHaveTextContent("Today");
+    expect(screen.queryByRole("searchbox")).toBeNull();
+    expect(loadLS(K_FOOD_TAB)).toBe("today");
+    const entries = loadLS(K_FOOD_ENTRIES);
+    expect(entries).toHaveLength(1);
+    expect(entries[0].date).toBe(todayLocal());
+    expect(entries[0].name).toBe("banana, raw");
   });
 });
