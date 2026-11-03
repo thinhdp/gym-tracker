@@ -1,0 +1,146 @@
+import {
+  deleteTarget,
+  targetForDate,
+  upsertTarget,
+  validateTarget,
+} from "./targets";
+
+const t = [
+  { from: "2026-01-01", kcal: 2000, protein: 150, carb: 200, fat: 70 },
+  { from: "2026-11-01", kcal: 1800, protein: 160, carb: 150, fat: 60 },
+];
+
+describe("targetForDate", () => {
+  it("returns the row with the greatest from on or before the date", () => {
+    expect(targetForDate(t, "2026-10-31").kcal).toBe(2000);
+    expect(targetForDate(t, "2026-11-01").kcal).toBe(1800);
+    expect(targetForDate(t, "2025-12-31")).toBeNull();
+  });
+
+  it("does not assume sorted input", () => {
+    const reversed = [...t].reverse();
+    expect(targetForDate(reversed, "2026-11-15").kcal).toBe(1800);
+    expect(targetForDate(reversed, "2026-10-31").kcal).toBe(2000);
+  });
+
+  it("returns null for an empty list", () => {
+    expect(targetForDate([], "2026-11-01")).toBeNull();
+  });
+});
+
+describe("upsertTarget", () => {
+  const replacement = {
+    from: "2026-11-01",
+    kcal: 1900,
+    protein: 160,
+    carb: 150,
+    fat: 60,
+  };
+
+  it("replaces the row with the same from", () => {
+    const result = upsertTarget(t, replacement);
+    expect(result).toHaveLength(2);
+    expect(targetForDate(result, "2026-11-01").kcal).toBe(1900);
+  });
+
+  it("sorts a new from into place", () => {
+    const row = {
+      from: "2026-06-01",
+      kcal: 1700,
+      protein: 140,
+      carb: 170,
+      fat: 55,
+    };
+    expect(upsertTarget(t, row).map((r) => r.from)).toEqual([
+      "2026-01-01",
+      "2026-06-01",
+      "2026-11-01",
+    ]);
+  });
+
+  it("does not mutate the input", () => {
+    const input = structuredClone(t);
+    const result = upsertTarget(input, replacement);
+    expect(input).toEqual(t);
+    expect(result).not.toBe(input);
+  });
+});
+
+describe("deleteTarget", () => {
+  it("removes one row", () => {
+    expect(deleteTarget(t, "2026-01-01")).toEqual([t[1]]);
+  });
+
+  it("deleting the only row leaves a list with no target", () => {
+    const result = deleteTarget([t[0]], "2026-01-01");
+    expect(result).toEqual([]);
+    expect(targetForDate(result, "2026-11-01")).toBeNull();
+  });
+});
+
+describe("validateTarget", () => {
+  const valid = {
+    from: "2026-11-01",
+    kcal: 1800,
+    protein: 160,
+    carb: 150,
+    fat: 60,
+  };
+
+  it("returns no messages for a valid row", () => {
+    expect(validateTarget(valid)).toEqual([]);
+  });
+
+  it("accepts protein 0", () => {
+    expect(validateTarget({ ...valid, protein: 0 })).toEqual([]);
+  });
+
+  it("rejects kcal 0", () => {
+    expect(
+      validateTarget({
+        from: "2026-11-01",
+        kcal: 0,
+        protein: 1,
+        carb: 1,
+        fat: 1,
+      }),
+    ).toContain("kcal must be above 0");
+  });
+
+  it("rejects negative carb and negative fat", () => {
+    expect(validateTarget({ ...valid, carb: -1 })).toEqual([
+      "carb must be 0 or more",
+    ]);
+    expect(validateTarget({ ...valid, fat: -1 })).toEqual([
+      "fat must be 0 or more",
+    ]);
+  });
+
+  it("rejects NaN, a string and a missing field", () => {
+    expect(validateTarget({ ...valid, kcal: NaN })).toEqual([
+      "kcal must be above 0",
+    ]);
+    expect(validateTarget({ ...valid, protein: "160" })).toEqual([
+      "protein must be 0 or more",
+    ]);
+    const noFat = { ...valid };
+    delete noFat.fat;
+    expect(validateTarget(noFat)).toEqual(["fat must be 0 or more"]);
+  });
+
+  it("rejects a bad from", () => {
+    expect(validateTarget({ ...valid, from: "2026-11-1" })).toEqual([
+      "from must be YYYY-MM-DD",
+    ]);
+  });
+
+  it("returns all five messages for null without throwing", () => {
+    expect(validateTarget(null)).toEqual([
+      "kcal must be above 0",
+      "protein must be 0 or more",
+      "carb must be 0 or more",
+      "fat must be 0 or more",
+      "from must be YYYY-MM-DD",
+    ]);
+  });
+});
