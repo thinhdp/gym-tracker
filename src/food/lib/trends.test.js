@@ -76,6 +76,57 @@ describe("weeklyIntake", () => {
     expect(rows[1].loggedDays).toBe(1);
   });
 
+  it("averages by days with at least one entry and rounds kcal to whole and macros to one decimal", () => {
+    // Day one has two entries, so the divisor is 3 days, not 4 entries.
+    const entries = [
+      entry("2026-11-02", 1000),
+      entry("2026-11-02", 500),
+      entry("2026-11-03", 1000),
+      entry("2026-11-04", 1000),
+    ];
+    const [row] = weeklyIntake(entries, {}, { weeks: 1, today: "2026-11-04" });
+    expect(row.loggedDays).toBe(3);
+    expect(row.avg).toEqual({
+      kcal: 1167,
+      protein: 13.3,
+      carb: 26.7,
+      fat: 6.7,
+    });
+  });
+
+  it("gives a null delta when the current week has no weigh-ins but the previous week does", () => {
+    const rows = weeklyIntake(
+      [],
+      { "2026-10-27": 80 },
+      {
+        weeks: 1,
+        today: "2026-11-04",
+      },
+    );
+    expect(rows[0].bodyweight).toBeNull();
+    expect(rows[0].bodyweightDelta).toBeNull();
+  });
+
+  it("builds weeks from local dates when today is a Monday in a zone behind UTC", () => {
+    vi.stubEnv("TZ", "America/New_York");
+    const logs = {
+      "2026-10-26": 72,
+      "2026-11-01": 70,
+      "2026-11-02": 80,
+      "2026-11-08": 82,
+    };
+    const rows = weeklyIntake([], logs, { weeks: 2, today: "2026-11-02" });
+    expect(rows.map((r) => [r.from, r.to])).toEqual([
+      ["2026-10-26", "2026-11-01"],
+      ["2026-11-02", "2026-11-08"],
+    ]);
+    expect(rows[1].label).toBe("2026-11-02 to 2026-11-08");
+    expect(rows[1].key).toBe("2026-45");
+    expect(rows[0].bodyweight).toBe(71);
+    expect(rows[1].bodyweight).toBe(81);
+    expect(rows[1].bodyweightDelta).toBe(10);
+  });
+
   it("handles empty and future-only cases", () => {
     expect(weeklyIntake([], {}, { weeks: null, today: "2026-11-04" })).toEqual(
       [],
