@@ -1277,7 +1277,8 @@ describe("SearchView", () => {
       const rerun = deferred();
       searchFoods.mockRejectedValueOnce(new FoodApiError("offline"));
       searchFoods.mockReturnValueOnce(rerun.promise);
-      searchFoods.mockResolvedValueOnce([]);
+      // Stays pending: a settled third search would hide a late result.
+      searchFoods.mockReturnValueOnce(deferred().promise);
       const { user } = setup();
       await user.type(box(), "ch");
       await tick(300);
@@ -1287,6 +1288,63 @@ describe("SearchView", () => {
       await settle(() => rerun.resolve([food("a", "late result")]));
       await fire("online");
       expect(screen.queryByText("late result")).toBeNull();
+    });
+
+    it("typing during a re-run aborts it, so its offline failure does not set the state", async () => {
+      const rerun = deferred();
+      searchFoods.mockRejectedValueOnce(new FoodApiError("offline"));
+      searchFoods.mockReturnValueOnce(rerun.promise);
+      searchFoods.mockResolvedValueOnce([food("b", "newer result")]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      await user.click(tryAgain());
+      const { signal } = searchFoods.mock.calls[1][1];
+
+      await user.type(box(), "i");
+      expect(signal.aborted).toBe(true);
+      await tick(300);
+      await settle(() => rerun.reject(new FoodApiError("offline")));
+
+      expectOnline();
+      expect(box()).toHaveValue("chi");
+      expect(screen.getByText("newer result")).toBeInTheDocument();
+    });
+
+    it("typing during a re-run keeps its late results off the newer query", async () => {
+      const rerun = deferred();
+      searchFoods.mockRejectedValueOnce(new FoodApiError("offline"));
+      searchFoods.mockReturnValueOnce(rerun.promise);
+      searchFoods.mockResolvedValueOnce([food("b", "newer result")]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      await user.click(tryAgain());
+
+      await user.type(box(), "i");
+      await tick(300);
+      await settle(() => rerun.resolve([food("a", "late result")]));
+
+      expect(screen.queryByText("late result")).toBeNull();
+      expect(screen.getByText("newer result")).toBeInTheDocument();
+    });
+
+    it("the Recent list shows only while offline", async () => {
+      setOnLine(true);
+      saveLS(K_FOOD_RECENT, [RECENT_DB]);
+      setup();
+      const recentHeading = () =>
+        screen.queryByRole("heading", { name: "Recent" });
+      expect(recentHeading()).toBeNull();
+      expect(screen.queryByRole("button", { name: /Boiled egg/ })).toBeNull();
+
+      await fire("offline");
+      expect(recentHeading()).toBeInTheDocument();
+      expect(rowButton(/Boiled egg/)).toBeInTheDocument();
+
+      await fire("online");
+      expect(recentHeading()).toBeNull();
+      expect(screen.queryByRole("button", { name: /Boiled egg/ })).toBeNull();
     });
 
     it("an online event while online changes nothing", async () => {
