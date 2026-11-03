@@ -5,6 +5,7 @@ import { todayLocal } from "./lib/localDate";
 import FoodBottomNav from "./components/FoodBottomNav";
 import SearchView from "./components/SearchView";
 import SettingsView from "./components/SettingsView";
+import TodayView from "./components/TodayView";
 import { FoodProvider } from "./context/FoodContext";
 
 // Heading per tab. A tab's view renders below it; tabs without one show only this.
@@ -21,8 +22,11 @@ export default function FoodApp() {
     return Object.keys(HEADINGS).includes(stored) ? stored : "today";
   });
 
-  // Today sets this in a later task, so Search opens on the tapped slot.
-  const [presetSlot] = useState(null);
+  // The viewed day. Search logs to this day, including a past one.
+  const [date, setDate] = useState(() => todayLocal());
+
+  // Set by + on a slot, so Search opens on the tapped slot.
+  const [presetSlot, setPresetSlot] = useState(null);
 
   useEffect(() => saveLS(K_FOOD_TAB, tab), [tab]);
 
@@ -30,6 +34,21 @@ export default function FoodApp() {
   useEffect(() => {
     document.title = "Food Tracker";
   }, []);
+
+  const addTo = (slot) => {
+    setPresetSlot(slot);
+    setTab("search");
+  };
+
+  const finishLog = () => {
+    setPresetSlot(null);
+    setTab("today");
+  };
+
+  const pickTab = (next) => {
+    setPresetSlot(null);
+    setTab(next);
+  };
 
   return (
     <FoodProvider>
@@ -40,15 +59,18 @@ export default function FoodApp() {
             Gym
           </a>
         </header>
+        {tab === "today" && (
+          <TodayView date={date} onChangeDate={setDate} onAddTo={addTo} />
+        )}
         {tab === "search" && (
           <SearchView
-            date={todayLocal()}
+            date={date}
             presetSlot={presetSlot}
-            onLogged={() => setTab("today")}
+            onLogged={finishLog}
           />
         )}
         {tab === "settings" && <SettingsView />}
-        <FoodBottomNav active={tab} onSelect={setTab} />
+        <FoodBottomNav active={tab} onSelect={pickTab} />
       </div>
     </FoodProvider>
   );

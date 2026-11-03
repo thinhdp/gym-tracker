@@ -1,14 +1,21 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ConfirmProvider } from "../components/ConfirmDialog";
 import { loadLS, saveLS } from "../lib/storage";
 import { K_FOOD_ENTRIES, K_FOOD_TAB } from "./lib/keys";
-import { todayLocal } from "./lib/localDate";
+import { addDays, formatDayHeader, todayLocal } from "./lib/localDate";
 import FoodApp from "./FoodApp";
 
 function heading() {
   return screen.getByRole("heading", { level: 1 });
+}
+
+function navButton(name) {
+  return within(screen.getByRole("navigation", { name: "Food" })).getByRole(
+    "button",
+    { name },
+  );
 }
 
 describe("FoodApp", () => {
@@ -131,5 +138,154 @@ describe("FoodApp", () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].date).toBe(todayLocal());
     expect(entries[0].name).toBe("banana, raw");
+  });
+
+  it("shows the day log on the today tab", () => {
+    render(<FoodApp />);
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(
+      formatDayHeader(todayLocal()),
+    );
+    expect(screen.getByRole("region", { name: "Lunch" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Day totals" })).toBeVisible();
+  });
+
+  describe("local day", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.unstubAllEnvs();
+    });
+
+    // Search through the nav and add the first banana row at its default amount.
+    const logBanana = async (user) => {
+      await user.click(navButton("Search"));
+      await user.type(screen.getByRole("searchbox"), "banana");
+      await user.click(await screen.findByRole("button", { name: /banana/ }));
+      await user.click(screen.getByRole("button", { name: "Add" }));
+    };
+
+    it("opens on the local day and logs to it before 07:00 in UTC+7", async () => {
+      vi.stubEnv("TZ", "Asia/Ho_Chi_Minh");
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-02T23:30:00Z")); // 06:30 on 3 Nov local
+      const user = userEvent.setup();
+      render(<FoodApp />);
+
+      expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(
+        formatDayHeader("2026-11-03"),
+      );
+
+      await logBanana(user);
+      expect(loadLS(K_FOOD_ENTRIES)[0].date).toBe("2026-11-03");
+    });
+
+    it("opens on the local day late in the evening west of UTC", () => {
+      vi.stubEnv("TZ", "America/New_York");
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-03T03:00:00Z")); // 22:00 on 2 Nov local
+      render(<FoodApp />);
+
+      expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(
+        formatDayHeader("2026-11-02"),
+      );
+    });
+  });
+
+  describe("adding to a slot", () => {
+    // Noon, so a Search with no preset opens on Lunch; the tests tap Dinner.
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(2026, 10, 3, 12, 0));
+    });
+    afterEach(() => vi.useRealTimers());
+
+    const openBananaSheet = async (user) => {
+      await user.type(screen.getByRole("searchbox"), "banana");
+      await user.click(await screen.findByRole("button", { name: /banana/ }));
+      return within(screen.getByRole("dialog"));
+    };
+
+    const expectSlotSelected = (sheet, label) => {
+      expect(sheet.getByRole("button", { name: label })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+    };
+
+    it("+ on a slot opens Search with that slot selected", async () => {
+      const user = userEvent.setup();
+      render(<FoodApp />);
+
+      await user.click(screen.getByRole("button", { name: "Add to Dinner" }));
+      expect(heading()).toHaveTextContent("Search");
+      expect(loadLS(K_FOOD_TAB)).toBe("search");
+
+      const sheet = await openBananaSheet(user);
+      expectSlotSelected(sheet, "Dinner");
+    });
+
+    it("logs to the viewed past day and returns to it", async () => {
+      const user = userEvent.setup();
+      render(<FoodApp />);
+      const yesterday = addDays(todayLocal(), -1);
+
+      await user.click(screen.getByRole("button", { name: "Previous day" }));
+      expect(heading()).toHaveTextContent("Today");
+      expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(
+        formatDayHeader(yesterday),
+      );
+
+      await user.click(screen.getByRole("button", { name: "Add to Dinner" }));
+      const sheet = await openBananaSheet(user);
+      await user.click(sheet.getByRole("button", { name: "Add" }));
+
+      const entries = loadLS(K_FOOD_ENTRIES);
+      expect(entries).toHaveLength(1);
+      expect(entries[0].date).toBe(yesterday);
+      expect(entries[0].slot).toBe("dinner");
+
+      expect(heading()).toHaveTextContent("Today");
+      expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(
+        formatDayHeader(yesterday),
+      );
+      expect(
+        within(screen.getByRole("region", { name: "Dinner" })).getByRole(
+          "button",
+          { name: /banana/ },
+        ),
+      ).toBeVisible();
+    });
+
+    it("drops the slot after a log", async () => {
+      const user = userEvent.setup();
+      render(<FoodApp />);
+
+      await user.click(screen.getByRole("button", { name: "Add to Dinner" }));
+      const first = await openBananaSheet(user);
+      await user.click(first.getByRole("button", { name: "Add" }));
+      expect(heading()).toHaveTextContent("Today");
+
+      await user.click(navButton("Search"));
+      const second = await openBananaSheet(user);
+      expectSlotSelected(second, "Lunch");
+    });
+
+    it.each([["Today"], ["Trends"], ["Settings"], ["Search"]])(
+      "drops the slot when the %s tab is picked from the nav",
+      async (tabName) => {
+        const user = userEvent.setup();
+        render(
+          <ConfirmProvider>
+            <FoodApp />
+          </ConfirmProvider>,
+        );
+
+        await user.click(screen.getByRole("button", { name: "Add to Dinner" }));
+        await user.click(navButton(tabName));
+        await user.click(navButton("Search"));
+
+        const sheet = await openBananaSheet(user);
+        expectSlotSelected(sheet, "Lunch");
+      },
+    );
   });
 });
