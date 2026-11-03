@@ -10,6 +10,7 @@ import {
   searchFoods,
 } from "../lib/foodApi";
 import { slotForTime } from "../lib/slots";
+import CustomFoodForm from "./CustomFoodForm";
 import PortionSheet from "./PortionSheet";
 import SearchResultRow from "./SearchResultRow";
 
@@ -32,6 +33,7 @@ export default function SearchView({ date, presetSlot, onLogged, onScan }) {
   const [results, setResults] = useState([]);
   const [errorText, setErrorText] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [creating, setCreating] = useState(false);
   const pending = useRef({ timer: null, controller: null });
 
   // On unmount, drop the waiting debounce and the request in flight.
@@ -81,6 +83,11 @@ export default function SearchView({ date, presetSlot, onLogged, onScan }) {
     onLogged();
   };
 
+  const openCreated = (saved) => {
+    setCreating(false);
+    setSelected({ ...saved, source: "custom" });
+  };
+
   const q = normaliseQuery(query);
   const customRows =
     q.length < MIN_QUERY_LENGTH
@@ -122,6 +129,17 @@ export default function SearchView({ date, presetSlot, onLogged, onScan }) {
           />
         ))}
       </div>
+
+      <Button type="button" onClick={() => setCreating(true)}>
+        Create custom food
+      </Button>
+
+      {creating && (
+        <CustomFoodForm
+          onSaved={openCreated}
+          onClose={() => setCreating(false)}
+        />
+      )}
 
       {selected && (
         <PortionSheet
