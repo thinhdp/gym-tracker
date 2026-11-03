@@ -28,7 +28,7 @@ versioned, and that is the only versioning.
 | `mgym.food.customFoods.v1` | `FoodProvider` (`K_FOOD_CUSTOM`)  | `CustomFood[]`                                                                           | `[]`                                             |
 | `mgym.food.savedMeals.v1`  | `FoodProvider` (`K_FOOD_MEALS`)   | `SavedMeal[]`                                                                            | `[]`                                             |
 | `mgym.food.recent.v1`      | `FoodProvider` (`K_FOOD_RECENT`)  | `RecentFood[]`                                                                           | `[]`                                             |
-| `mgym.food.searchCache.v1` | `foodApi` (`K_FOOD_SEARCH_CACHE`) | `{ [normQuery]: { at, results } }`                                                       | `{}`                                             |
+| `mgym.food.searchCache.v1` | `foodApi` (`K_FOOD_SEARCH_CACHE`) | `{ ["q:<normalised query>" \| "bc:<code>"]: { at, results } }`                           | `{}`                                             |
 | `mgym.food.tab`            | `FoodApp` (`K_FOOD_TAB`)          | active food tab: `today`/`search`/`trends`/`settings`                                    | `"today"`                                        |
 | `weekly-note:<weekKey>`    | _legacy_ (no longer used)         | `string` — one note per ISO week (written by the removed `WeeklyNotes`)                  | `""`                                             |
 | `summary-open:<periodKey>` | _legacy_ (no longer used)         | `boolean` — card collapse state (written by the removed `PeriodCard`)                    | card default                                     |
@@ -228,6 +228,22 @@ two kinds of entry, both rounded to 0.5 kg:
 
 Purely a network cache — safe to clear, rebuilt on demand. Not in the backup
 payload. See `src/lib/fvApi.js`.
+
+### Search cache (`mgym.food.searchCache.v1`)
+
+A response cache for the food API (spec §5.7). One map, two kinds of key:
+
+- **Search** — key `q:<normalised query>` (trimmed, lowercased, whitespace
+  collapsed by `normaliseQuery`), value `{ at, results }` where `results` is
+  the API `results` array.
+- **Barcode** — key `bc:<code>`, value `{ at, results: [food] }` (one food).
+
+`at` is the epoch ms of the write. Entries older than 7 days
+(`SEARCH_CACHE_TTL_MS`) are ignored on read and pruned on write; past 200 keys
+(`SEARCH_CACHE_MAX`) the oldest `at` is dropped on write. A stored value that is
+not a plain object reads as `{}`. Errors and empty queries are not cached.
+Purely a network cache — safe to clear, rebuilt on demand. Not in the backup
+payload. See `src/food/lib/searchCache.js` and `src/food/lib/foodApi.js`.
 
 ### Notes
 
