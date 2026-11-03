@@ -8,11 +8,14 @@ import {
   todayLocal,
 } from "../lib/localDate";
 import { sumMacros } from "../lib/macros";
-import { SLOTS, slotLabel } from "../lib/slots";
+import { recentKey, recentToFood } from "../lib/recent";
+import { SLOTS, slotForTime, slotLabel } from "../lib/slots";
 import { targetForDate } from "../lib/targets";
 import EntryEditSheet from "./EntryEditSheet";
 import MacroBars from "./MacroBars";
 import MealSlot from "./MealSlot";
+import PortionSheet from "./PortionSheet";
+import RecentRow from "./RecentRow";
 import SavedMealsPanel from "./SavedMealsPanel";
 import SaveMealSheet from "./SaveMealSheet";
 
@@ -46,14 +49,21 @@ function SlotMenu({ slot, canSave, onSave, onLog, onClose }) {
 }
 
 /** One day's log: date navigation, macro bars and the six meal slots. */
-export default function TodayView({ date, onChangeDate, onAddTo }) {
-  const { entries, targets, updateEntry, deleteEntry } = useFood();
+export default function TodayView({
+  date,
+  onChangeDate,
+  onAddTo,
+  onOpenSettings,
+}) {
+  const { entries, targets, addEntry, updateEntry, deleteEntry } = useFood();
   const [editing, setEditing] = useState(null);
   const [menuSlot, setMenuSlot] = useState(null);
   const [mealsSlot, setMealsSlot] = useState(null);
   const [saveSlot, setSaveSlot] = useState(null);
+  const [recentSheet, setRecentSheet] = useState(null);
 
   const dayEntries = entries.filter((entry) => entry.date === date);
+  const target = targetForDate(targets, date);
 
   return (
     <div className="space-y-4">
@@ -88,10 +98,25 @@ export default function TodayView({ date, onChangeDate, onAddTo }) {
         )}
       </div>
 
-      <MacroBars
-        totals={sumMacros(dayEntries)}
-        target={targetForDate(targets, date)}
-      />
+      <MacroBars totals={sumMacros(dayEntries)} target={target} />
+
+      {!target && (
+        <button
+          type="button"
+          className="text-sm text-blue-600 underline dark:text-blue-400"
+          onClick={onOpenSettings}
+        >
+          Set targets in Settings
+        </button>
+      )}
+
+      {dayEntries.length === 0 && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          Nothing logged yet
+        </p>
+      )}
+
+      <RecentRow date={date} onOpen={setRecentSheet} />
 
       {SLOTS.map(({ id }) => (
         <MealSlot
@@ -136,6 +161,21 @@ export default function TodayView({ date, onChangeDate, onAddTo }) {
           slot={mealsSlot}
           onLogged={() => setMealsSlot(null)}
           onClose={() => setMealsSlot(null)}
+        />
+      )}
+
+      {recentSheet && (
+        <PortionSheet
+          key={recentKey(recentSheet.food)}
+          food={recentToFood(recentSheet)}
+          date={date}
+          defaultSlot={slotForTime()}
+          defaultGrams={recentSheet.lastGrams}
+          onAdd={(payload) => {
+            addEntry({ ...payload, date });
+            setRecentSheet(null);
+          }}
+          onClose={() => setRecentSheet(null)}
         />
       )}
 

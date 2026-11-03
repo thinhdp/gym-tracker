@@ -81,7 +81,12 @@ export default function FoodApp() {
         </header>
         <DroppedRowsNote />
         {tab === "today" && (
-          <TodayView date={date} onChangeDate={setDate} onAddTo={addTo} />
+          <TodayView
+            date={date}
+            onChangeDate={setDate}
+            onAddTo={addTo}
+            onOpenSettings={() => pickTab("settings")}
+          />
         )}
         {tab === "search" && (
           <SearchView

@@ -56,6 +56,20 @@ describe("FoodApp", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
 
+  it("the Set targets in Settings link on Today opens the Settings tab", async () => {
+    const user = userEvent.setup();
+    render(
+      <ConfirmProvider>
+        <FoodApp />
+      </ConfirmProvider>,
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Set targets in Settings" }),
+    );
+    expect(heading()).toHaveTextContent("Settings");
+    expect(loadLS(K_FOOD_TAB)).toBe("settings");
+  });
+
   it("restores a stored tab", () => {
     saveLS(K_FOOD_TAB, "settings");
     render(

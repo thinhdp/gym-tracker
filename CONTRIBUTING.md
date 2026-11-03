@@ -165,3 +165,21 @@ also verify manually in the browser via `npm run dev`:
 - Log a few bodyweights on the Weight tab and check the weekly average / trend.
 - Open the Summary tab and confirm weekly/monthly metrics and PRs look right.
 - Export a backup, then Import it in both **merge** and **replace** modes.
+- Food mode (`/food`): log a food from Search into a slot, then edit its grams
+  and delete it from Today (the delete asks to confirm).
+- Food mode: set a target in Settings and confirm the Today bars fill and change
+  colour; with no target, Today shows plain totals and the "Set targets in
+  Settings" link opens Settings.
+- Food mode, Recent: tap a Recent chip on Today, confirm the entry appears and the
+  toast's **Undo** removes it (the chip stays); on a fresh profile the row shows
+  its one-line hint.
+- Food mode, offline: turn on airplane mode (or the DevTools offline switch) on
+  Search; confirm the box is disabled with "Search needs a connection", Scan is
+  hidden, and Recent, Saved meals and Custom foods can still be logged. Turn the
+  connection back on and confirm the search runs again.
+- Food mode: create a custom food, edit it, and confirm its Recent chip follows
+  the edit; delete it and confirm the chip goes.
+- Food mode, scanner: scan or type a barcode online; an unknown code opens the
+  custom food form with the code filled in.
+- Food mode in dark mode: check Today, Search, Trends and Settings, the sheets and
+  the toast for unreadable text or borders.

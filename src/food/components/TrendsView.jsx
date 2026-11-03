@@ -94,100 +94,110 @@ export default function TrendsView() {
         <Segmented options={METRICS} value={metric} onChange={setMetric} />
       </div>
 
-      <ResponsiveContainer width="100%" height={260}>
-        <ComposedChart
-          data={data}
-          margin={{ top: 12, right: 4, bottom: 4, left: 12 }}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="currentColor"
-            opacity={0.12}
-            vertical={false}
-          />
-          <XAxis
-            dataKey="from"
-            tickFormatter={(from) => tickByFrom.get(from) ?? from}
-            tick={axisTick}
-            tickLine={false}
-            axisLine={{ stroke: "currentColor", opacity: 0.2 }}
-            interval="preserveStartEnd"
-            minTickGap={0}
-            angle={-45}
-            textAnchor="end"
-            height={64}
-          />
-          <YAxis
-            yAxisId="intake"
-            tick={axisTick}
-            tickLine={false}
-            axisLine={false}
-            width={40}
-          />
-          <YAxis
-            yAxisId="weight"
-            orientation="right"
-            tick={axisTick}
-            tickLine={false}
-            axisLine={false}
-            width={40}
-            domain={["auto", "auto"]}
-          />
-          <Tooltip
-            content={<ChartTooltip />}
-            cursor={{ stroke: "currentColor", opacity: 0.2 }}
-          />
-          <Bar
-            yAxisId="intake"
-            dataKey="value"
-            name={metricLabel}
-            fill={BAR_COLOR}
-            isAnimationActive={false}
-          />
-          <Line
-            yAxisId="weight"
-            type="monotone"
-            dataKey="bodyweight"
-            name={`Bodyweight (${unit})`}
-            stroke={LINE_COLOR}
-            strokeWidth={2}
-            connectNulls={false}
-            dot={{ r: 2.5 }}
-            isAnimationActive={false}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
+      {entries.length === 0 && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          No food logged yet
+        </p>
+      )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm tabular-nums">
-          <thead className="text-xs text-neutral-500 dark:text-neutral-400">
-            <tr>
-              <th className="py-1 pr-3 font-medium">Week</th>
-              <th className="py-1 pr-3 font-medium">kcal</th>
-              <th className="py-1 pr-3 font-medium">P</th>
-              <th className="py-1 pr-3 font-medium">C</th>
-              <th className="py-1 pr-3 font-medium">F</th>
-              <th className="py-1 pr-3 font-medium">Days</th>
-              <th className="py-1 pr-3 font-medium">Weight ({unit})</th>
-              <th className="py-1 font-medium">Change</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.from} className="border-t dark:border-neutral-800">
-                <td className="whitespace-nowrap py-1 pr-3">{r.label}</td>
-                <td className="py-1 pr-3">{fmt(r.avg?.kcal)}</td>
-                <td className="py-1 pr-3">{fmt(r.avg?.protein)}</td>
-                <td className="py-1 pr-3">{fmt(r.avg?.carb)}</td>
-                <td className="py-1 pr-3">{fmt(r.avg?.fat)}</td>
-                <td className="py-1 pr-3">{r.loggedDays}/7</td>
-                <td className="py-1 pr-3">{fmt(r.bodyweight)}</td>
-                <td className="py-1">{fmtDelta(r.bodyweightDelta)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {rows.length > 0 && (
+        <>
+          <ResponsiveContainer width="100%" height={260}>
+            <ComposedChart
+              data={data}
+              margin={{ top: 12, right: 4, bottom: 4, left: 12 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="currentColor"
+                opacity={0.12}
+                vertical={false}
+              />
+              <XAxis
+                dataKey="from"
+                tickFormatter={(from) => tickByFrom.get(from) ?? from}
+                tick={axisTick}
+                tickLine={false}
+                axisLine={{ stroke: "currentColor", opacity: 0.2 }}
+                interval="preserveStartEnd"
+                minTickGap={0}
+                angle={-45}
+                textAnchor="end"
+                height={64}
+              />
+              <YAxis
+                yAxisId="intake"
+                tick={axisTick}
+                tickLine={false}
+                axisLine={false}
+                width={40}
+              />
+              <YAxis
+                yAxisId="weight"
+                orientation="right"
+                tick={axisTick}
+                tickLine={false}
+                axisLine={false}
+                width={40}
+                domain={["auto", "auto"]}
+              />
+              <Tooltip
+                content={<ChartTooltip />}
+                cursor={{ stroke: "currentColor", opacity: 0.2 }}
+              />
+              <Bar
+                yAxisId="intake"
+                dataKey="value"
+                name={metricLabel}
+                fill={BAR_COLOR}
+                isAnimationActive={false}
+              />
+              <Line
+                yAxisId="weight"
+                type="monotone"
+                dataKey="bodyweight"
+                name={`Bodyweight (${unit})`}
+                stroke={LINE_COLOR}
+                strokeWidth={2}
+                connectNulls={false}
+                dot={{ r: 2.5 }}
+                isAnimationActive={false}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm tabular-nums">
+              <thead className="text-xs text-neutral-500 dark:text-neutral-400">
+                <tr>
+                  <th className="py-1 pr-3 font-medium">Week</th>
+                  <th className="py-1 pr-3 font-medium">kcal</th>
+                  <th className="py-1 pr-3 font-medium">P</th>
+                  <th className="py-1 pr-3 font-medium">C</th>
+                  <th className="py-1 pr-3 font-medium">F</th>
+                  <th className="py-1 pr-3 font-medium">Days</th>
+                  <th className="py-1 pr-3 font-medium">Weight ({unit})</th>
+                  <th className="py-1 font-medium">Change</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.from} className="border-t dark:border-neutral-800">
+                    <td className="whitespace-nowrap py-1 pr-3">{r.label}</td>
+                    <td className="py-1 pr-3">{fmt(r.avg?.kcal)}</td>
+                    <td className="py-1 pr-3">{fmt(r.avg?.protein)}</td>
+                    <td className="py-1 pr-3">{fmt(r.avg?.carb)}</td>
+                    <td className="py-1 pr-3">{fmt(r.avg?.fat)}</td>
+                    <td className="py-1 pr-3">{r.loggedDays}/7</td>
+                    <td className="py-1 pr-3">{fmt(r.bodyweight)}</td>
+                    <td className="py-1">{fmtDelta(r.bodyweightDelta)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { RECENT_MAX, recentKey, touchRecent } from "./recent";
+import { RECENT_MAX, recentKey, recentToFood, touchRecent } from "./recent";
 
 const row = (id, overrides = {}) => ({
   food: { kind: "db", id },
@@ -23,6 +23,37 @@ describe("RECENT_MAX", () => {
 describe("recentKey", () => {
   it("joins kind and id", () => {
     expect(recentKey({ kind: "db", id: "abc" })).toBe("db:abc");
+  });
+});
+
+describe("recentToFood", () => {
+  it("gives a db food the db source and its id, name, per100 and portions", () => {
+    const portions = [{ label: "1 egg", grams: 50, isDefault: true }];
+    const recent = row("a", { portions });
+    expect(recentToFood(recent)).toStrictEqual({
+      id: "a",
+      name: "Food a",
+      per100: recent.per100,
+      portions,
+      source: "db",
+    });
+  });
+
+  it("gives a custom food the custom source", () => {
+    const food = recentToFood(row("a", { food: { kind: "custom", id: "a" } }));
+    expect(food.source).toBe("custom");
+    expect(food.id).toBe("a");
+  });
+
+  it("keeps a barcode on the FoodRef", () => {
+    const recent = row("a", { food: { kind: "db", id: "a", barcode: "123" } });
+    expect(recentToFood(recent).barcode).toBe("123");
+  });
+
+  it("gives [] for a row with no portions", () => {
+    const recent = row("a");
+    delete recent.portions;
+    expect(recentToFood(recent).portions).toEqual([]);
   });
 });
 

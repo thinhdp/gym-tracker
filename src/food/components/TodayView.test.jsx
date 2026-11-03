@@ -4,9 +4,14 @@ import userEvent from "@testing-library/user-event";
 import { ConfirmProvider } from "../../components/ConfirmDialog";
 import { loadLS, saveLS } from "../../lib/storage";
 import { FoodProvider } from "../context/FoodContext";
-import { K_FOOD_ENTRIES, K_FOOD_MEALS, K_FOOD_TARGETS } from "../lib/keys";
+import {
+  K_FOOD_ENTRIES,
+  K_FOOD_MEALS,
+  K_FOOD_RECENT,
+  K_FOOD_TARGETS,
+} from "../lib/keys";
 import { formatDayHeader, todayLocal } from "../lib/localDate";
-import { SLOTS } from "../lib/slots";
+import { SLOTS, slotForTime, slotLabel } from "../lib/slots";
 import TodayView from "./TodayView";
 
 const PER100 = { kcal: 100, protein: 10, carb: 20, fat: 5 };
@@ -55,6 +60,94 @@ async function setGrams(user, value) {
 }
 
 describe("TodayView", () => {
+  describe("recent row", () => {
+    const portions = [
+      { label: "1 bar", grams: 45 },
+      { label: "2 bars", grams: 90 },
+    ];
+    const BAR = {
+      food: { kind: "custom", id: "bar", barcode: "8934563138165" },
+      name: "Protein bar",
+      per100: PER100,
+      portions,
+      lastGrams: 90,
+      lastPortionLabel: "2 bars",
+      lastAt: 1000,
+    };
+
+    it("sits between the macro bars and the slots", () => {
+      saveLS(K_FOOD_RECENT, [BAR]);
+      setup();
+      const row = screen.getByRole("group", { name: "Recent foods" });
+      const follows = (a, b) =>
+        a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING;
+      expect(
+        follows(screen.getByRole("group", { name: "Day totals" }), row),
+      ).toBeTruthy();
+      expect(follows(row, screen.getAllByRole("region")[0])).toBeTruthy();
+    });
+
+    it("one tap logs onto the viewed date and shows in its slot", async () => {
+      saveLS(K_FOOD_RECENT, [BAR]);
+      const { user } = setup();
+      await user.click(
+        screen.getByRole("button", { name: "Protein bar · 90 g" }),
+      );
+      const [stored] = loadLS(K_FOOD_ENTRIES);
+      expect(stored.date).toBe("2026-11-02");
+      expect(
+        slotRegion(slotLabel(stored.slot)).getByText("Protein bar"),
+      ).toBeVisible();
+    });
+
+    it("the options button opens a prefilled sheet; Add logs on the viewed date and Today stays open", async () => {
+      saveLS(K_FOOD_RECENT, [BAR]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Next day" }));
+      await user.click(
+        screen.getByRole("button", { name: "Options for Protein bar" }),
+      );
+      const sheet = within(screen.getByRole("dialog", { name: "Protein bar" }));
+      expect(
+        sheet.getByText(formatDayHeader("2026-11-03")),
+      ).toBeInTheDocument();
+      expect(sheet.getByRole("spinbutton", { name: "Grams" })).toHaveValue(90);
+      expect(sheet.getByRole("button", { name: "2 bars" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(
+        sheet.getByRole("button", { name: slotLabel(slotForTime()) }),
+      ).toHaveAttribute("aria-pressed", "true");
+
+      await user.click(sheet.getByRole("button", { name: "1 bar" }));
+      await user.click(sheet.getByRole("button", { name: "Add" }));
+
+      const [stored] = loadLS(K_FOOD_ENTRIES);
+      expect(stored.date).toBe("2026-11-03");
+      expect(stored.grams).toBe(45);
+      expect(stored.portionLabel).toBe("1 bar");
+      // Kind, id and barcode come back through the sheet unchanged.
+      expect(stored.food).toStrictEqual(BAR.food);
+      expect(stored).not.toHaveProperty("portions");
+      expect(loadLS(K_FOOD_RECENT)[0].portions).toEqual(portions);
+      expect(loadLS(K_FOOD_RECENT)[0].lastGrams).toBe(45);
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(screen.getAllByRole("region")).toHaveLength(SLOTS.length);
+    });
+
+    it("Close on the sheet logs nothing", async () => {
+      saveLS(K_FOOD_RECENT, [BAR]);
+      const { user } = setup();
+      await user.click(
+        screen.getByRole("button", { name: "Options for Protein bar" }),
+      );
+      await user.click(screen.getByRole("button", { name: "Close" }));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
+    });
+  });
+
   it("renders the six slots in order and places entries by slot", () => {
     saveLS(K_FOOD_ENTRIES, [
       entry("rice", { slot: "lunch" }),
@@ -140,6 +233,44 @@ describe("TodayView", () => {
       formatDayHeader(todayLocal()),
     );
     expect(screen.queryByRole("button", { name: "Today" })).toBeNull();
+  });
+
+  it("shows Nothing logged yet on a day with no entries, and not on a day with some", async () => {
+    saveLS(K_FOOD_ENTRIES, [entry("rice")]);
+    const { user } = setup("2026-11-02");
+    expect(screen.queryByText("Nothing logged yet")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Next day" }));
+    expect(screen.getByText("Nothing logged yet")).toBeInTheDocument();
+  });
+
+  it("shows the Settings link with no target and calls onOpenSettings; hides it with a target", async () => {
+    const onOpenSettings = vi.fn();
+    const user = userEvent.setup();
+    const { unmount } = render(
+      <FoodProvider>
+        <TodayView
+          date="2026-11-02"
+          onChangeDate={() => {}}
+          onAddTo={() => {}}
+          onOpenSettings={onOpenSettings}
+        />
+      </FoodProvider>,
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Set targets in Settings" }),
+    );
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+    expect(totals().getByText("0 kcal")).toBeVisible();
+    unmount();
+
+    saveLS(K_FOOD_TARGETS, [
+      { from: "2026-11-01", kcal: 2000, protein: 100, carb: 200, fat: 50 },
+    ]);
+    setup("2026-11-02");
+    expect(
+      screen.queryByRole("button", { name: "Set targets in Settings" }),
+    ).toBeNull();
   });
 
   it("shows plain totals and no bars with no target row", () => {

@@ -7,6 +7,8 @@ import {
   K_FOOD_RECENT,
   K_FOOD_TARGETS,
 } from "../lib/keys";
+import { normalizeRecent } from "../lib/normalize";
+import { RECENT_MAX } from "../lib/recent";
 import { FoodProvider, useFood } from "./FoodContext";
 
 const PER100 = { kcal: 155, protein: 13, carb: 1.1, fat: 11 };
@@ -707,18 +709,305 @@ describe("FoodProvider custom foods", () => {
 });
 
 describe("FoodProvider recent", () => {
-  // Task 11b replaces this test when touchRecent gets its real implementation.
-  it("touchRecent is a stub that leaves recent unchanged", () => {
-    const seeded = [recentRow("egg", 1)];
+  const PORTIONS = [{ label: "1 large egg", grams: 50, isDefault: true }];
+  const customRecent = (id, overrides = {}) => ({
+    food: { kind: "custom", id },
+    name: `Food ${id}`,
+    per100: PER100,
+    portions: [{ label: "1 bar", grams: 45 }],
+    lastGrams: 45,
+    lastPortionLabel: "1 bar",
+    lastAt: 500,
+    ...overrides,
+  });
+  const NEW_PER100 = { kcal: 1, protein: 2, carb: 3, fat: 4 };
+
+  it("touchRecent puts the row first, replaces the same food and persists", () => {
+    saveLS(K_FOOD_RECENT, [recentRow("egg", 1), recentRow("rice", 2)]);
+    const { result } = setup();
+    const row = recentRow("rice", 3);
+    act(() => {
+      result.current.touchRecent(row);
+    });
+    expect(result.current.recent[0]).toEqual(row);
+    expect(result.current.recent).toHaveLength(2);
+    expect(loadLS(K_FOOD_RECENT)[0]).toEqual(row);
+  });
+
+  it("touchRecent caps the list", () => {
+    const { result } = setup();
+    act(() => {
+      for (let i = 0; i <= RECENT_MAX; i += 1) {
+        result.current.touchRecent(recentRow(`food${i}`, i));
+      }
+    });
+    expect(result.current.recent).toHaveLength(RECENT_MAX);
+    expect(result.current.recent[0].food.id).toBe(`food${RECENT_MAX}`);
+  });
+
+  it("addEntry stores a recent row that normalizeRecent returns unchanged, and no portions on the entry", () => {
+    const { result } = setup();
+    let entry;
+    act(() => {
+      entry = result.current.addEntry(draft({ portions: PORTIONS }));
+    });
+
+    const [stored] = loadLS(K_FOOD_RECENT);
+    expect(stored).toStrictEqual({
+      food: FOOD,
+      name: "Egg",
+      per100: PER100,
+      portions: PORTIONS,
+      lastGrams: 50,
+      lastPortionLabel: "1 large egg",
+      lastAt: entry.createdAt,
+    });
+    expect(normalizeRecent(stored)).toStrictEqual(stored);
+    expect(entry).not.toHaveProperty("portions");
+    expect(loadLS(K_FOOD_ENTRIES)[0]).not.toHaveProperty("portions");
+  });
+
+  it("addEntry leaves lastPortionLabel out when the entry has no label and defaults portions to []", () => {
+    const { result } = setup();
+    act(() => {
+      result.current.addEntry(draft({ portionLabel: undefined }));
+    });
+    expect(result.current.recent[0]).not.toHaveProperty("lastPortionLabel");
+    expect(result.current.recent[0].portions).toEqual([]);
+    expect(normalizeRecent(result.current.recent[0])).toStrictEqual(
+      result.current.recent[0],
+    );
+  });
+
+  it("addEntry moves a food already in Recent to the front with the new values", () => {
+    saveLS(K_FOOD_RECENT, [recentRow("rice", 2), recentRow("egg", 1)]);
+    const { result } = setup();
+    act(() => {
+      result.current.addEntry(draft({ grams: 120 }));
+    });
+    expect(result.current.recent.map((row) => row.food.id)).toEqual([
+      "egg",
+      "rice",
+    ]);
+    expect(result.current.recent[0].lastGrams).toBe(120);
+  });
+
+  it("logSavedMeal does not touch Recent", () => {
+    const meal = mealRow("m");
+    saveLS(K_FOOD_MEALS, [meal]);
+    const { result } = setup();
+    act(() => {
+      result.current.logSavedMeal("m", "2026-11-02", "lunch");
+    });
+    expect(result.current.recent).toEqual([]);
+    expect(loadLS(K_FOOD_RECENT)).toEqual([]);
+  });
+
+  it("deleteEntry leaves the recent row", () => {
+    const { result } = setup();
+    let entry;
+    act(() => {
+      entry = result.current.addEntry(draft());
+    });
+    act(() => {
+      result.current.deleteEntry(entry.id);
+    });
+    expect(result.current.entries).toEqual([]);
+    expect(result.current.recent).toHaveLength(1);
+  });
+
+  it("editing a custom food updates its recent row in place and keeps position, lastAt and lastGrams", () => {
+    saveLS(K_FOOD_CUSTOM, [customRow("x")]);
+    saveLS(K_FOOD_RECENT, [
+      recentRow("egg", 900),
+      customRecent("x"),
+      recentRow("rice", 100),
+    ]);
+    const { result } = setup();
+    const portions = [
+      { label: "1 bar", grams: 45 },
+      { label: "half", grams: 30 },
+    ];
+    act(() => {
+      result.current.upsertCustomFood({
+        ...customRow("x"),
+        name: "Edited",
+        per100: NEW_PER100,
+        portions,
+      });
+    });
+
+    const expected = customRecent("x", {
+      food: { kind: "custom", id: "x", barcode: "8934563138165" },
+      name: "Edited",
+      per100: NEW_PER100,
+      portions,
+    });
+    expect(result.current.recent).toEqual([
+      recentRow("egg", 900),
+      expected,
+      recentRow("rice", 100),
+    ]);
+    expect(loadLS(K_FOOD_RECENT)[1]).toEqual(expected);
+  });
+
+  it("editing a custom food removes lastPortionLabel when no portion has that label", () => {
+    saveLS(K_FOOD_CUSTOM, [customRow("x")]);
+    saveLS(K_FOOD_RECENT, [customRecent("x")]);
+    const { result } = setup();
+    act(() => {
+      result.current.upsertCustomFood({
+        ...customRow("x"),
+        portions: [{ label: "1 slice", grams: 30 }],
+      });
+    });
+    expect(result.current.recent[0]).not.toHaveProperty("lastPortionLabel");
+    expect(result.current.recent[0].lastGrams).toBe(45);
+  });
+
+  it("editing a custom food removes lastPortionLabel when the portion with that label has other grams", () => {
+    saveLS(K_FOOD_CUSTOM, [customRow("x")]);
+    saveLS(K_FOOD_RECENT, [customRecent("x")]);
+    const { result } = setup();
+    act(() => {
+      result.current.upsertCustomFood({
+        ...customRow("x"),
+        portions: [{ label: "1 bar", grams: 60 }],
+      });
+    });
+    expect(result.current.recent[0]).not.toHaveProperty("lastPortionLabel");
+    expect(result.current.recent[0].lastGrams).toBe(45);
+    expect(result.current.recent[0].portions).toEqual([
+      { label: "1 bar", grams: 60 },
+    ]);
+  });
+
+  it("editing a custom food keeps lastPortionLabel when a portion has that label and the grams of lastGrams", () => {
+    saveLS(K_FOOD_CUSTOM, [customRow("x")]);
+    saveLS(K_FOOD_RECENT, [customRecent("x")]);
+    const { result } = setup();
+    act(() => {
+      result.current.upsertCustomFood({
+        ...customRow("x"),
+        portions: [
+          { label: "1 bar", grams: 45 },
+          { label: "other", grams: 90 },
+        ],
+      });
+    });
+    expect(result.current.recent[0].lastPortionLabel).toBe("1 bar");
+  });
+
+  it("editing a custom food updates the barcode on its recent row's food, and removes it when the food has none", () => {
+    saveLS(K_FOOD_CUSTOM, [customRow("x")]);
+    saveLS(K_FOOD_RECENT, [
+      customRecent("x", {
+        food: { kind: "custom", id: "x", barcode: "111" },
+      }),
+    ]);
+    const { result } = setup();
+    act(() => {
+      result.current.upsertCustomFood({ ...customRow("x"), barcode: "222" });
+    });
+    expect(result.current.recent[0].food).toStrictEqual({
+      kind: "custom",
+      id: "x",
+      barcode: "222",
+    });
+
+    act(() => {
+      result.current.upsertCustomFood({
+        ...customRow("x"),
+        barcode: undefined,
+      });
+    });
+    expect(result.current.recent[0].food).toStrictEqual({
+      kind: "custom",
+      id: "x",
+    });
+    expect(loadLS(K_FOOD_RECENT)[0].food).toStrictEqual({
+      kind: "custom",
+      id: "x",
+    });
+  });
+
+  it("editing a custom food to no portions gives [] and removes lastPortionLabel", () => {
+    saveLS(K_FOOD_CUSTOM, [customRow("x")]);
+    saveLS(K_FOOD_RECENT, [customRecent("x")]);
+    const { result } = setup();
+    const withoutPortions = { ...customRow("x"), portions: undefined };
+    act(() => {
+      result.current.upsertCustomFood(withoutPortions);
+    });
+    expect(result.current.recent[0].portions).toEqual([]);
+    expect(result.current.recent[0]).not.toHaveProperty("lastPortionLabel");
+  });
+
+  it("editing a custom food leaves a db row with the same id alone", () => {
+    saveLS(K_FOOD_CUSTOM, [customRow("x")]);
+    saveLS(K_FOOD_RECENT, [recentRow("x", 1)]);
+    const { result } = setup();
+    act(() => {
+      result.current.upsertCustomFood({ ...customRow("x"), name: "Edited" });
+    });
+    expect(result.current.recent).toEqual([recentRow("x", 1)]);
+  });
+
+  it("creating a custom food changes no recent row", () => {
+    const seeded = [customRecent("x")];
     saveLS(K_FOOD_RECENT, seeded);
     const { result } = setup();
     act(() => {
-      result.current.touchRecent({
-        food: { kind: "db", id: "new" },
-        name: "New",
+      result.current.upsertCustomFood({ name: "New", per100: NEW_PER100 });
+    });
+    expect(result.current.recent).toEqual(seeded);
+    // An id no stored food has is a create as well.
+    act(() => {
+      result.current.upsertCustomFood({
+        id: "x",
+        name: "New x",
+        per100: NEW_PER100,
       });
     });
     expect(result.current.recent).toEqual(seeded);
-    expect(loadLS(K_FOOD_RECENT)).toEqual(seeded);
+  });
+
+  it("a logged entry keeps its copy when its custom food is edited", () => {
+    saveLS(K_FOOD_CUSTOM, [customRow("x")]);
+    const { result } = setup();
+    let entry;
+    act(() => {
+      entry = result.current.addEntry(
+        draft({ food: { kind: "custom", id: "x" } }),
+      );
+    });
+    act(() => {
+      result.current.upsertCustomFood({
+        ...customRow("x"),
+        name: "Edited",
+        per100: NEW_PER100,
+      });
+    });
+    expect(result.current.entries).toEqual([entry]);
+    expect(result.current.recent[0].per100).toEqual(NEW_PER100);
+  });
+
+  it("deleting a custom food removes its recent row only, and logged entries stay", () => {
+    const entry = storedEntry("a", { food: { kind: "custom", id: "x" } });
+    saveLS(K_FOOD_CUSTOM, [customRow("x")]);
+    saveLS(K_FOOD_ENTRIES, [entry]);
+    saveLS(K_FOOD_RECENT, [
+      recentRow("x", 3000),
+      customRecent("x"),
+      customRecent("y", { lastAt: 400 }),
+    ]);
+    const { result } = setup();
+    act(() => {
+      result.current.deleteCustomFood("x");
+    });
+    const expected = [recentRow("x", 3000), customRecent("y", { lastAt: 400 })];
+    expect(result.current.recent).toEqual(expected);
+    expect(loadLS(K_FOOD_RECENT)).toEqual(expected);
+    expect(result.current.entries).toEqual([entry]);
   });
 });

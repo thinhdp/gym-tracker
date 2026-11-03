@@ -3,7 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { loadLS, saveLS } from "../../lib/storage";
 import { ConfirmProvider } from "../../components/ConfirmDialog";
 import { FoodProvider } from "../context/FoodContext";
-import { K_FOOD_CUSTOM, K_FOOD_ENTRIES, K_FOOD_MEALS } from "../lib/keys";
+import {
+  K_FOOD_CUSTOM,
+  K_FOOD_ENTRIES,
+  K_FOOD_MEALS,
+  K_FOOD_RECENT,
+} from "../lib/keys";
 import {
   FoodApiError,
   isFixtureMode,
@@ -651,6 +656,7 @@ describe("SearchView", () => {
       await user.type(box(), "chi");
       await tick(300);
       expect(screen.getByText("Search needs a connection")).toBeInTheDocument();
+      expect(box()).toBeDisabled();
       expect(screen.getByText("Chicken Salad")).toBeInTheDocument();
     });
 
@@ -874,6 +880,773 @@ describe("SearchView", () => {
 
       expect(screen.queryByRole("dialog")).toBeNull();
       expect(onLogged).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("no match line", () => {
+    const LINE = "No match. Create a custom food?";
+    const line = () => screen.queryByText(LINE);
+
+    it("shows only after the search for the current query finished empty", async () => {
+      const search = deferred();
+      searchFoods.mockReturnValueOnce(search.promise);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      expect(line()).toBeNull();
+      await tick(299);
+      expect(line()).toBeNull();
+      await tick(1);
+      expect(line()).toBeNull();
+
+      await settle(() => search.resolve([]));
+      expect(line()).toBeInTheDocument();
+      expect(
+        screen.getAllByRole("button", { name: "Create custom food" }),
+      ).toHaveLength(1);
+    });
+
+    it("hides again when the query changes, and while the next search is pending", async () => {
+      searchFoods.mockResolvedValueOnce([]);
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      expect(line()).toBeInTheDocument();
+
+      await user.type(box(), "z");
+      expect(line()).toBeNull();
+      await tick(300);
+      expect(line()).toBeNull();
+    });
+
+    it("does not return for an earlier query typed back during the debounce", async () => {
+      searchFoods.mockResolvedValueOnce([]);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      expect(line()).toBeInTheDocument();
+
+      await user.type(box(), "z");
+      await user.type(box(), "{Backspace}");
+      expect(box()).toHaveValue("zz");
+      expect(line()).toBeNull();
+    });
+
+    it("does not show below two characters", async () => {
+      const { user } = setup();
+      await user.type(box(), "z");
+      await tick(1000);
+      expect(line()).toBeNull();
+    });
+
+    it("does not show with API results", async () => {
+      searchFoods.mockResolvedValueOnce([food("a", "API chicken")]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(line()).toBeNull();
+    });
+
+    it("does not show when a custom food matches", async () => {
+      saveLS(K_FOOD_CUSTOM, [CUSTOM]);
+      const { user } = setup();
+      await user.type(box(), "chicken");
+      await tick(300);
+      expect(screen.getByText("Chicken Salad")).toBeInTheDocument();
+      expect(line()).toBeNull();
+    });
+
+    it("does not show after an error", async () => {
+      searchFoods.mockRejectedValueOnce(new FoodApiError("unavailable"));
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      expect(
+        screen.getByText("Search unavailable, try again"),
+      ).toBeInTheDocument();
+      expect(line()).toBeNull();
+    });
+
+    it("does not show for an aborted search that resolves late", async () => {
+      const first = deferred();
+      searchFoods.mockReturnValueOnce(first.promise);
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      await user.type(box(), "y");
+      await settle(() => first.resolve([]));
+      expect(line()).toBeNull();
+    });
+
+    it("does not show offline", async () => {
+      searchFoods.mockResolvedValueOnce([]);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      expect(line()).toBeInTheDocument();
+      await act(async () => {
+        window.dispatchEvent(new Event("offline"));
+      });
+      expect(line()).toBeNull();
+    });
+  });
+
+  describe("custom foods shortcut", () => {
+    const shortcut = () => screen.getByRole("button", { name: "Custom foods" });
+
+    it("shows No custom foods yet in the opened list when there are none", async () => {
+      const { user } = setup();
+      expect(screen.queryByText("No custom foods yet")).toBeNull();
+      await user.click(shortcut());
+      expect(screen.getByText("No custom foods yet")).toBeInTheDocument();
+    });
+
+    it("lists the shortcuts in the order the spec gives", () => {
+      setup();
+      const names = screen
+        .getAllByRole("button")
+        .map((button) => button.textContent)
+        .filter((text) => text !== "Scan");
+      expect(names).toEqual([
+        "Saved meals",
+        "Custom foods",
+        "Create custom food",
+      ]);
+    });
+
+    it("toggles the list of all custom foods online, and a tap opens the sheet", async () => {
+      saveLS(K_FOOD_CUSTOM, [CUSTOM]);
+      const { user } = setup();
+      expect(screen.queryByText("Chicken Salad")).toBeNull();
+
+      await user.click(shortcut());
+      expect(shortcut()).toHaveAttribute("aria-pressed", "true");
+      const row = rowButton(/Chicken Salad/);
+      expect(within(row).getByText("Custom")).toBeInTheDocument();
+
+      await user.click(shortcut());
+      expect(screen.queryByText("Chicken Salad")).toBeNull();
+
+      await user.click(shortcut());
+      await user.click(rowButton(/Chicken Salad/));
+      expect(
+        screen.getByRole("dialog", { name: "Chicken Salad" }),
+      ).toBeInTheDocument();
+    });
+
+    it("drops a barcode lookup in flight", async () => {
+      const lookup = deferred();
+      lookupBarcode.mockReturnValueOnce(lookup.promise);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Scan barcode" }));
+      const scanner = within(
+        screen.getByRole("dialog", { name: "Scan barcode" }),
+      );
+      await user.type(await scanner.findByLabelText("Barcode"), "12345678");
+      await user.click(scanner.getByRole("button", { name: "Use" }));
+      expect(screen.getByRole("status")).toBeInTheDocument();
+
+      await user.click(shortcut());
+      expect(screen.queryByRole("status")).toBeNull();
+      await settle(() => lookup.resolve(food("late", "Late food")));
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+  });
+
+  describe("offline", () => {
+    const NOTE = "Search needs a connection";
+    const RECENT_DB = {
+      food: { kind: "db", id: "egg", barcode: "8934563138165" },
+      name: "Boiled egg",
+      per100: { kcal: 155, protein: 13, carb: 1.1, fat: 11 },
+      portions: [
+        { label: "1 egg", grams: 50, isDefault: true },
+        { label: "2 eggs", grams: 100 },
+      ],
+      lastGrams: 100,
+      lastPortionLabel: "2 eggs",
+      lastAt: 2000,
+    };
+    const RECENT_CUSTOM = {
+      food: { kind: "custom", id: "custom-1" },
+      name: "Old salad name",
+      per100: CUSTOM.per100,
+      portions: CUSTOM.portions,
+      lastGrams: 300,
+      lastAt: 1000,
+    };
+
+    const setOnLine = (value) =>
+      Object.defineProperty(navigator, "onLine", {
+        value,
+        configurable: true,
+      });
+    const fire = (name) =>
+      act(async () => {
+        window.dispatchEvent(new Event(name));
+      });
+    const scanButton = () =>
+      screen.queryByRole("button", { name: "Scan barcode" });
+    const tryAgain = () => screen.getByRole("button", { name: "Try again" });
+    const expectOffline = () => {
+      expect(screen.getByText(NOTE)).toBeInTheDocument();
+      expect(box()).toBeDisabled();
+      expect(scanButton()).toBeNull();
+    };
+    const expectOnline = () => {
+      expect(screen.queryByText(NOTE)).toBeNull();
+      expect(box()).toBeEnabled();
+      expect(scanButton()).not.toBeNull();
+    };
+
+    async function enterCode(user, code = "12345678") {
+      await user.click(screen.getByRole("button", { name: "Scan barcode" }));
+      const scanner = within(
+        screen.getByRole("dialog", { name: "Scan barcode" }),
+      );
+      await user.type(await scanner.findByLabelText("Barcode"), code);
+      await user.click(scanner.getByRole("button", { name: "Use" }));
+    }
+
+    afterEach(() => {
+      delete navigator.onLine;
+    });
+
+    it("starts offline from navigator.onLine, with the note, disabled input and no Scan", () => {
+      setOnLine(false);
+      setup();
+      expectOffline();
+    });
+
+    it("starts online when navigator.onLine is true", () => {
+      setOnLine(true);
+      setup();
+      expectOnline();
+    });
+
+    it("lists recent foods and custom foods, and keeps the shortcuts", () => {
+      setOnLine(false);
+      saveLS(K_FOOD_RECENT, [RECENT_DB]);
+      saveLS(K_FOOD_CUSTOM, [CUSTOM]);
+      setup();
+      expect(
+        screen.getByRole("heading", { name: "Recent" }),
+      ).toBeInTheDocument();
+      expect(rowButton(/Boiled egg/)).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "Custom foods" }),
+      ).toBeInTheDocument();
+      expect(rowButton(/Chicken Salad/)).toBeInTheDocument();
+      for (const name of [
+        "Saved meals",
+        "Custom foods",
+        "Create custom food",
+      ]) {
+        expect(screen.getByRole("button", { name })).toBeEnabled();
+      }
+    });
+
+    it("shows an empty line for Recent and for Custom foods with none", () => {
+      setOnLine(false);
+      setup();
+      expect(screen.getByText("No recent foods yet")).toBeInTheDocument();
+      expect(screen.getByText("No custom foods yet")).toBeInTheDocument();
+    });
+
+    it("shows no empty line for a list that has rows", () => {
+      setOnLine(false);
+      saveLS(K_FOOD_RECENT, [RECENT_DB]);
+      saveLS(K_FOOD_CUSTOM, [CUSTOM]);
+      setup();
+      expect(screen.queryByText("No recent foods yet")).toBeNull();
+      expect(screen.queryByText("No custom foods yet")).toBeNull();
+    });
+
+    it("the custom list stays while offline when the shortcut is pressed", async () => {
+      setOnLine(false);
+      saveLS(K_FOOD_CUSTOM, [CUSTOM]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Custom foods" }));
+      expect(rowButton(/Chicken Salad/)).toBeInTheDocument();
+    });
+
+    it("a recent food opens the sheet at lastGrams and logs with its FoodRef and the preset slot", async () => {
+      setOnLine(false);
+      saveLS(K_FOOD_RECENT, [RECENT_DB]);
+      const { user, onLogged } = setup();
+      await user.click(rowButton(/Boiled egg/));
+
+      const sheet = within(screen.getByRole("dialog", { name: "Boiled egg" }));
+      expect(sheet.getByRole("spinbutton", { name: "Grams" })).toHaveValue(100);
+      expect(sheet.getByRole("button", { name: "2 eggs" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(sheet.getByRole("button", { name: "Lunch" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      await user.click(sheet.getByRole("button", { name: "Add" }));
+
+      const [entry] = loadLS(K_FOOD_ENTRIES);
+      expect(entry.food).toStrictEqual(RECENT_DB.food);
+      expect(entry.grams).toBe(100);
+      expect(entry.date).toBe("2026-11-03");
+      expect(normalizeEntry(entry)).not.toBeNull();
+      expect(onLogged).toHaveBeenCalledTimes(1);
+      expect(loadLS(K_FOOD_RECENT)[0].portions).toEqual(RECENT_DB.portions);
+    });
+
+    it("a recent custom food keeps kind custom", async () => {
+      setOnLine(false);
+      saveLS(K_FOOD_RECENT, [RECENT_CUSTOM]);
+      const { user } = setup();
+      const row = rowButton(/Old salad name/);
+      expect(within(row).getByText("Custom")).toBeInTheDocument();
+      await user.click(row);
+      expect(screen.getByRole("spinbutton", { name: "Grams" })).toHaveValue(
+        300,
+      );
+      await user.click(screen.getByRole("button", { name: "Add" }));
+      expect(loadLS(K_FOOD_ENTRIES)[0].food).toStrictEqual(RECENT_CUSTOM.food);
+    });
+
+    it("a custom food opens the sheet at its default portion, without another food's lastGrams", async () => {
+      setOnLine(false);
+      saveLS(K_FOOD_RECENT, [RECENT_DB]);
+      saveLS(K_FOOD_CUSTOM, [CUSTOM]);
+      const { user } = setup();
+      await user.click(rowButton(/Boiled egg/));
+      await user.click(screen.getByRole("button", { name: "Close" }));
+      await user.click(rowButton(/Chicken Salad/));
+      expect(screen.getByRole("spinbutton", { name: "Grams" })).toHaveValue(
+        250,
+      );
+      await user.click(screen.getByRole("button", { name: "Add" }));
+      expect(loadLS(K_FOOD_ENTRIES)[0].food).toStrictEqual({
+        kind: "custom",
+        id: "custom-1",
+      });
+    });
+
+    it("Saved meals stays usable", async () => {
+      setOnLine(false);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Saved meals" }));
+      expect(
+        screen.getByRole("dialog", { name: "Saved meals" }),
+      ).toBeInTheDocument();
+    });
+
+    it("Create custom food stays usable", async () => {
+      setOnLine(false);
+      const { user } = setup();
+      await user.click(
+        screen.getByRole("button", { name: "Create custom food" }),
+      );
+      expect(
+        screen.getByRole("dialog", { name: "Create custom food" }),
+      ).toBeInTheDocument();
+    });
+
+    it("a window offline event hides API results and drops the waiting debounce", async () => {
+      searchFoods.mockResolvedValueOnce([food("a", "API chicken")]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(screen.getByText("API chicken")).toBeInTheDocument();
+
+      await user.type(box(), "i");
+      await fire("offline");
+      expectOffline();
+      expect(screen.queryByText("API chicken")).toBeNull();
+
+      await tick(1000);
+      expect(searchFoods).toHaveBeenCalledTimes(1);
+    });
+
+    it("a window offline event aborts the search in flight, and its late result stays hidden", async () => {
+      const pending = deferred();
+      searchFoods.mockReturnValueOnce(pending.promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      const { signal } = searchFoods.mock.calls[0][1];
+
+      await fire("offline");
+      expect(signal.aborted).toBe(true);
+      await settle(() => pending.resolve([food("a", "late result")]));
+      expect(screen.queryByText("late result")).toBeNull();
+    });
+
+    it("a window offline event drops a barcode lookup in flight", async () => {
+      const lookup = deferred();
+      lookupBarcode.mockReturnValueOnce(lookup.promise);
+      const { user } = setup();
+      await enterCode(user);
+      expect(screen.getByRole("status")).toBeInTheDocument();
+
+      await fire("offline");
+      expect(screen.queryByRole("status")).toBeNull();
+      await settle(() => lookup.resolve(food("late", "Late food")));
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("FoodApiError offline from search sets the state", async () => {
+      searchFoods.mockRejectedValueOnce(new FoodApiError("offline"));
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expectOffline();
+    });
+
+    it("FoodApiError offline from a barcode lookup sets the state", async () => {
+      lookupBarcode.mockRejectedValueOnce(new FoodApiError("offline"));
+      const { user } = setup();
+      await enterCode(user);
+      expectOffline();
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+
+    it("a superseded search that fails with offline does not set the state", async () => {
+      const first = deferred();
+      searchFoods.mockReturnValueOnce(first.promise);
+      searchFoods.mockResolvedValueOnce([food("b", "second result")]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      await user.type(box(), "i");
+      await tick(300);
+      await settle(() => first.reject(new FoodApiError("offline")));
+
+      expectOnline();
+      expect(screen.getByText("second result")).toBeInTheDocument();
+    });
+
+    it("a superseded lookup that fails with offline does not set the state", async () => {
+      const first = deferred();
+      lookupBarcode.mockReturnValueOnce(first.promise);
+      const { user } = setup();
+      await enterCode(user);
+      await user.click(screen.getByRole("button", { name: "Saved meals" }));
+      await settle(() => first.reject(new FoodApiError("offline")));
+      expectOnline();
+    });
+
+    it("a window online event clears the state, keeps the query and re-runs the search", async () => {
+      searchFoods.mockRejectedValueOnce(new FoodApiError("offline"));
+      searchFoods.mockResolvedValueOnce([food("a", "API chicken")]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expectOffline();
+
+      await fire("online");
+      expectOnline();
+      expect(box()).toHaveValue("ch");
+      expect(searchFoods).toHaveBeenCalledTimes(2);
+      expect(searchFoods.mock.calls[1][0]).toBe("ch");
+      expect(screen.getByText("API chicken")).toBeInTheDocument();
+    });
+
+    it("Try again clears the state and re-runs the latest query", async () => {
+      searchFoods.mockResolvedValueOnce([]);
+      searchFoods.mockRejectedValueOnce(new FoodApiError("offline"));
+      searchFoods.mockResolvedValueOnce([food("a", "API chicken")]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      await user.type(box(), "ick");
+      await tick(300);
+      expectOffline();
+
+      await user.click(tryAgain());
+      expectOnline();
+      expect(box()).toHaveValue("chick");
+      expect(searchFoods.mock.calls.at(-1)[0]).toBe("chick");
+      expect(screen.getByText("API chicken")).toBeInTheDocument();
+    });
+
+    it("the online listener re-runs the query typed last, not an earlier one", async () => {
+      searchFoods.mockResolvedValue([]);
+      const { user } = setup();
+      await user.type(box(), "chicken");
+      await fire("offline");
+      expect(searchFoods).not.toHaveBeenCalled();
+      await fire("online");
+      expect(searchFoods).toHaveBeenCalledTimes(1);
+      expect(searchFoods.mock.calls[0][0]).toBe("chicken");
+    });
+
+    it("clearing with a short query clears the state and searches nothing", async () => {
+      const { user } = setup();
+      await fire("offline");
+      await user.click(tryAgain());
+      expectOnline();
+      expect(searchFoods).not.toHaveBeenCalled();
+    });
+
+    it("the state returns when the re-run fails with offline", async () => {
+      searchFoods.mockRejectedValue(new FoodApiError("offline"));
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expectOffline();
+
+      await user.click(tryAgain());
+      expect(searchFoods).toHaveBeenCalledTimes(2);
+      expectOffline();
+    });
+
+    it("a re-run superseded by going offline again does not surface its result", async () => {
+      const rerun = deferred();
+      searchFoods.mockRejectedValueOnce(new FoodApiError("offline"));
+      searchFoods.mockReturnValueOnce(rerun.promise);
+      // Stays pending: a settled third search would hide a late result.
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      await user.click(tryAgain());
+      await fire("offline");
+
+      await settle(() => rerun.resolve([food("a", "late result")]));
+      await fire("online");
+      expect(screen.queryByText("late result")).toBeNull();
+    });
+
+    it("typing during a re-run aborts it, so its offline failure does not set the state", async () => {
+      const rerun = deferred();
+      searchFoods.mockRejectedValueOnce(new FoodApiError("offline"));
+      searchFoods.mockReturnValueOnce(rerun.promise);
+      searchFoods.mockResolvedValueOnce([food("b", "newer result")]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      await user.click(tryAgain());
+      const { signal } = searchFoods.mock.calls[1][1];
+
+      await user.type(box(), "i");
+      expect(signal.aborted).toBe(true);
+      await tick(300);
+      await settle(() => rerun.reject(new FoodApiError("offline")));
+
+      expectOnline();
+      expect(box()).toHaveValue("chi");
+      expect(screen.getByText("newer result")).toBeInTheDocument();
+    });
+
+    it("going offline then online does not show the no-match line while the re-run is in flight", async () => {
+      searchFoods.mockResolvedValueOnce([]);
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      expect(screen.getByText("No match. Create a custom food?")).toBeTruthy();
+
+      await fire("offline");
+      await fire("online");
+      expect(searchFoods).toHaveBeenCalledTimes(2);
+      expect(screen.queryByText("No match. Create a custom food?")).toBeNull();
+    });
+
+    it("a barcode lookup failing after a finished empty search shows the error without the no-match line", async () => {
+      searchFoods.mockResolvedValueOnce([]);
+      lookupBarcode.mockRejectedValueOnce(new FoodApiError("unavailable"));
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      expect(screen.getByText("No match. Create a custom food?")).toBeTruthy();
+
+      await enterCode(user);
+      expect(
+        screen.getByText("Search unavailable, try again"),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("No match. Create a custom food?")).toBeNull();
+    });
+
+    it("typing during a re-run keeps its late results off the newer query", async () => {
+      const rerun = deferred();
+      searchFoods.mockRejectedValueOnce(new FoodApiError("offline"));
+      searchFoods.mockReturnValueOnce(rerun.promise);
+      searchFoods.mockResolvedValueOnce([food("b", "newer result")]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      await user.click(tryAgain());
+
+      await user.type(box(), "i");
+      await tick(300);
+      await settle(() => rerun.resolve([food("a", "late result")]));
+
+      expect(screen.queryByText("late result")).toBeNull();
+      expect(screen.getByText("newer result")).toBeInTheDocument();
+    });
+
+    it("the Recent list shows only while offline", async () => {
+      setOnLine(true);
+      saveLS(K_FOOD_RECENT, [RECENT_DB]);
+      setup();
+      const recentHeading = () =>
+        screen.queryByRole("heading", { name: "Recent" });
+      expect(recentHeading()).toBeNull();
+      expect(screen.queryByRole("button", { name: /Boiled egg/ })).toBeNull();
+
+      await fire("offline");
+      expect(recentHeading()).toBeInTheDocument();
+      expect(rowButton(/Boiled egg/)).toBeInTheDocument();
+
+      await fire("online");
+      expect(recentHeading()).toBeNull();
+      expect(screen.queryByRole("button", { name: /Boiled egg/ })).toBeNull();
+    });
+
+    it("hides Try again while navigator.onLine is false; the online event still clears the state", async () => {
+      setOnLine(false);
+      setup();
+      expect(screen.getByText(NOTE)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+
+      setOnLine(true);
+      await fire("online");
+      expectOnline();
+    });
+
+    it("shows Try again when the browser reports a connection but a request failed offline", async () => {
+      searchFoods.mockRejectedValueOnce(new FoodApiError("offline"));
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(tryAgain()).toBeInTheDocument();
+    });
+
+    it("an offline event closes an open scanner", async () => {
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Scan barcode" }));
+      expect(
+        screen.getByRole("dialog", { name: "Scan barcode" }),
+      ).toBeInTheDocument();
+
+      await fire("offline");
+      expect(screen.queryByRole("dialog", { name: "Scan barcode" })).toBeNull();
+      expectOffline();
+    });
+
+    it("a lookup that fails with unavailable after going offline shows no error once back online", async () => {
+      const lookup = deferred();
+      lookupBarcode.mockReturnValueOnce(lookup.promise);
+      const { user } = setup();
+      await enterCode(user);
+      await fire("offline");
+      await settle(() => lookup.reject(new FoodApiError("unavailable")));
+      await fire("online");
+      expect(screen.queryByText("Search unavailable, try again")).toBeNull();
+    });
+
+    it("a second online event after the state cleared does not search again", async () => {
+      const { user } = setup();
+      await user.type(box(), "chicken");
+      await fire("offline");
+      await fire("online");
+      expect(searchFoods).toHaveBeenCalledTimes(1);
+
+      await fire("online");
+      expect(searchFoods).toHaveBeenCalledTimes(1);
+    });
+
+    it("going offline empties the results, so they do not return while a re-run is pending", async () => {
+      searchFoods.mockResolvedValueOnce([food("a", "API chicken")]);
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(screen.getByText("API chicken")).toBeInTheDocument();
+
+      await fire("offline");
+      await fire("online");
+      expect(screen.queryByText("API chicken")).toBeNull();
+    });
+
+    it("an error line from before going offline is gone after coming back online", async () => {
+      searchFoods.mockRejectedValueOnce(new FoodApiError("unavailable"));
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      const line = () => screen.queryByText("Search unavailable, try again");
+      expect(line()).toBeInTheDocument();
+
+      await fire("offline");
+      expect(line()).toBeNull();
+      await fire("online");
+      expect(line()).toBeNull();
+    });
+
+    it("pressing Custom foods while offline does not change the online list state", async () => {
+      setOnLine(false);
+      saveLS(K_FOOD_CUSTOM, [CUSTOM]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Custom foods" }));
+
+      setOnLine(true);
+      await fire("online");
+      expect(screen.queryByText("Chicken Salad")).toBeNull();
+      expect(
+        screen.getByRole("button", { name: "Custom foods" }),
+      ).toHaveAttribute("aria-pressed", "false");
+    });
+
+    it("an online event while online changes nothing", async () => {
+      searchFoods.mockResolvedValueOnce([food("a", "API chicken")]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+
+      await fire("online");
+      expect(searchFoods).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("API chicken")).toBeInTheDocument();
+    });
+
+    it("rate_limited keeps its line and leaves the input enabled", async () => {
+      searchFoods.mockRejectedValueOnce(new FoodApiError("rate_limited"));
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(
+        screen.getByText("Too many searches, wait a minute"),
+      ).toBeInTheDocument();
+      expectOnline();
+    });
+
+    it("unavailable keeps its line and leaves the input enabled", async () => {
+      lookupBarcode.mockRejectedValueOnce(new FoodApiError("unavailable"));
+      const { user } = setup();
+      await enterCode(user);
+      expect(
+        screen.getByText("Search unavailable, try again"),
+      ).toBeInTheDocument();
+      expectOnline();
+    });
+
+    it("removes the window listeners on unmount", () => {
+      const add = vi.spyOn(window, "addEventListener");
+      const remove = vi.spyOn(window, "removeEventListener");
+      const { unmount } = setup();
+      const listenerFor = (spy, name) =>
+        spy.mock.calls.find(([event]) => event === name)?.[1];
+      const added = {
+        offline: listenerFor(add, "offline"),
+        online: listenerFor(add, "online"),
+      };
+      expect(added.offline).toBeInstanceOf(Function);
+      expect(added.online).toBeInstanceOf(Function);
+
+      unmount();
+      expect(listenerFor(remove, "offline")).toBe(added.offline);
+      expect(listenerFor(remove, "online")).toBe(added.online);
+      add.mockRestore();
+      remove.mockRestore();
     });
   });
 

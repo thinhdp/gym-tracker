@@ -112,7 +112,32 @@ describe("TrendsView", () => {
     const user = userEvent.setup();
     setup([]);
     await user.click(screen.getByRole("button", { name: "All" }));
-    expect(screen.queryAllByRole("row")).toHaveLength(1);
+    expect(screen.queryByRole("table")).toBeNull();
+  });
+
+  it("shows No food logged yet with no entries, and keeps the chart and table on 4w", () => {
+    const { container } = setup([]);
+    expect(screen.getByText("No food logged yet")).toBeInTheDocument();
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(container.querySelector(".recharts-surface")).not.toBeNull();
+  });
+
+  it("hides the line once there is an entry", () => {
+    setup([entry("a", mondayOfWeek(0), kcal(1500))]);
+    expect(screen.queryByText("No food logged yet")).toBeNull();
+  });
+
+  it("hides the chart and table when there are no weekly rows, and keeps the controls", async () => {
+    const user = userEvent.setup();
+    const { container } = setup([]);
+    await user.click(screen.getByRole("button", { name: "All" }));
+    expect(screen.getByText("No food logged yet")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).toBeNull();
+    expect(container.querySelector(".recharts-surface")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Calories" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "4w" })).toBeInTheDocument();
   });
 });
 

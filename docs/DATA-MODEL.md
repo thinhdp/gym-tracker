@@ -352,6 +352,26 @@ The last 50 distinct foods logged, newest first, keyed by `kind + id`.
 `touchRecent(list, item)` moves or inserts the item at the front and trims to 50. This list is what makes offline logging work: tapping a chip logs
 `lastGrams` of that food in one step; opening it lets you change the portion.
 
+What writes `mgym.food.recent.v1` (`FoodProvider` for all but the last item):
+
+- `addEntry` touches Recent with a row built from what it logged. Its optional
+  `portions` argument goes on that row (`[]` when absent) and is not stored on the
+  entry. `lastPortionLabel` is left out when the entry has no portion label.
+- `logSavedMeal` does not touch Recent.
+- `upsertCustomFood` on an existing food updates that food's recent row in place:
+  `name`, `per100` and `portions` change; position, `lastAt` and `lastGrams` stay;
+  `lastPortionLabel` is removed unless the edited food has a portion with that label
+  and grams equal to the row's `lastGrams`; `food.barcode` is set to the edited
+  food's barcode, or removed when the food has none. Creating a custom food changes
+  no recent row.
+- `deleteCustomFood` removes that food's recent row.
+- Undoing a one-tap log deletes the entry only; the recent row stays.
+- `importFoodData` (`src/food/lib/backupFood.js`) writes the list directly with
+  `saveLS`, outside `FoodProvider`: replace overwrites it, merge applies the rules
+  in the backup section.
+
+Logged entries keep their own copies through all of these.
+
 ## Derived / computed (not stored)
 
 The Strength tab (`StrengthAnalysis`) computes these on the fly from `workouts`;
