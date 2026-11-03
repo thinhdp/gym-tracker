@@ -26,6 +26,21 @@ git switch -c <type>/<short-slug>      # e.g. feat/goals-tab, fix/kg-rounding
 - Branch naming: `feat/…`, `fix/…`, `chore/…`, `docs/…` + a short kebab slug.
 - One branch per logical change. Don't pile unrelated work onto one branch.
 
+**In a worktree**, create the branch with its final name when you create the
+worktree, then enter it by path. Do not use `EnterWorktree` with `name`, and do
+not rename the branch afterwards: that tool names the branch
+`worktree-<name>`, and its removal check refuses a branch that was renamed.
+
+```bash
+git fetch origin main
+git worktree add .claude/worktrees/<type>-<short-slug> -b <type>/<short-slug> origin/main
+# then: EnterWorktree with path set to that folder
+```
+
+After the merge, leave with `ExitWorktree` (`action: "keep"`), then run
+`git worktree remove .claude/worktrees/<type>-<short-slug>`. `ExitWorktree` does
+not remove a worktree that was entered by path.
+
 ## 2. While working
 
 - Commit in focused, working increments with clear messages.
