@@ -841,9 +841,11 @@ The former Task 15 "finish" steps assumed one long-lived branch. The workflow is
 - [ ] **Gate:** `npm run check`, once before the PR and once more after `git fetch origin && git rebase origin/main` (git-workflow skill).
 - [ ] **Review:** each task gets an `opus55-reviewer` pass; the tasks named above and Part K's whole-branch pass get `opus55-reviewer-deep`. Part K's whole-branch review confirms every spec §3–§9 item maps to a commit.
 - [ ] **PR** via `superpowers:finishing-a-development-branch`; the owner merges. Close the part's issues with the merge SHA.
-- [ ] **Handoff:** append a `## Part <X> handoff` section to this file: shipped commits, cost (session tokens, fix rounds, wall time), rulings, follow-ups, unchecked steps moved into a named later part.
+- [ ] **Handoff:** append a `## Part <X> handoff` section to `2026-11-02-food-tracker-handoffs.md` (Parts A and B are in this file): shipped commits, cost (session tokens, fix rounds, wall time), rulings, follow-ups, unchecked steps moved into a named later part.
 
 Before the first production deploy that includes Part F, set `VITE_FOOD_API_BASE` in the gym-tracker Vercel project to the deployed API URL (macro-calculator Part G handoff). Until then the app runs in fixture mode.
+
+Handoffs from Part D on live in `2026-11-02-food-tracker-handoffs.md` (CLAUDE.md, Execution part sizing).
 
 ## Part A handoff
 
