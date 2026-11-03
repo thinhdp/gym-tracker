@@ -4,7 +4,12 @@ import { loadLS, saveLS } from "../../lib/storage";
 import { ConfirmProvider } from "../../components/ConfirmDialog";
 import { FoodProvider } from "../context/FoodContext";
 import { K_FOOD_CUSTOM, K_FOOD_ENTRIES, K_FOOD_MEALS } from "../lib/keys";
-import { FoodApiError, isFixtureMode, searchFoods } from "../lib/foodApi";
+import {
+  FoodApiError,
+  isFixtureMode,
+  lookupBarcode,
+  searchFoods,
+} from "../lib/foodApi";
 import { formatDayHeader } from "../lib/localDate";
 import { normalizeEntry } from "../lib/normalize";
 import SearchView from "./SearchView";
@@ -12,6 +17,7 @@ import SearchView from "./SearchView";
 vi.mock("../lib/foodApi", async (importActual) => ({
   ...(await importActual()),
   searchFoods: vi.fn(),
+  lookupBarcode: vi.fn(),
   isFixtureMode: vi.fn(() => false),
 }));
 
@@ -83,6 +89,7 @@ describe("SearchView", () => {
     searchFoods.mockResolvedValue([]);
     isFixtureMode.mockReset();
     isFixtureMode.mockReturnValue(false);
+    lookupBarcode.mockReset();
   });
 
   afterEach(() => {
@@ -262,15 +269,68 @@ describe("SearchView", () => {
       expect(screen.queryByText("demo data")).toBeNull();
     });
 
-    it("shows the camera button only when onScan is provided", async () => {
-      const { unmount } = setup();
-      expect(screen.queryByRole("button", { name: "Scan barcode" })).toBeNull();
-      unmount();
-
-      const onScan = vi.fn();
-      const { user } = setup({ onScan });
+    it("the Scan button opens the barcode scanner", async () => {
+      const { user } = setup();
+      expect(screen.queryByRole("dialog")).toBeNull();
       await user.click(screen.getByRole("button", { name: "Scan barcode" }));
-      expect(onScan).toHaveBeenCalledTimes(1);
+      const scanner = screen.getByRole("dialog", { name: "Scan barcode" });
+      expect(
+        await within(scanner).findByText("Camera unavailable"),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe("barcode scan", () => {
+    const CODE = "8934563138165";
+
+    // jsdom has no navigator.mediaDevices, so the scanner shows its manual field.
+    async function enterCode(user, code = CODE) {
+      await user.click(screen.getByRole("button", { name: "Scan barcode" }));
+      const scanner = within(
+        screen.getByRole("dialog", { name: "Scan barcode" }),
+      );
+      await user.type(await scanner.findByLabelText("Barcode"), code);
+      await user.click(scanner.getByRole("button", { name: "Use" }));
+    }
+
+    it("looks up the code and opens the portion sheet for the food found", async () => {
+      lookupBarcode.mockResolvedValueOnce(
+        food("off-1", "Instant noodles", {
+          barcode: CODE,
+          source: "open_food_facts",
+        }),
+      );
+      const { user } = setup();
+      await enterCode(user);
+
+      expect(lookupBarcode).toHaveBeenCalledWith(CODE);
+      expect(
+        await screen.findByRole("dialog", { name: "Instant noodles" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("dialog", { name: "Scan barcode" })).toBeNull();
+    });
+
+    it("on not_found opens the custom food form with the barcode prefilled", async () => {
+      lookupBarcode.mockRejectedValueOnce(new FoodApiError("not_found"));
+      const { user } = setup();
+      await enterCode(user);
+
+      const form = await screen.findByRole("dialog", {
+        name: "Create custom food",
+      });
+      expect(within(form).getByLabelText("Barcode")).toHaveValue(CODE);
+      expect(screen.queryByRole("dialog", { name: "Scan barcode" })).toBeNull();
+    });
+
+    it("on another error shows the search error line and opens nothing", async () => {
+      lookupBarcode.mockRejectedValueOnce(new FoodApiError("offline"));
+      const { user } = setup();
+      await enterCode(user);
+
+      expect(
+        await screen.findByText("Search needs a connection"),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).toBeNull();
     });
   });
 
