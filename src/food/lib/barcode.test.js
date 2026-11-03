@@ -6,6 +6,31 @@ import {
   pickStrategy,
 } from "./barcode";
 
+const zx = vi.hoisted(() => ({
+  instances: [],
+  controlsPromise: null,
+}));
+
+vi.mock("@zxing/browser", () => ({
+  BrowserMultiFormatReader: class {
+    constructor(hints) {
+      this.hints = hints;
+      this.callback = null;
+      zx.instances.push(this);
+    }
+    decodeFromVideoElement(video, callback) {
+      this.video = video;
+      this.callback = callback;
+      return zx.controlsPromise;
+    }
+  },
+}));
+
+vi.mock("@zxing/library", () => ({
+  BarcodeFormat: { EAN_13: 7, EAN_8: 6, UPC_A: 14, UPC_E: 15 },
+  DecodeHintType: { POSSIBLE_FORMATS: 2 },
+}));
+
 const fakeWindow = (result) => {
   const calls = [];
   class BarcodeDetector {
@@ -147,5 +172,68 @@ describe("createDetector native polling", () => {
     expect(detector.detectOnce({})).toBe(first);
     detector.stop();
     await expect(first).resolves.toBeNull();
+  });
+});
+
+describe("createDetector zxing", () => {
+  const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+  const fakeControls = () => ({ stop: vi.fn() });
+  const fakeResult = (text) => ({ getText: () => text });
+
+  beforeEach(() => {
+    zx.instances.length = 0;
+  });
+
+  it("builds the reader with hints for the EAN/UPC formats only", async () => {
+    zx.controlsPromise = Promise.resolve(fakeControls());
+    await createDetector("zxing");
+    expect(zx.instances).toHaveLength(1);
+    const { hints } = zx.instances[0];
+    expect(hints).toBeInstanceOf(Map);
+    expect([...hints.keys()]).toEqual([2]);
+    expect(hints.get(2)).toEqual([7, 6, 14, 15]);
+  });
+
+  it("resolves with getText() on a result and stops the controls", async () => {
+    const controls = fakeControls();
+    zx.controlsPromise = Promise.resolve(controls);
+    const detector = await createDetector("zxing");
+    const video = {};
+    const pending = detector.detectOnce(video);
+    await flush();
+    const reader = zx.instances[0];
+    expect(reader.video).toBe(video);
+    reader.callback(undefined, new Error("miss"), controls);
+    reader.callback(fakeResult("5000112637922"), undefined, controls);
+    await expect(pending).resolves.toBe("5000112637922");
+    expect(controls.stop).toHaveBeenCalled();
+  });
+
+  it("stop() before a result resolves null and stops the controls", async () => {
+    const controls = fakeControls();
+    zx.controlsPromise = Promise.resolve(controls);
+    const detector = await createDetector("zxing");
+    const pending = detector.detectOnce({});
+    await flush();
+    detector.stop();
+    await expect(pending).resolves.toBeNull();
+    expect(controls.stop).toHaveBeenCalled();
+    await expect(detector.detectOnce({})).resolves.toBeNull();
+  });
+
+  it("stops controls that arrive after stop()", async () => {
+    const controls = fakeControls();
+    let deliver;
+    zx.controlsPromise = new Promise((resolve) => {
+      deliver = resolve;
+    });
+    const detector = await createDetector("zxing");
+    const pending = detector.detectOnce({});
+    detector.stop();
+    await expect(pending).resolves.toBeNull();
+    expect(controls.stop).not.toHaveBeenCalled();
+    deliver(controls);
+    await flush();
+    expect(controls.stop).toHaveBeenCalled();
   });
 });
