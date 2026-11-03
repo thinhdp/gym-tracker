@@ -274,6 +274,59 @@ describe("importFoodData", () => {
     ]);
   });
 
+  it("merge normalises incoming rows: invalid and null rows drop, the first of two rows with one key wins", () => {
+    seed();
+    importFoodData(
+      {
+        food: {
+          entries: [
+            entry("bad", { grams: 0 }),
+            null,
+            entry("dup"),
+            entry("dup", { grams: 99 }),
+            entry("barcode", { food: { kind: "db", id: "egg", barcode: 7 } }),
+          ],
+          targets: [
+            target("not-a-date"),
+            null,
+            target("2026-02-01"),
+            target("2026-02-01", { kcal: 1 }),
+          ],
+          customFoods: [
+            custom("bad", { name: "" }),
+            null,
+            custom("dup"),
+            custom("dup", { name: "Second" }),
+          ],
+          savedMeals: [
+            meal("bad", { items: [] }),
+            null,
+            meal("dup"),
+            meal("dup", { name: "Second" }),
+          ],
+          recent: [
+            recent("bad", { lastGrams: 0 }),
+            null,
+            recent("dup", { lastAt: 2000 }),
+            recent("dup", { lastAt: 1500 }),
+          ],
+        },
+      },
+      "merge",
+    );
+    expect(storedLists()).toEqual({
+      [K_FOOD_ENTRIES]: [
+        entry("old"),
+        entry("dup"),
+        entry("barcode", { food: { kind: "db", id: "egg" } }),
+      ],
+      [K_FOOD_TARGETS]: [target("2026-01-01"), target("2026-02-01")],
+      [K_FOOD_CUSTOM]: [custom("old"), custom("dup")],
+      [K_FOOD_MEALS]: [meal("old"), meal("dup")],
+      [K_FOOD_RECENT]: [recent("dup", { lastAt: 2000 }), recent("old")],
+    });
+  });
+
   it("replace still drops invalid incoming rows and ignores the stored rows", () => {
     saveLS(K_FOOD_ENTRIES, [null, entry("old")]);
     importFoodData(
