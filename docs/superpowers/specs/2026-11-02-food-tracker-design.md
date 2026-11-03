@@ -77,7 +77,7 @@ src/food/
 │   ├── targets.js              # targetForDate, upsertTarget, validation
 │   ├── trends.js               # weekly buckets, averages, loggedDays, bodyweight join
 │   ├── localDate.js            # todayLocal(), addDays()  (local-time YYYY-MM-DD)
-│   ├── recent.js               # recent-foods ring (50 distinct), touch()
+│   ├── recent.js               # recent-foods ring (50 distinct), touchRecent()
 │   ├── searchCache.js          # query → results cache, 7-day expiry, 200-entry cap
 │   ├── foodApi.js              # the only file that knows the API shape
 │   ├── foodApiFixture.js       # fixture fetch used in tests and when VITE_FOOD_API_BASE=fixture
@@ -276,7 +276,7 @@ The last 50 distinct foods logged, newest first, keyed by `kind + id`.
 | `lastPortionLabel` | `string?`                        |                                    |
 | `lastAt`           | `number`                         | epoch ms                           |
 
-`recent.touch(list, item)` moves or inserts the item at the front and trims to 50. This list is what makes offline logging work: tapping a chip logs
+`touchRecent(list, item)` moves or inserts the item at the front and trims to 50. This list is what makes offline logging work: tapping a chip logs
 `lastGrams` of that food in one step; opening it lets you change the portion.
 
 ### 5.7 Search cache
@@ -288,7 +288,7 @@ oldest `at` is dropped. Barcode lookups are cached under `bc:<code>`.
 ### 5.8 Dates are local
 
 `todayStr()` in `src/lib/storage.js` slices a UTC ISO string, so in UTC+7 an
-entry logged after 19:00 local would land on the next day. The food tracker uses
+entry logged before 07:00 local would land on the previous day. The food tracker uses
 `ymdFromDate(new Date())` from `src/lib/date.js` (already local-time) through
 `localDate.todayLocal()`. Switching the gym app's `todayStr()` to local time is
 recorded in the backlog as a separate item; it is not part of this work.
@@ -440,7 +440,7 @@ Lib tests (minimum):
   before the first row, replace-on-same-`from`.
 - `trends.js` — weekly bucketing across a month boundary, average by logged
   days not 7, zero-day weeks produce gaps, bodyweight join.
-- `localDate.js` — local date at 23:30 in UTC+7 stays on the same day.
+- `localDate.js` — local date at 06:30 in UTC+7 stays on the same day (a UTC slice gives the previous day).
 - `recent.js` — moves existing item to front, caps at 50, keyed by kind+id.
 - `searchCache.js` — expiry at 7 days, 200-entry cap drops oldest.
 - `foodApi.js` — builds URLs, no Authorization header, maps 429/404/network to

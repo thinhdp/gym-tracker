@@ -39,7 +39,7 @@ Tasks follow the backlog phases in `docs/superpowers/specs/2026-11-02-food-track
 
 ## Review Focus
 
-1. An entry logged at 23:30 in UTC+7 must land on that local day, not the next UTC day. Test in Task 2 (`localDate`) and Task 6 (TodayView uses it).
+1. An entry logged before 07:00 in UTC+7 must land on that local day, not the previous UTC day. Test in Task 2 (`localDate`) and Task 6 (TodayView uses it).
 2. Deleting the only target row leaves the app with no target: Today shows plain totals and no bars, the Home card shows "Set up food tracking". Tests in Tasks 6, 7, 13.
 3. A corrupted `mgym.food.entries.v1` value (not an array) must not crash `FoodProvider`; it falls back to `[]`. Test in Task 3.
 4. A search request that returns after the user has typed more must not overwrite newer results (abort stale requests). Test in Task 5.
@@ -117,7 +117,7 @@ Four S modules in one lib area, each with its own test; 4 points as one task.
   - `slots.js`: `SLOTS` (array of `{ id, label }` in the fixed order), `SLOT_IDS`, `slotLabel(id)`, `slotForTime(date = new Date())` → id by local hour/minute: `< 10:00` breakfast, `< 11:30` snack1, `< 14:00` lunch, `< 17:00` snack2, `< 20:30` dinner, else snack3.
   - `macros.js`: `ZERO_MACROS = { kcal: 0, protein: 0, carb: 0, fat: 0 }`; `round1(n)`; `scaleMacros(per100, grams)` → `{ kcal: Math.round, protein/carb/fat: round1 }`; `entryMacros(entry)` = `scaleMacros(entry.per100, entry.grams)`; `sumMacros(entries)`; `kcalFromMacros({ protein, carb, fat })` = `4P + 4C + 9F` rounded; `pct(value, target)` → `value / target` or `null` when `!target`; `barTone(ratio)` → `"ok" | "warn" | "over"` (`warn` when `ratio >= 0.9`, `over` when `ratio > 1`).
   - `localDate.js`: `todayLocal(now = new Date())` via `ymdFromDate`; `addDays(ymd, n)` → ymd (build the Date with `new Date(y, m - 1, d)`, never `new Date(ymd)`); `isToday(ymd, now)`; `formatDayHeader(ymd)` → e.g. `"Mon 2 Nov"` using `toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })`.
-  - `targets.js`: `targetForDate(targets, ymd)` → the row with the greatest `from <= ymd`, else `null`; `upsertTarget(targets, row)` → new array with same-`from` replaced, sorted by `from` ascending; `deleteTarget(targets, from)`; `validateTarget(row)` → array of messages (`"kcal must be above 0"`, `"protein must be 0 or more"`, …, `"from must be YYYY-MM-DD"`), empty when valid.
+  - `targets.js`: `targetForDate(targets, ymd)` → the row with the greatest `from <= ymd`, else `null`; `upsertTarget(targets, row)` → new array with same-`from` replaced, sorted by `from` ascending; `deleteTarget(targets, from)`; `validateTarget(row)` → array of messages (`"kcal must be above 0"`, `"protein must be 0 or more"`, …, `"from must be YYYY-MM-DD"`, also used for a date that does not exist, such as `2026-02-31`), empty when valid.
 
 - [ ] **Step 1: Write the failing tests** (one `describe` per export; the boundaries that matter)
 
@@ -870,3 +870,29 @@ Before the first production deploy that includes Part F, set `VITE_FOOD_API_BASE
 **Unchecked steps moved:** none.
 
 **Next:** Part B can run now. Parts C, D and E need Parts A and B merged (D needs only A).
+
+## Part B handoff
+
+**Shipped:** `97ba165` (Task 2), `bf5b5e5` (Task 11a), `47af087` (review fixes), `de41c2f` (#116), `d68c570` and `bcbcb38` (#117). New files under `src/food/lib` only: `slots`, `macros`, `localDate`, `targets`, `recent`, each with a test.
+
+**Cost:** 374,570 subagent tokens across 6 agents in the workflow (about 15 minutes, 1 fix round), plus the #117 work below (1 more fix round). Controller session tokens not measured.
+
+**Rulings** (from the `fable-fallback` decide stage, using the Fable advisor):
+
+- `sumMacros` adds the rounded `entryMacros` values, so visible rows add up to the visible total.
+- `validateTarget` messages for the other fields: `carb must be 0 or more`, `fat must be 0 or more`.
+- The recent helper is named `touchRecent`, as in this plan. The spec says `touch`.
+- `formatDayHeader` keeps the `undefined` locale, so an en-US user sees `Mon, Nov 2`, not `Mon 2 Nov`. It matches `src/components/Home.jsx`.
+- Local-date tests add zone-stubbed cases, because the plan's 23:30 case cannot fail against the UTC bug.
+- Commits use the Opus 5.5 trailer, because this session ran on Opus 5.5.
+- `validateTarget` rejects a `from` that is not a real calendar date (#117). This goes beyond the format check Task 2 first asked for. The check uses arithmetic, not `Date`, so its result does not depend on the machine time zone. The message text stays `from must be YYYY-MM-DD`.
+
+**Notes for later parts:**
+
+- Part F (Task 7): `validateTarget` uses `Number.isFinite`, so numeric strings fail. `TargetsEditor` must convert inputs to numbers before calling it, or Save stays disabled.
+- Part F and Part G (any test of the day header): do not assert the literal text `Mon 2 Nov`; the output depends on the machine locale.
+- Part G (Task 6): `barTone(null)` returns `ok`. `MacroBars` must hide bars itself when there is no target.
+- Part E (Task 8a): `normalizeTarget` will drop a target dated `2026-02-31`, while `normalizeEntry` as written checks only the date format and would keep an entry with that date. Decide there whether entries get the same check.
+- Part C and Part E: `targetForDate` throws on a null row, and `touchRecent` throws on a row with no `food`. Both rely on `FoodProvider` and `normalizeFoodData` to drop malformed rows. `addDays` returns `NaN-NaN-NaN` on a malformed date.
+
+**Follow-ups:** #116 and #117 were fixed in this PR. No plan steps are left undone. Issue #86 closes with this PR, because Part A has merged. Issue #97 stays open until Part K.
