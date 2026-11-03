@@ -35,7 +35,7 @@ export const validateTarget = (row) => {
   if (!Number.isFinite(fat) || fat < 0) {
     messages.push("fat must be 0 or more");
   }
-  if (!FROM_RE.test(from)) {
+  if (typeof from !== "string" || !FROM_RE.test(from)) {
     messages.push("from must be YYYY-MM-DD");
   }
   return messages;

@@ -116,6 +116,32 @@ describe("validateTarget", () => {
     ]);
   });
 
+  it("rejects negative kcal and negative protein", () => {
+    expect(validateTarget({ ...valid, kcal: -5 })).toEqual([
+      "kcal must be above 0",
+    ]);
+    expect(validateTarget({ ...valid, protein: -1 })).toEqual([
+      "protein must be 0 or more",
+    ]);
+  });
+
+  it.each([
+    ["kcal", "kcal must be above 0"],
+    ["protein", "protein must be 0 or more"],
+    ["carb", "carb must be 0 or more"],
+    ["fat", "fat must be 0 or more"],
+  ])("rejects a non-finite or non-number %s", (field, message) => {
+    for (const bad of [NaN, Infinity, -Infinity, "150", null, undefined]) {
+      expect(validateTarget({ ...valid, [field]: bad })).toEqual([message]);
+    }
+  });
+
+  it("rejects a from that is not a string, even if it stringifies to a date", () => {
+    expect(validateTarget({ ...valid, from: ["2026-11-01"] })).toEqual([
+      "from must be YYYY-MM-DD",
+    ]);
+  });
+
   it("rejects NaN, a string and a missing field", () => {
     expect(validateTarget({ ...valid, kcal: NaN })).toEqual([
       "kcal must be above 0",

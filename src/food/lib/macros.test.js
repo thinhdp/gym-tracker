@@ -30,6 +30,12 @@ describe("scaleMacros", () => {
       scaleMacros({ kcal: 165, protein: 31, carb: 0, fat: 3.6 }, 150),
     ).toEqual({ kcal: 248, protein: 46.5, carb: 0, fat: 5.4 });
   });
+
+  it("rounds protein, carb and fat to 1 dp when the scaled value has more", () => {
+    expect(
+      scaleMacros({ kcal: 0, protein: 1.1, carb: 2.2, fat: 3.3 }, 33.3),
+    ).toEqual({ kcal: 0, protein: 0.4, carb: 0.7, fat: 1.1 });
+  });
 });
 
 describe("entryMacros", () => {
@@ -61,6 +67,19 @@ describe("sumMacros", () => {
   it("adds the rounded entry values, so visible rows add up to the total", () => {
     const halfKcal = entry({ kcal: 50, protein: 0, carb: 0, fat: 0 }, 1);
     expect(sumMacros([halfKcal, halfKcal]).kcal).toBe(2);
+  });
+
+  it("adds the rounded protein, carb and fat of each entry", () => {
+    const quarter = entry(
+      { kcal: 0, protein: 0.25, carb: 0.25, fat: 0.25 },
+      100,
+    );
+    expect(sumMacros([quarter, quarter])).toEqual({
+      kcal: 0,
+      protein: 0.6,
+      carb: 0.6,
+      fat: 0.6,
+    });
   });
 
   it("removes float noise from the macro totals", () => {
