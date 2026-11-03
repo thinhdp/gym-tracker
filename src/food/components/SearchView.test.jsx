@@ -3,8 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { loadLS, saveLS } from "../../lib/storage";
 import { ConfirmProvider } from "../../components/ConfirmDialog";
 import { FoodProvider } from "../context/FoodContext";
-import { K_FOOD_CUSTOM, K_FOOD_ENTRIES } from "../lib/keys";
+import { K_FOOD_CUSTOM, K_FOOD_ENTRIES, K_FOOD_MEALS } from "../lib/keys";
 import { FoodApiError, isFixtureMode, searchFoods } from "../lib/foodApi";
+import { formatDayHeader } from "../lib/localDate";
 import { normalizeEntry } from "../lib/normalize";
 import SearchView from "./SearchView";
 
@@ -523,6 +524,105 @@ describe("SearchView", () => {
         .filter((b) => /kcal \/ 100 g/.test(b.textContent));
       expect(rows[0]).toHaveTextContent("Oat bar");
       expect(within(rows[0]).getByText("Custom")).toBeInTheDocument();
+    });
+  });
+
+  describe("saved meals shortcut", () => {
+    const MEAL = {
+      id: "m1",
+      name: "Rice bowl",
+      items: [
+        {
+          name: "rice",
+          grams: 200,
+          per100: { kcal: 130, protein: 2.7, carb: 28, fat: 0.3 },
+          food: { kind: "db", id: "rice" },
+        },
+      ],
+      createdAt: 1,
+    };
+    const open = (user) => user.click(rowButton("Saved meals"));
+    const panel = () => screen.getByRole("dialog", { name: "Saved meals" });
+    const day = formatDayHeader("2026-11-03");
+
+    it("opens the panel on presetSlot", async () => {
+      // Time of day would give dinner, so seeing Lunch proves the preset wins.
+      vi.setSystemTime(new Date(2026, 10, 3, 18, 0));
+      const { user } = setup();
+      expect(screen.queryByRole("dialog")).toBeNull();
+      await open(user);
+      expect(within(panel()).getByText(`Lunch · ${day}`)).toBeVisible();
+    });
+
+    it("opens the panel on the time-of-day slot when no slot is preset", async () => {
+      vi.setSystemTime(new Date(2026, 10, 3, 18, 0));
+      const { user } = setup({ presetSlot: undefined });
+      await open(user);
+      expect(within(panel()).getByText(`Dinner · ${day}`)).toBeVisible();
+    });
+
+    it("logging a meal closes the panel and calls onLogged", async () => {
+      saveLS(K_FOOD_MEALS, [MEAL]);
+      const { user, onLogged } = setup();
+      await open(user);
+      await user.click(
+        within(panel()).getByRole("button", { name: /Rice bowl/ }),
+      );
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(onLogged).toHaveBeenCalledTimes(1);
+      const stored = loadLS(K_FOOD_ENTRIES);
+      expect(stored).toHaveLength(1);
+      expect(stored[0].date).toBe("2026-11-03");
+      expect(stored[0].slot).toBe("lunch");
+    });
+
+    it("logs onto the viewed day when it is not today", async () => {
+      vi.setSystemTime(new Date(2026, 10, 3, 12, 0));
+      saveLS(K_FOOD_MEALS, [MEAL]);
+      const { user } = setup({ date: "2026-10-20" });
+      await open(user);
+      expect(
+        within(panel()).getByText(`Lunch · ${formatDayHeader("2026-10-20")}`),
+      ).toBeVisible();
+      await user.click(
+        within(panel()).getByRole("button", { name: /Rice bowl/ }),
+      );
+
+      const stored = loadLS(K_FOOD_ENTRIES);
+      expect(stored).toHaveLength(1);
+      expect(stored[0].date).toBe("2026-10-20");
+    });
+
+    it("offers no Save as meal field from Search, even when the slot has entries", async () => {
+      saveLS(K_FOOD_ENTRIES, [
+        {
+          id: "e1",
+          date: "2026-11-03",
+          slot: "lunch",
+          name: "rice",
+          grams: 200,
+          per100: MEAL.items[0].per100,
+          food: MEAL.items[0].food,
+          createdAt: 1,
+        },
+      ]);
+      const { user } = setup();
+      await open(user);
+      expect(panel()).toBeVisible();
+      expect(screen.queryByLabelText("Save as meal")).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: /^save( as meal)?$/i }),
+      ).toBeNull();
+    });
+
+    it("Close does not call onLogged", async () => {
+      const { user, onLogged } = setup();
+      await open(user);
+      await user.click(within(panel()).getByRole("button", { name: "Close" }));
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(onLogged).not.toHaveBeenCalled();
     });
   });
 

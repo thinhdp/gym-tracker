@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ConfirmProvider } from "../../components/ConfirmDialog";
 import { loadLS, saveLS } from "../../lib/storage";
 import { FoodProvider } from "../context/FoodContext";
-import { K_FOOD_ENTRIES, K_FOOD_TARGETS } from "../lib/keys";
+import { K_FOOD_ENTRIES, K_FOOD_MEALS, K_FOOD_TARGETS } from "../lib/keys";
 import { formatDayHeader, todayLocal } from "../lib/localDate";
 import { SLOTS } from "../lib/slots";
 import TodayView from "./TodayView";
@@ -298,10 +298,256 @@ describe("TodayView", () => {
     expect(onAddTo).toHaveBeenCalledWith("snack2");
   });
 
-  it("disables the options button while there is no menu", () => {
-    setup();
-    expect(
-      screen.getByRole("button", { name: "Lunch options" }),
-    ).toBeDisabled();
+  describe("slot menu and saved meals", () => {
+    const MEAL = {
+      id: "m1",
+      name: "Rice bowl",
+      items: [
+        {
+          name: "rice",
+          grams: 200,
+          per100: PER100,
+          food: { kind: "db", id: "food-rice" },
+        },
+      ],
+      createdAt: 500,
+    };
+    const menu = (label) => screen.getByRole("dialog", { name: label });
+    const panel = () => screen.getByRole("dialog", { name: "Saved meals" });
+    const sheet = () => screen.getByRole("dialog", { name: "Save meal" });
+
+    it("the options button opens a menu for that slot, not the panel", async () => {
+      const { user } = setup();
+      const options = screen.getByRole("button", { name: "Lunch options" });
+      expect(options).toBeEnabled();
+      expect(screen.queryByRole("dialog")).toBeNull();
+
+      await user.click(options);
+
+      expect(menu("Lunch options")).toBeVisible();
+      expect(screen.queryByRole("dialog", { name: "Saved meals" })).toBeNull();
+    });
+
+    it("the menu shows both actions when the slot has entries", async () => {
+      saveLS(K_FOOD_ENTRIES, [entry("rice", { slot: "lunch" })]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Lunch options" }));
+      const m = within(menu("Lunch options"));
+      expect(m.getByRole("button", { name: "Save as meal" })).toBeVisible();
+      expect(m.getByRole("button", { name: "Log saved meal" })).toBeVisible();
+      expect(m.getByRole("button", { name: "Close" })).toBeVisible();
+    });
+
+    it("the menu hides Save as meal when the slot is empty on the viewed day", async () => {
+      saveLS(K_FOOD_ENTRIES, [
+        entry("rice", { slot: "lunch" }),
+        entry("old", { slot: "dinner", date: "2026-11-01" }),
+      ]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Dinner options" }));
+      const m = within(menu("Dinner options"));
+      expect(m.queryByRole("button", { name: "Save as meal" })).toBeNull();
+      expect(m.getByRole("button", { name: "Log saved meal" })).toBeVisible();
+    });
+
+    it("Close on the menu closes it and changes nothing", async () => {
+      const entries = [entry("rice", { slot: "lunch" })];
+      saveLS(K_FOOD_ENTRIES, entries);
+      saveLS(K_FOOD_MEALS, [MEAL]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Lunch options" }));
+      await user.click(
+        within(menu("Lunch options")).getByRole("button", { name: "Close" }),
+      );
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(loadLS(K_FOOD_ENTRIES)).toEqual(entries);
+      expect(loadLS(K_FOOD_MEALS)).toEqual([MEAL]);
+    });
+
+    it.each([
+      ["lunch", "Lunch", "rice"],
+      ["dinner", "Dinner", "fish"],
+    ])(
+      "Save as meal on %s stores that slot's entries only",
+      async (_slot, label, food) => {
+        saveLS(K_FOOD_ENTRIES, [
+          entry("rice", { slot: "lunch" }),
+          entry("fish", { slot: "dinner" }),
+        ]);
+        const { user } = setup();
+        await user.click(
+          screen.getByRole("button", { name: `${label} options` }),
+        );
+        await user.click(
+          within(menu(`${label} options`)).getByRole("button", {
+            name: "Save as meal",
+          }),
+        );
+        expect(
+          within(sheet()).getByText(new RegExp(`^${label} ·`)),
+        ).toBeVisible();
+        await user.type(within(sheet()).getByLabelText("Save as meal"), "M");
+        await user.click(within(sheet()).getByRole("button", { name: "Save" }));
+
+        const meals = loadLS(K_FOOD_MEALS);
+        expect(meals).toHaveLength(1);
+        expect(meals[0].items.map((item) => item.name)).toEqual([food]);
+      },
+    );
+
+    it.each([
+      ["lunch", "Lunch"],
+      ["dinner", "Dinner"],
+    ])(
+      "Log saved meal on %s stores the entries in that slot",
+      async (slot, label) => {
+        saveLS(K_FOOD_MEALS, [MEAL]);
+        const { user } = setup();
+        await user.click(
+          screen.getByRole("button", { name: `${label} options` }),
+        );
+        await user.click(
+          within(menu(`${label} options`)).getByRole("button", {
+            name: "Log saved meal",
+          }),
+        );
+        await user.click(
+          within(panel()).getByRole("button", { name: /Rice bowl/ }),
+        );
+
+        const stored = loadLS(K_FOOD_ENTRIES);
+        expect(stored).toHaveLength(1);
+        expect(stored[0].slot).toBe(slot);
+      },
+    );
+
+    it("logging after changing the day stores entries on the new day", async () => {
+      saveLS(K_FOOD_MEALS, [MEAL]);
+      const { user } = setup("2026-11-02");
+      await user.click(screen.getByRole("button", { name: "Next day" }));
+      await user.click(screen.getByRole("button", { name: "Lunch options" }));
+      await user.click(
+        within(menu("Lunch options")).getByRole("button", {
+          name: "Log saved meal",
+        }),
+      );
+      await user.click(
+        within(panel()).getByRole("button", { name: /Rice bowl/ }),
+      );
+      expect(loadLS(K_FOOD_ENTRIES).map((row) => row.date)).toEqual([
+        "2026-11-03",
+      ]);
+
+      await user.click(screen.getByRole("button", { name: "Previous day" }));
+      await user.click(screen.getByRole("button", { name: "Previous day" }));
+      await user.click(screen.getByRole("button", { name: "Lunch options" }));
+      await user.click(
+        within(menu("Lunch options")).getByRole("button", {
+          name: "Log saved meal",
+        }),
+      );
+      await user.click(
+        within(panel()).getByRole("button", { name: /Rice bowl/ }),
+      );
+      expect(
+        loadLS(K_FOOD_ENTRIES)
+          .map((row) => row.date)
+          .sort(),
+      ).toEqual(["2026-11-01", "2026-11-03"]);
+    });
+
+    it("Log saved meal closes the menu and opens the panel for that slot and date", async () => {
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Dinner options" }));
+      await user.click(
+        within(menu("Dinner options")).getByRole("button", {
+          name: "Log saved meal",
+        }),
+      );
+
+      expect(
+        screen.queryByRole("dialog", { name: "Dinner options" }),
+      ).toBeNull();
+      expect(
+        within(panel()).getByText(`Dinner · ${formatDayHeader("2026-11-02")}`),
+      ).toBeVisible();
+      expect(within(panel()).queryByLabelText("Save as meal")).toBeNull();
+    });
+
+    it("Save as meal closes the menu and opens the sheet for that slot and date", async () => {
+      saveLS(K_FOOD_ENTRIES, [entry("rice", { slot: "lunch" })]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Lunch options" }));
+      await user.click(
+        within(menu("Lunch options")).getByRole("button", {
+          name: "Save as meal",
+        }),
+      );
+
+      expect(
+        screen.queryByRole("dialog", { name: "Lunch options" }),
+      ).toBeNull();
+      expect(
+        within(sheet()).getByText(`Lunch · ${formatDayHeader("2026-11-02")}`),
+      ).toBeVisible();
+    });
+
+    it("saving from Today stores a meal and closes the sheet", async () => {
+      saveLS(K_FOOD_ENTRIES, [entry("rice", { slot: "lunch" })]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Lunch options" }));
+      await user.click(
+        within(menu("Lunch options")).getByRole("button", {
+          name: "Save as meal",
+        }),
+      );
+      await user.type(
+        within(sheet()).getByLabelText("Save as meal"),
+        "Usual lunch",
+      );
+      await user.click(within(sheet()).getByRole("button", { name: "Save" }));
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(loadLS(K_FOOD_MEALS).map((meal) => meal.name)).toEqual([
+        "Usual lunch",
+      ]);
+    });
+
+    it("logging a meal on a viewed past day stores entries on that day and closes the panel", async () => {
+      saveLS(K_FOOD_MEALS, [MEAL]);
+      const { user } = setup("2026-10-20");
+      await user.click(screen.getByRole("button", { name: "Dinner options" }));
+      await user.click(
+        within(menu("Dinner options")).getByRole("button", {
+          name: "Log saved meal",
+        }),
+      );
+      await user.click(
+        within(panel()).getByRole("button", { name: /Rice bowl/ }),
+      );
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(slotRegion("Dinner").getByText("rice")).toBeVisible();
+      const stored = loadLS(K_FOOD_ENTRIES);
+      expect(stored).toHaveLength(1);
+      expect(stored[0].date).toBe("2026-10-20");
+      expect(stored[0].slot).toBe("dinner");
+    });
+
+    it("Close on the panel leaves nothing changed", async () => {
+      saveLS(K_FOOD_MEALS, [MEAL]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Lunch options" }));
+      await user.click(
+        within(menu("Lunch options")).getByRole("button", {
+          name: "Log saved meal",
+        }),
+      );
+      await user.click(within(panel()).getByRole("button", { name: "Close" }));
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
+      expect(loadLS(K_FOOD_MEALS)).toEqual([MEAL]);
+    });
   });
 });

@@ -552,7 +552,7 @@ L: two new `FoodProvider` actions (shared state) and four views.
 **Interfaces:**
 
 - Consumes: `useFood()` (savedMeals, saveMealFromSlot, logSavedMeal, setters for rename/delete via `updateSavedMeal(id, patch)` and `deleteSavedMeal(id)` — add these two actions to `FoodProvider` in this task); `useConfirm`.
-- Produces: `SavedMealsPanel` props `{ date, slot, onLogged, onClose }`: list of meals with item count and total kcal; tap → `logSavedMeal(meal.id, date, slot)` then `onLogged()`. "Save as meal" prompts for a name with an inline `Input` (not `window.prompt`).
+- Produces: `SavedMealsPanel` props `{ date, slot, onLogged, onClose }`: list of meals with item count and total kcal; tap → `logSavedMeal(meal.id, date, slot)` then `onLogged()`. "Save as meal" prompts for a name with an inline `Input` (not `window.prompt`), in `SaveMealSheet` props `{ date, slot, onClose }` (Part I handoff).
 
 - [ ] **Step 1: Write the failing tests**
 

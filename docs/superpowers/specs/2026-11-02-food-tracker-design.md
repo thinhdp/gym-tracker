@@ -96,7 +96,8 @@ src/food/
     ├── PortionSheet.jsx        # portion picker + grams + slot picker + Add
     ├── BarcodeScanner.jsx      # camera view, manual code field fallback
     ├── CustomFoodForm.jsx      # name, barcode?, per-100 g values, optional portion
-    ├── SavedMealsPanel.jsx     # list, log a meal into a slot, create from a slot
+    ├── SavedMealsPanel.jsx     # list, log a meal into a slot
+    ├── SaveMealSheet.jsx       # name a new meal from a slot's entries
     ├── TrendsView.jsx          # weekly bars + bodyweight line (Recharts), range toggle
     ├── SettingsView.jsx        # targets editor, custom foods, saved meals, back to gym
     └── TargetsEditor.jsx       # current targets + applies-from + history list
