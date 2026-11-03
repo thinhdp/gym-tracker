@@ -4,6 +4,7 @@ import { K_FOOD_TAB } from "./lib/keys";
 import { todayLocal } from "./lib/localDate";
 import FoodBottomNav from "./components/FoodBottomNav";
 import SearchView from "./components/SearchView";
+import SettingsView from "./components/SettingsView";
 import { FoodProvider } from "./context/FoodContext";
 
 // Heading per tab. A tab's view renders below it; tabs without one show only this.
@@ -46,6 +47,7 @@ export default function FoodApp() {
             onLogged={() => setTab("today")}
           />
         )}
+        {tab === "settings" && <SettingsView />}
         <FoodBottomNav active={tab} onSelect={setTab} />
       </div>
     </FoodProvider>

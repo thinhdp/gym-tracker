@@ -1,6 +1,7 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { ConfirmProvider } from "../components/ConfirmDialog";
 import { loadLS, saveLS } from "../lib/storage";
 import { K_FOOD_ENTRIES, K_FOOD_TAB } from "./lib/keys";
 import { todayLocal } from "./lib/localDate";
@@ -43,7 +44,11 @@ describe("FoodApp", () => {
 
   it("restores a stored tab", () => {
     saveLS(K_FOOD_TAB, "settings");
-    render(<FoodApp />);
+    render(
+      <ConfirmProvider>
+        <FoodApp />
+      </ConfirmProvider>,
+    );
     expect(heading()).toHaveTextContent("Settings");
     expect(screen.getByRole("button", { name: "Settings" })).toHaveAttribute(
       "aria-current",
@@ -94,6 +99,20 @@ describe("FoodApp", () => {
     await user.click(screen.getByRole("button", { name: "Search" }));
     expect(heading()).toHaveTextContent("Search");
     expect(screen.getByRole("searchbox")).toBeInTheDocument();
+  });
+
+  it("renders the targets editor on the settings tab", () => {
+    saveLS(K_FOOD_TAB, "settings");
+    render(
+      <ConfirmProvider>
+        <FoodApp />
+      </ConfirmProvider>,
+    );
+    expect(screen.getByLabelText("Calories")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to Gym" })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
 
   it("logs today's date and switches to the today tab after Add", async () => {
