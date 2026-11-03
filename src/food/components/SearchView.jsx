@@ -125,6 +125,7 @@ export default function SearchView({ date, presetSlot, onLogged, onScan }) {
 
       {selected && (
         <PortionSheet
+          key={`${selected.source}:${selected.id}`}
           food={selected}
           date={date}
           defaultSlot={presetSlot ?? slotForTime()}

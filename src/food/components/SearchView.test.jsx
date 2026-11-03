@@ -464,6 +464,33 @@ describe("SearchView", () => {
       );
     });
 
+    it("resets the sheet when another row is activated while it is open", async () => {
+      searchFoods.mockResolvedValueOnce([
+        food("a", "alpha", {
+          portions: [{ label: "1 a", grams: 10, isDefault: true }],
+        }),
+        food("b", "beta", {
+          portions: [{ label: "1 b", grams: 500, isDefault: true }],
+        }),
+      ]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+
+      await user.click(rowButton(/alpha/));
+      await user.click(rowButton(/beta/));
+      const dialog = screen.getByRole("dialog", { name: "beta" });
+      expect(
+        within(dialog).getByRole("button", { name: "1 b" }),
+      ).toHaveAttribute("aria-pressed", "true");
+      await user.click(within(dialog).getByRole("button", { name: "Add" }));
+
+      const [entry] = loadLS(K_FOOD_ENTRIES);
+      expect(entry.name).toBe("beta");
+      expect(entry.grams).toBe(500);
+      expect(entry.portionLabel).toBe("1 b");
+    });
+
     it("closes the sheet without logging", async () => {
       searchFoods.mockResolvedValueOnce([food("a", "chicken")]);
       const { user, onLogged } = setup();
