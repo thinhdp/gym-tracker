@@ -332,6 +332,107 @@ describe("SearchView", () => {
       ).toBeInTheDocument();
       expect(screen.queryByRole("dialog")).toBeNull();
     });
+
+    it("adds the scanned food with the barcode on its FoodRef", async () => {
+      lookupBarcode.mockResolvedValueOnce(
+        food("off-1", "Instant noodles", {
+          barcode: CODE,
+          source: "open_food_facts",
+        }),
+      );
+      const { user, onLogged } = setup();
+      await enterCode(user);
+      const sheet = await screen.findByRole("dialog", {
+        name: "Instant noodles",
+      });
+      await user.click(within(sheet).getByRole("button", { name: "Add" }));
+
+      const [entry] = loadLS(K_FOOD_ENTRIES);
+      expect(entry.food.barcode).toBe(CODE);
+      expect(normalizeEntry(entry)).not.toBeNull();
+      expect(onLogged).toHaveBeenCalledTimes(1);
+    });
+
+    it("on not_found saves a custom food that keeps the prefilled barcode", async () => {
+      lookupBarcode.mockRejectedValueOnce(new FoodApiError("not_found"));
+      const { user } = setup();
+      await enterCode(user);
+      const form = within(
+        await screen.findByRole("dialog", { name: "Create custom food" }),
+      );
+      await user.type(form.getByLabelText("Name"), "Noodles");
+      await user.type(form.getByLabelText("Protein (g)"), "10");
+      await user.type(form.getByLabelText("Carbs (g)"), "60");
+      await user.type(form.getByLabelText("Fat (g)"), "12");
+      await user.click(form.getByRole("button", { name: "Save" }));
+
+      const [saved] = loadLS(K_FOOD_CUSTOM);
+      expect(saved.name).toBe("Noodles");
+      expect(saved.barcode).toBe(CODE);
+    });
+
+    it("shows a status line while the lookup runs and clears it when it settles", async () => {
+      const lookup = deferred();
+      lookupBarcode.mockReturnValueOnce(lookup.promise);
+      const { user } = setup();
+      await enterCode(user);
+
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Looking up barcode…",
+      );
+      expect(box()).toBeEnabled();
+      expect(
+        screen.getByRole("button", { name: "Scan barcode" }),
+      ).toBeEnabled();
+
+      await settle(() => lookup.reject(new FoodApiError("offline")));
+      expect(screen.queryByRole("status")).toBeNull();
+      expect(screen.getByText("Search needs a connection")).toBeInTheDocument();
+    });
+
+    it("ignores a lookup that settles after a newer scan started", async () => {
+      const first = deferred();
+      const second = deferred();
+      lookupBarcode
+        .mockReturnValueOnce(first.promise)
+        .mockReturnValueOnce(second.promise);
+      const { user } = setup();
+      await enterCode(user, CODE);
+      await enterCode(user, "12345678");
+
+      await settle(() =>
+        first.resolve(food("old", "Old food", { barcode: CODE })),
+      );
+      expect(screen.queryByRole("dialog", { name: "Old food" })).toBeNull();
+      expect(screen.getByRole("status")).toBeInTheDocument();
+
+      await settle(() =>
+        second.resolve(food("new", "New food", { barcode: "12345678" })),
+      );
+      expect(
+        screen.getByRole("dialog", { name: "New food" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("dialog", { name: "Old food" })).toBeNull();
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+
+    it("ignores a lookup that settles after Create custom food was opened", async () => {
+      const lookup = deferred();
+      lookupBarcode.mockReturnValueOnce(lookup.promise);
+      const { user } = setup();
+      await enterCode(user);
+      await user.click(
+        screen.getByRole("button", { name: "Create custom food" }),
+      );
+
+      await settle(() =>
+        lookup.resolve(food("late", "Late food", { barcode: CODE })),
+      );
+      expect(screen.queryByRole("dialog", { name: "Late food" })).toBeNull();
+      expect(
+        screen.getByRole("dialog", { name: "Create custom food" }),
+      ).toBeInTheDocument();
+    });
   });
 
   describe("errors", () => {

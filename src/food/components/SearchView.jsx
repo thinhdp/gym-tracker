@@ -40,14 +40,20 @@ export default function SearchView({ date, presetSlot, onLogged }) {
   const [createInitial, setCreateInitial] = useState(undefined);
   const [scanning, setScanning] = useState(false);
   const [mealsSlot, setMealsSlot] = useState(null);
+  const [lookingUp, setLookingUp] = useState(false);
   const pending = useRef({ timer: null, controller: null });
+  // Bumped whenever a barcode lookup in flight stops being the latest one.
+  const lookupToken = useRef(0);
 
-  // On unmount, drop the waiting debounce and the request in flight.
+  // On unmount, drop the waiting debounce, the request in flight and any
+  // barcode lookup in flight.
   useEffect(() => {
     const current = pending.current;
+    const token = lookupToken;
     return () => {
       clearTimeout(current.timer);
       current.controller?.abort();
+      token.current += 1;
     };
   }, []);
 
@@ -104,18 +110,43 @@ export default function SearchView({ date, presetSlot, onLogged }) {
     setCreateInitial(undefined);
   };
 
+  const dropLookup = () => {
+    lookupToken.current += 1;
+    setLookingUp(false);
+  };
+
+  const openScanner = () => {
+    dropLookup();
+    setScanning(true);
+  };
+
+  const cancelScanner = () => {
+    dropLookup();
+    setScanning(false);
+  };
+
   const lookupScanned = async (code) => {
+    lookupToken.current += 1;
+    const token = lookupToken.current;
     setScanning(false);
     setErrorText(null);
+    setLookingUp(true);
+    let found;
     try {
-      setSelected(await lookupBarcode(code));
+      found = await lookupBarcode(code);
     } catch (error) {
+      if (lookupToken.current !== token) return;
+      setLookingUp(false);
       if (error instanceof FoodApiError && error.kind === "not_found") {
         openCreate({ barcode: code });
         return;
       }
       setErrorText(errorLine(error));
+      return;
     }
+    if (lookupToken.current !== token) return;
+    setLookingUp(false);
+    setSelected(found);
   };
 
   const openCreated = (saved) => {
@@ -142,16 +173,18 @@ export default function SearchView({ date, presetSlot, onLogged }) {
           value={query}
           onChange={changeQuery}
         />
-        <Button
-          type="button"
-          aria-label="Scan barcode"
-          onClick={() => setScanning(true)}
-        >
+        <Button type="button" aria-label="Scan barcode" onClick={openScanner}>
           Scan
         </Button>
       </div>
 
       {isFixtureMode() && <Badge>demo data</Badge>}
+
+      {lookingUp && (
+        <p role="status" className="text-sm text-neutral-500">
+          Looking up barcode…
+        </p>
+      )}
 
       {errorText && (
         <p className="text-sm text-red-600 dark:text-red-400">{errorText}</p>
@@ -174,7 +207,13 @@ export default function SearchView({ date, presetSlot, onLogged }) {
         >
           Saved meals
         </Button>
-        <Button type="button" onClick={() => openCreate(undefined)}>
+        <Button
+          type="button"
+          onClick={() => {
+            dropLookup();
+            openCreate(undefined);
+          }}
+        >
           Create custom food
         </Button>
       </div>
@@ -189,10 +228,7 @@ export default function SearchView({ date, presetSlot, onLogged }) {
       )}
 
       {scanning && (
-        <BarcodeScanner
-          onDetected={lookupScanned}
-          onCancel={() => setScanning(false)}
-        />
+        <BarcodeScanner onDetected={lookupScanned} onCancel={cancelScanner} />
       )}
 
       {creating && (
