@@ -10,6 +10,7 @@ import {
   latestBodyweight,
 } from "../lib/homeStats";
 import NextSessionCard from "./NextSessionCard";
+import FoodSummaryCard from "./FoodSummaryCard";
 
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -112,6 +113,8 @@ export default function Home() {
       ) : (
         <NextSessionCard today={todayYmd} />
       )}
+
+      <FoodSummaryCard />
 
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-2">

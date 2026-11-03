@@ -218,3 +218,43 @@ Recent: a stored row is replaced when the incoming row for that food has a newer
 **Unchecked steps moved:** none.
 
 **Next:** Part H, then I, J and K in the plan's default order.
+
+## Part H handoff
+
+**Shipped:** Tasks 9 and 13. Commits on the branch before squash or merge: `e4a63a1` (Task 9), `1146668` (Task 9 review fixes), `37e1793` (Task 13), `254967e` (Task 13 review fix), `581ce00` (test pins), plus this docs commit. New files: `CustomFoodForm`, `FoodSummaryCard`, and tests for both, plus `SettingsView.test.jsx`, which Task 9's Files list omits. `TONE_CLASSES` is now exported from `MacroBars.jsx`, which Task 13's Files list omits. #95 and #101 close with this PR. `npm run check` passed before the PR (1059 tests); main had not moved, so no rebase was needed.
+
+**Cost:** $9.15 for the session up to the gate, read from `get_session`. The per-model split was not measured: `session-cost.mjs` is not on this machine. 508,549 subagent tokens across 10 agents, in 2 workflow runs, 1 test fix agent and 1 diff review. Fix rounds: 1 for Task 9, 1 for Task 13, 1 controller round for test gaps. Decision rounds: 1, before the first dispatch. About 40 minutes of wall time.
+
+**Verified in a browser:** a Playwright run on the dev server in fixture mode, at iPhone 13 size. A custom food saved with blank Calories stored the computed kcal, and the portion sheet opened on it. Add stored an entry with `food.kind` `custom`. The food appeared in Search with the Custom badge. An edit in Settings changed the custom food and left the logged entry's `per100` unchanged. Delete went through the confirm dialog and left the entry stored. Gym Home showed the set-up link with no target, then the card with today's totals and a link that opened `/food`. No console errors, and no horizontal page scroll on the form, Settings or Home.
+
+**Not verified:** the real food API; a real phone; dark mode; the browser back button from `/food` to Home, where a page restored from the browser's cache may show old totals.
+
+**Plan and spec difference left in place:** spec 6.5 shows "Set up food tracking →" without a target or with no entries ever. Task 13 shows it only without a target, so a target with no entries shows the card at 0 eaten. The code follows the plan, as in Part A. The owner can change this if the prompt should also cover no entries.
+
+**Rulings** (Opus orchestrator, with one advisor round, unless marked):
+
+- After saving from Search, the form closes and `PortionSheet` opens on the new food. Closing without saving keeps the query. The form does not prefill the name from the query.
+- A blank macro blocks Save and never becomes 0. Calories may be 0. A portion needs both label and grams.
+- The form edits `portions[0]` only and keeps further portions. It rebuilds `portions[0]` as `{ label, grams }`.
+- Settings has no create button; custom foods are created from Search. An empty list shows one line.
+- Review fix: Save is blocked when blank Calories would compute to a non-finite number. Settings leaves out the kcal text for a row with no finite `per100.kcal`.
+- The Home card guards only against a non-array stored value. Row-level filtering stays with #126 (advisor ruling). This means a malformed food row can now break gym Home, not only `/food`; #126 has a comment with the cases. Rows the app writes itself are valid, so this needs corrupted storage or a merge that kept such a row.
+- Commits use the Opus 5.5 trailer, because this session ran on Opus 5.5.
+
+**Parked review findings** (real, low impact, deferred):
+
+- Custom foods: an `isDefault` on `portions[0]` from a restored row is lost on save. Typed Calories with an extreme macro such as 1e308 is accepted, and logging can then show Infinity. A row with no kcal shows no hint in Settings.
+- Unpinned by tests: the `Number.isFinite` halves in the form, the grams field's red outline and two of its `aria-invalid` cases, the `portions` `Array.isArray` guard, the `initial?.id` title check, the finite half of the Settings kcal guard, and a typed barcode reaching `entry.food.barcode` through the create flow.
+- Home card: the 23:59:30 test cannot catch a UTC date, so the 00:30 UTC+7 test is the one that pins it; do not remove that test as a near-duplicate. The zone leak test depends on test order. `vi.useRealTimers()` in `afterEach` is unpinned. The position test covers only the no-workout state.
+
+**Notes for later parts:**
+
+- Part I: add the Saved meals section to `SettingsView`, after Custom foods. The sheet pattern is in `CustomFoodForm` and `PortionSheet`.
+- Part J: pass `initial={{ barcode }}` to `CustomFoodForm` on `not_found`. `onSaved` already opens the portion sheet in Search. `initial?.id` picks the title, so a prefilled form reads "Create custom food". A digits-only barcode is all the form checks; `isValidBarcode` adds the length rule.
+- Part K: spec 6.2's online "Custom foods" shortcut has no task yet, so add it with Task 11b's shortcuts. `ARCHITECTURE.md` needs `CustomFoodForm` and `FoodSummaryCard` (Task 15). Task 15's "No match" line should reuse the Create custom food button already in `SearchView`.
+
+**Follow-ups:** a new comment on #126, and #129, #132, #133, #135, #137, #138 from earlier parts. Plan size: the plan file is still over the 30 KB limit in CLAUDE.md; the owner has not decided whether to cut it.
+
+**Unchecked steps moved:** none.
+
+**Next:** Part I, then J and K in the plan's default order.

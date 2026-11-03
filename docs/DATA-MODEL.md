@@ -256,6 +256,8 @@ payload. See `src/food/lib/searchCache.js` and `src/food/lib/foodApi.js`.
 
 The food tracker's stored shapes. `FoodProvider` owns the lists through
 `loadLS`/`saveLS`. Constants live in `src/food/lib/keys.js`.
+`FoodSummaryCard` on gym Home reads the entries and targets keys directly and
+writes nothing.
 
 #### FoodRef
 

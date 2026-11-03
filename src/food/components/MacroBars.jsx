@@ -7,7 +7,7 @@ const ROWS = [
   { key: "fat", label: "Fat", unit: "g" },
 ];
 
-const TONE_CLASSES = {
+export const TONE_CLASSES = {
   ok: "bg-blue-600",
   warn: "bg-amber-500",
   over: "bg-red-600",

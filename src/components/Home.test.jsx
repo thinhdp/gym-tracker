@@ -30,4 +30,24 @@ describe("Home", () => {
     renderHome();
     expect(screen.queryByText(/day streak/i)).not.toBeInTheDocument();
   });
+
+  it("places the food card after the next-session card and before the Quick stats", () => {
+    renderHome();
+    const next = screen.getByText(/Next session/i);
+    const food = screen.getByRole("link", { name: /Set up food tracking/i });
+    const stats = screen.getByText("workouts");
+    expect(
+      next.compareDocumentPosition(food) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      food.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("shows the food set-up link with empty storage", () => {
+    renderHome();
+    expect(
+      screen.getByRole("link", { name: /Set up food tracking/i }),
+    ).toHaveAttribute("href", "/food");
+  });
 });

@@ -453,6 +453,39 @@ describe("FoodProvider custom foods", () => {
     expect(loadLS(K_FOOD_ENTRIES)).toEqual([entry]);
   });
 
+  it("editing a custom food does not change an existing entry's per100", () => {
+    const original = { id: "x", name: "Bar", per100: PER100, createdAt: 111 };
+    saveLS(K_FOOD_CUSTOM, [original]);
+    const { result } = setup();
+    let entry;
+    act(() => {
+      entry = result.current.addEntry(
+        draft({ per100: PER100, food: { kind: "custom", id: "x" } }),
+      );
+    });
+    act(() => {
+      result.current.upsertCustomFood({
+        ...original,
+        per100: { kcal: 1, protein: 1, carb: 1, fat: 1 },
+      });
+    });
+    expect(result.current.entries).toEqual([entry]);
+    expect(loadLS(K_FOOD_ENTRIES)[0].per100).toEqual(PER100);
+  });
+
+  it("deleting a custom food keeps an entry's per100 and food ref", () => {
+    const original = { id: "x", name: "Bar", per100: PER100, createdAt: 111 };
+    const entry = storedEntry("a", { food: { kind: "custom", id: "x" } });
+    saveLS(K_FOOD_CUSTOM, [original]);
+    saveLS(K_FOOD_ENTRIES, [entry]);
+    const { result } = setup();
+    act(() => {
+      result.current.deleteCustomFood("x");
+    });
+    expect(result.current.entries).toEqual([entry]);
+    expect(loadLS(K_FOOD_ENTRIES)).toEqual([entry]);
+  });
+
   it("deleteCustomFood removes the row", () => {
     const first = { id: "x", name: "Bar", per100: PER100, createdAt: 111 };
     const other = { id: "y", name: "Other", per100: PER100, createdAt: 222 };

@@ -429,6 +429,103 @@ describe("SearchView", () => {
     });
   });
 
+  describe("create custom food", () => {
+    const createButton = () =>
+      screen.getByRole("button", { name: "Create custom food" });
+    const formDialog = () =>
+      screen.getByRole("dialog", { name: "Create custom food" });
+
+    async function fillForm(user) {
+      const form = within(formDialog());
+      await user.type(form.getByLabelText("Name"), "Oat bar");
+      await user.type(form.getByLabelText("Protein (g)"), "10");
+      await user.type(form.getByLabelText("Carbs (g)"), "60");
+      await user.type(form.getByLabelText("Fat (g)"), "12");
+    }
+
+    it("stays visible below the results, whatever the query", async () => {
+      searchFoods.mockResolvedValueOnce([food("a", "chicken")]);
+      const { user } = setup();
+      expect(createButton()).toBeVisible();
+
+      await user.type(box(), "ch");
+      await tick(300);
+      const result = rowButton(/chicken/);
+      expect(
+        result.compareDocumentPosition(createButton()) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+
+      await user.clear(box());
+      expect(createButton()).toBeVisible();
+    });
+
+    it("opens the form empty, without the query as the name", async () => {
+      const { user } = setup();
+      await user.type(box(), "chi");
+      await user.click(createButton());
+      expect(within(formDialog()).getByLabelText("Name")).toHaveValue("");
+    });
+
+    it("Close returns to Search with the query intact and writes nothing", async () => {
+      const { user } = setup();
+      await user.type(box(), "chi");
+      await user.click(createButton());
+      await user.click(
+        within(formDialog()).getByRole("button", { name: "Close" }),
+      );
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(box()).toHaveValue("chi");
+      expect(loadLS(K_FOOD_CUSTOM)).toEqual([]);
+    });
+
+    it("after Save, closes the form and opens the portion sheet; Add stores a custom entry that passes normalizeEntry", async () => {
+      const { user, onLogged } = setup();
+      await user.click(createButton());
+      await fillForm(user);
+      await user.click(
+        within(formDialog()).getByRole("button", { name: "Save" }),
+      );
+
+      expect(screen.getAllByRole("dialog")).toHaveLength(1);
+      const sheet = screen.getByRole("dialog", { name: "Oat bar" });
+      expect(onLogged).not.toHaveBeenCalled();
+      expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
+
+      await user.type(within(sheet).getByRole("spinbutton"), "45");
+      await user.click(within(sheet).getByRole("button", { name: "Add" }));
+
+      const [saved] = loadLS(K_FOOD_CUSTOM);
+      const [entry] = loadLS(K_FOOD_ENTRIES);
+      expect(entry.food).toStrictEqual({ kind: "custom", id: saved.id });
+      expect(entry.per100).toEqual(saved.per100);
+      expect(entry.date).toBe("2026-11-03");
+      expect(normalizeEntry(entry)).not.toBeNull();
+      expect(onLogged).toHaveBeenCalledTimes(1);
+    });
+
+    it("a food saved here then matches the query at the top with its badge", async () => {
+      searchFoods.mockResolvedValue([food("a", "oat from the API")]);
+      const { user } = setup();
+      await user.type(box(), "oat");
+      await tick(300);
+      await user.click(createButton());
+      await fillForm(user);
+      await user.click(
+        within(formDialog()).getByRole("button", { name: "Save" }),
+      );
+      await user.click(screen.getByRole("button", { name: "Close" }));
+
+      expect(box()).toHaveValue("oat");
+      const rows = screen
+        .getAllByRole("button")
+        .filter((b) => /kcal \/ 100 g/.test(b.textContent));
+      expect(rows[0]).toHaveTextContent("Oat bar");
+      expect(within(rows[0]).getByText("Custom")).toBeInTheDocument();
+    });
+  });
+
   describe("logging", () => {
     it("opens the portion sheet on row tap and adds an entry to the preset slot", async () => {
       const per100 = { kcal: 165, protein: 31, carb: 0, fat: 3.6 };
