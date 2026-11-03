@@ -873,7 +873,7 @@ Before the first production deploy that includes Part F, set `VITE_FOOD_API_BASE
 
 ## Part B handoff
 
-**Shipped:** `85c4de1` (Task 2), `fe42d01` (Task 11a), `1ac68fb` (review fixes), `a555bb8` (#116), `b44024f` and `924d5bf` (#117). New files under `src/food/lib` only: `slots`, `macros`, `localDate`, `targets`, `recent`, each with a test.
+**Shipped:** `97ba165` (Task 2), `bf5b5e5` (Task 11a), `47af087` (review fixes), `de41c2f` (#116), `d68c570` and `bcbcb38` (#117). New files under `src/food/lib` only: `slots`, `macros`, `localDate`, `targets`, `recent`, each with a test.
 
 **Cost:** 374,570 subagent tokens across 6 agents in the workflow (about 15 minutes, 1 fix round), plus the #117 work below (1 more fix round). Controller session tokens not measured.
 
@@ -895,4 +895,4 @@ Before the first production deploy that includes Part F, set `VITE_FOOD_API_BASE
 - Part E (Task 8a): `normalizeTarget` will drop a target dated `2026-02-31`, while `normalizeEntry` as written checks only the date format and would keep an entry with that date. Decide there whether entries get the same check.
 - Part C and Part E: `targetForDate` throws on a null row, and `touchRecent` throws on a row with no `food`. Both rely on `FoodProvider` and `normalizeFoodData` to drop malformed rows. `addDays` returns `NaN-NaN-NaN` on a malformed date.
 
-**Follow-ups:** #116 and #117 were fixed in this PR. No plan steps are left undone. Issue #86 stays open until Part A also merges, because it includes `keys.js`. Issue #97 stays open until Part K.
+**Follow-ups:** #116 and #117 were fixed in this PR. No plan steps are left undone. Issue #86 closes with this PR, because Part A has merged. Issue #97 stays open until Part K.
