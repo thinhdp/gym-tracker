@@ -77,7 +77,7 @@ const defaultFetch = (...args) => fetch(...args);
 function resolve(base, fetchImpl) {
   const fixture = isFixtureMode(base);
   return {
-    prefix: fixture ? "" : base,
+    prefix: fixture ? "" : String(base).replace(/\/+$/, ""),
     impl: fetchImpl || (fixture ? fixtureFetch : defaultFetch),
   };
 }
@@ -89,8 +89,12 @@ function statusError(status) {
   return new FoodApiError("unavailable", `Food API ${status}`);
 }
 
-async function getJson(url, { fetchImpl, signal, timeoutMs }) {
-  const combined = combineSignals(signal, timeoutMs);
+async function getJson(url, { fetchImpl, signal, timeoutMs, useAny }) {
+  const combined = combineSignals(
+    signal,
+    timeoutMs,
+    useAny === undefined ? undefined : { useAny },
+  );
   try {
     let res;
     try {
@@ -101,7 +105,14 @@ async function getJson(url, { fetchImpl, signal, timeoutMs }) {
       throw new FoodApiError("unavailable", e?.message);
     }
     if (!res.ok) throw statusError(res.status);
-    return await res.json();
+    // A body that is not JSON (an HTML page from a wrong base URL) or a
+    // timeout while reading it is "unavailable"; a caller abort is rethrown.
+    try {
+      return await res.json();
+    } catch (e) {
+      if (signal?.aborted) throw e;
+      throw new FoodApiError("unavailable", e?.message);
+    }
   } finally {
     combined.cleanup();
   }
@@ -113,25 +124,29 @@ export async function searchFoods(
   {
     fetchImpl,
     signal,
-    now = Date.now(),
+    now,
     base = FOOD_API_BASE,
     timeoutMs = FOOD_API_TIMEOUT_MS,
+    useAny,
   } = {},
 ) {
   const q = normaliseQuery(query);
   if (!q) return [];
   const key = `q:${q}`;
-  const hit = readSearchCache(key, now);
+  const hit = readSearchCache(key, now ?? Date.now());
   if (hit) return hit;
 
   const { prefix, impl } = resolve(base, fetchImpl);
   const json = await getJson(
     `${prefix}/v1/foods?q=${encodeURIComponent(q)}&limit=20`,
-    { fetchImpl: impl, signal, timeoutMs },
+    { fetchImpl: impl, signal, timeoutMs, useAny },
   );
-  const results = Array.isArray(json?.results) ? json.results : [];
-  writeSearchCache(key, results, now);
-  return results;
+  if (!Array.isArray(json?.results)) {
+    throw new FoodApiError("unavailable", "Food API: malformed results");
+  }
+  // Timestamp the write after the await, not at request start.
+  writeSearchCache(key, json.results, now ?? Date.now());
+  return json.results;
 }
 
 /** Look up one food by barcode; 404 throws FoodApiError("not_found"). */
@@ -139,21 +154,23 @@ export async function lookupBarcode(
   code,
   {
     fetchImpl,
-    now = Date.now(),
+    now,
     base = FOOD_API_BASE,
     timeoutMs = FOOD_API_TIMEOUT_MS,
+    useAny,
   } = {},
 ) {
-  const key = `bc:${code}`;
-  const hit = readSearchCache(key, now);
+  const trimmed = String(code ?? "").trim();
+  const key = `bc:${trimmed}`;
+  const hit = readSearchCache(key, now ?? Date.now());
   if (hit && hit.length) return hit[0];
 
   const { prefix, impl } = resolve(base, fetchImpl);
   const json = await getJson(
-    `${prefix}/v1/foods/barcode/${encodeURIComponent(code)}`,
-    { fetchImpl: impl, signal: undefined, timeoutMs },
+    `${prefix}/v1/foods/barcode/${encodeURIComponent(trimmed)}`,
+    { fetchImpl: impl, signal: undefined, timeoutMs, useAny },
   );
   if (!json?.food) throw new FoodApiError("not_found");
-  writeSearchCache(key, [json.food], now);
+  writeSearchCache(key, [json.food], now ?? Date.now());
   return json.food;
 }

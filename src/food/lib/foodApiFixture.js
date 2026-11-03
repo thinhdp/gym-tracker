@@ -107,11 +107,18 @@ const BARCODE_PATH = /^\/v1\/foods\/barcode\/([^/]+)$/;
 export async function fixtureFetch(url) {
   const u = new URL(url, "http://fixture");
   if (u.pathname === "/v1/foods") {
-    const q = (u.searchParams.get("q") || "").toLowerCase();
+    const q = (u.searchParams.get("q") || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+    const tokens = q ? q.split(" ") : [];
     const limit = Number(u.searchParams.get("limit")) || 20;
-    const results = FIXTURE_FOODS.filter((f) =>
-      f.name.toLowerCase().includes(q),
-    ).slice(0, limit);
+    // A food matches when every query token is a substring of its name, so
+    // "chicken breast" finds "chicken, breast, roasted".
+    const results = FIXTURE_FOODS.filter((f) => {
+      const name = f.name.toLowerCase();
+      return tokens.every((t) => name.includes(t));
+    }).slice(0, limit);
     return respond(200, { requestId: "req_fixture", query: q, results });
   }
   const m = BARCODE_PATH.exec(u.pathname);

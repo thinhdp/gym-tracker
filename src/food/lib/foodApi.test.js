@@ -8,7 +8,7 @@ import {
   normaliseQuery,
   searchFoods,
 } from "./foodApi";
-import { FIXTURE_FOODS, fixtureFetch } from "./foodApiFixture";
+import { FIXTURE_FOODS } from "./foodApiFixture";
 import { K_FOOD_SEARCH_CACHE } from "./keys";
 import { loadLS, saveLS } from "../../lib/storage";
 
@@ -287,43 +287,109 @@ describe("combineSignals", () => {
   });
 });
 
-describe("fixtureFetch", () => {
-  it("holds ten PublicFood items, nine USDA and one product", () => {
-    expect(FIXTURE_FOODS).toHaveLength(10);
-    expect(FIXTURE_FOODS.filter((f) => f.source === "usda_fdc")).toHaveLength(
-      9,
+describe("fix round 1", () => {
+  it("maps a 200 whose body is not JSON to unavailable and caches nothing", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.reject(new SyntaxError("Unexpected token <")),
+    });
+    expect(
+      await kindOf(searchFoods("chicken", { fetchImpl, base: BASE })),
+    ).toBe("unavailable");
+    expect(await kindOf(lookupBarcode("123", { fetchImpl, base: BASE }))).toBe(
+      "unavailable",
     );
-    const product = FIXTURE_FOODS.find((f) => f.source === "open_food_facts");
-    expect(product.barcode).toBe("8934563138165");
-    for (const f of FIXTURE_FOODS) {
-      expect(f).toMatchObject({
-        id: expect.any(String),
-        name: expect.any(String),
-        isVerified: expect.any(Boolean),
-        per100: {
-          kcal: expect.any(Number),
-          protein: expect.any(Number),
-          carb: expect.any(Number),
-          fat: expect.any(Number),
-        },
-      });
-      expect(f.portions.length).toBeGreaterThan(0);
-      if (f.source === "usda_fdc") expect(f.barcode).toBeNull();
-    }
+    expect(loadLS(K_FOOD_SEARCH_CACHE, null)).toBeNull();
   });
 
-  it("filters by case-insensitive substring, honours limit and 404s unknown routes", async () => {
-    const res = await fixtureFetch("/v1/foods?q=CHICKEN&limit=20");
-    expect(res.ok).toBe(true);
-    const { results } = await res.json();
-    expect(results.length).toBeGreaterThan(0);
-    for (const f of results) expect(f.name.toLowerCase()).toContain("chicken");
+  it("maps a 200 without a results array to unavailable and caches nothing", async () => {
+    for (const body of [{}, { results: null }, { results: "x" }]) {
+      const fetchImpl = vi.fn().mockResolvedValue(ok(body));
+      expect(
+        await kindOf(searchFoods("chicken", { fetchImpl, base: BASE })),
+      ).toBe("unavailable");
+    }
+    expect(loadLS(K_FOOD_SEARCH_CACHE, null)).toBeNull();
+  });
 
-    const one = await (await fixtureFetch("/v1/foods?q=&limit=1")).json();
-    expect(one.results).toHaveLength(1);
+  it("caches a legitimate empty results array", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(ok({ results: [] }));
+    expect(await searchFoods("zzz", { fetchImpl, base: BASE })).toEqual([]);
+    expect(loadLS(K_FOOD_SEARCH_CACHE, {})["q:zzz"].results).toEqual([]);
+  });
 
-    const miss = await fixtureFetch("/v1/foods/barcode/999");
-    expect(miss.status).toBe(404);
-    expect(await miss.json()).toEqual({ error: { code: "not_found" } });
+  it("lookupBarcode throws not_found on a 200 with no food and caches nothing", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(ok({ requestId: "req_1" }));
+    expect(await kindOf(lookupBarcode("123", { fetchImpl, base: BASE }))).toBe(
+      "not_found",
+    );
+    expect(loadLS(K_FOOD_SEARCH_CACHE, null)).toBeNull();
+  });
+
+  it("stamps the cache entry after the await when now is not injected", async () => {
+    vi.useFakeTimers({ now: 1000 });
+    const fetchImpl = vi.fn(async () => {
+      vi.setSystemTime(5000);
+      return ok({ results: [food] });
+    });
+    await searchFoods("chicken", { fetchImpl, base: BASE });
+    expect(loadLS(K_FOOD_SEARCH_CACHE, {})["q:chicken"].at).toBe(5000);
+    vi.setSystemTime(6000);
+    const bc = vi.fn(async () => {
+      vi.setSystemTime(9000);
+      return ok({ food });
+    });
+    await lookupBarcode("123", { fetchImpl: bc, base: BASE });
+    expect(loadLS(K_FOOD_SEARCH_CACHE, {})["bc:123"].at).toBe(9000);
+  });
+
+  it("leaves no pending timer after a request on the manual signal path", async () => {
+    // A 429 so nothing is written: jsdom schedules a timer for the storage
+    // event on every localStorage write, which would mask the count.
+    vi.useFakeTimers();
+    let during = -1;
+    const fetchImpl = vi.fn(async () => {
+      during = vi.getTimerCount();
+      return status(429);
+    });
+    expect(
+      await kindOf(
+        searchFoods("chicken", { fetchImpl, base: BASE, useAny: false }),
+      ),
+    ).toBe("rate_limited");
+    expect(during).toBe(1);
+    expect(vi.getTimerCount()).toBe(0);
+    during = -1;
+    expect(
+      await kindOf(
+        lookupBarcode("123", { fetchImpl, base: BASE, useAny: false }),
+      ),
+    ).toBe("rate_limited");
+    expect(during).toBe(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("trims the barcode before building the URL and cache key", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(ok({ food }));
+    await lookupBarcode(" 123 ", { fetchImpl, base: BASE, now: 1 });
+    expect(fetchImpl.mock.calls[0][0]).toBe(`${BASE}/v1/foods/barcode/123`);
+    expect(Object.keys(loadLS(K_FOOD_SEARCH_CACHE, {}))).toEqual(["bc:123"]);
+  });
+
+  it("strips trailing slashes from base", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(ok({ results: [food] }));
+    await searchFoods("chicken", { fetchImpl, base: "https://x/" });
+    expect(fetchImpl.mock.calls[0][0]).toBe(
+      "https://x/v1/foods?q=chicken&limit=20",
+    );
+    const bc = vi.fn().mockResolvedValue(ok({ food }));
+    await lookupBarcode("123", { fetchImpl: bc, base: "https://x//" });
+    expect(bc.mock.calls[0][0]).toBe("https://x/v1/foods/barcode/123");
+  });
+
+  it("finds a multi-word query in fixture mode", async () => {
+    const r = await searchFoods("Chicken  Breast", { base: "fixture" });
+    expect(r.map((f) => f.name)).toEqual(["chicken, breast, roasted"]);
   });
 });

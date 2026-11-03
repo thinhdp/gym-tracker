@@ -28,7 +28,7 @@ versioned, and that is the only versioning.
 | `mgym.food.customFoods.v1` | `FoodProvider` (`K_FOOD_CUSTOM`)  | `CustomFood[]`                                                                           | `[]`                                             |
 | `mgym.food.savedMeals.v1`  | `FoodProvider` (`K_FOOD_MEALS`)   | `SavedMeal[]`                                                                            | `[]`                                             |
 | `mgym.food.recent.v1`      | `FoodProvider` (`K_FOOD_RECENT`)  | `RecentFood[]`                                                                           | `[]`                                             |
-| `mgym.food.searchCache.v1` | `foodApi` (`K_FOOD_SEARCH_CACHE`) | `{ [normQuery]: { at, results } }`                                                       | `{}`                                             |
+| `mgym.food.searchCache.v1` | `foodApi` (`K_FOOD_SEARCH_CACHE`) | `{ ["q:<normalised query>" \| "bc:<code>"]: { at, results } }`                           | `{}`                                             |
 | `mgym.food.tab`            | `FoodApp` (`K_FOOD_TAB`)          | active food tab: `today`/`search`/`trends`/`settings`                                    | `"today"`                                        |
 | `weekly-note:<weekKey>`    | _legacy_ (no longer used)         | `string` — one note per ISO week (written by the removed `WeeklyNotes`)                  | `""`                                             |
 | `summary-open:<periodKey>` | _legacy_ (no longer used)         | `boolean` — card collapse state (written by the removed `PeriodCard`)                    | card default                                     |

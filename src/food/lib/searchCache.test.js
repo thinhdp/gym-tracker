@@ -48,6 +48,20 @@ describe("putCached", () => {
     expect(Object.keys(map)).toEqual(["q:new"]);
   });
 
+  it("drops the oldest at past 200, not the first inserted", () => {
+    // Insert in descending `at` order so insertion order and `at` order differ.
+    let map = {};
+    for (let i = 0; i < SEARCH_CACHE_MAX; i++) {
+      map = putCached(map, `q:${i}`, results, 5000 - i);
+    }
+    const oldest = `q:${SEARCH_CACHE_MAX - 1}`;
+    map = putCached(map, "q:extra", results, 6000);
+    expect(Object.keys(map)).toHaveLength(SEARCH_CACHE_MAX);
+    expect(map[oldest]).toBeUndefined();
+    expect(map["q:0"]).toBeDefined();
+    expect(map["q:extra"]).toBeDefined();
+  });
+
   it("drops the oldest entry past 200", () => {
     let map = {};
     for (let i = 0; i < SEARCH_CACHE_MAX; i++) {
@@ -70,6 +84,17 @@ describe("readSearchCache / writeSearchCache", () => {
     });
     expect(readSearchCache("q:apple", 10)).toEqual(results);
     expect(readSearchCache("q:apple", 10 + SEARCH_CACHE_TTL_MS + 1)).toBeNull();
+  });
+
+  it("treats a stored array of entry-shaped objects as an empty map", () => {
+    // Without the plain-object guard, index "0" of the array reads as a
+    // fresh entry and survives the next write.
+    saveLS(K_FOOD_SEARCH_CACHE, [{ at: 0, results }]);
+    expect(readSearchCache("0", 0)).toBeNull();
+    writeSearchCache("q:apple", results, 0);
+    const stored = loadLS(K_FOOD_SEARCH_CACHE, null);
+    expect(Array.isArray(stored)).toBe(false);
+    expect(stored).toEqual({ "q:apple": { at: 0, results } });
   });
 
   it("treats a non-object stored value as an empty map", () => {
