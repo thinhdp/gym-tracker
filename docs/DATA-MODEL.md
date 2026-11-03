@@ -229,6 +229,22 @@ two kinds of entry, both rounded to 0.5 kg:
 Purely a network cache — safe to clear, rebuilt on demand. Not in the backup
 payload. See `src/lib/fvApi.js`.
 
+### Search cache (`mgym.food.searchCache.v1`)
+
+A response cache for the food API (spec §5.7). One map, two kinds of key:
+
+- **Search** — key `q:<normalised query>` (trimmed, lowercased, whitespace
+  collapsed by `normaliseQuery`), value `{ at, results }` where `results` is
+  the API `results` array.
+- **Barcode** — key `bc:<code>`, value `{ at, results: [food] }` (one food).
+
+`at` is the epoch ms of the write. Entries older than 7 days
+(`SEARCH_CACHE_TTL_MS`) are ignored on read and pruned on write; past 200 keys
+(`SEARCH_CACHE_MAX`) the oldest `at` is dropped on write. A stored value that is
+not a plain object reads as `{}`. Errors and empty queries are not cached.
+Purely a network cache — safe to clear, rebuilt on demand. Not in the backup
+payload. See `src/food/lib/searchCache.js` and `src/food/lib/foodApi.js`.
+
 ### Notes
 
 - **Global notepad** (`mgym.note.v1`) — a single free-form `string`.
