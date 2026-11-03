@@ -577,6 +577,23 @@ describe("SearchView", () => {
       expect(stored[0].slot).toBe("lunch");
     });
 
+    it("logs onto the viewed day when it is not today", async () => {
+      vi.setSystemTime(new Date(2026, 10, 3, 12, 0));
+      saveLS(K_FOOD_MEALS, [MEAL]);
+      const { user } = setup({ date: "2026-10-20" });
+      await open(user);
+      expect(
+        within(panel()).getByText(`Lunch · ${formatDayHeader("2026-10-20")}`),
+      ).toBeVisible();
+      await user.click(
+        within(panel()).getByRole("button", { name: /Rice bowl/ }),
+      );
+
+      const stored = loadLS(K_FOOD_ENTRIES);
+      expect(stored).toHaveLength(1);
+      expect(stored[0].date).toBe("2026-10-20");
+    });
+
     it("Save as meal closes the panel and stays on Search", async () => {
       saveLS(K_FOOD_ENTRIES, [
         {
