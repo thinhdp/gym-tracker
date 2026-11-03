@@ -258,3 +258,46 @@ Recent: a stored row is replaced when the incoming row for that food has a newer
 **Unchecked steps moved:** none.
 
 **Next:** Part I, then J and K in the plan's default order.
+
+## Part I handoff
+
+**Shipped:** Task 10. Commits on the branch before squash or merge: `ebb8328` (Task 10), `68e9d65` (test pin for the viewed day), plus this docs commit. New files: `SavedMealsPanel` and its test. `FoodProvider` gains `updateSavedMeal` and `deleteSavedMeal`. `MealSlot.jsx` is unchanged, although Task 10's Files list names it, because `TodayView` passes `onMenu` and owns the panel. #96 closes with this PR. `npm run check` passed before the PR; main had not moved, so no rebase was needed.
+
+**Cost:** $6.10 for the session at the browser check, read from `get_session`, before the gate and this handoff. The per-model split was not measured: `session-cost.mjs` is not on this machine. 262,367 subagent tokens across 4 agents, in 1 workflow run, 1 test fix agent and 1 diff review. Fix rounds: 0 in the workflow (the review found only low-severity items), 1 controller round for a test gap. Decision rounds: 1, before the first dispatch. About 25 minutes of wall time.
+
+**Verified in a browser:** a Playwright run on the dev server in fixture mode, at 320 and 390 px wide, with two entries seeded into `mgym.food.entries.v1`. Blank names block Save and rename, and names are trimmed. A saved meal stored only `id`, `name`, `items`, `createdAt`. On a past day, the slot "…" logged the meal into that day and slot with fresh ids, and Search's Saved meals shortcut logged it into the preset slot on that day and returned to Today. Rename and delete worked in Settings; delete went through the confirm dialog and left the logged entries stored. No console errors, no horizontal page scroll, and no control past the screen edge in the rename row, which settles review finding 6 for these widths.
+
+**Not verified:** the real food API (the panel does not call it); a real phone; dark mode.
+
+**Spec difference left in place:** spec 6.1 describes a "…" menu with two items, "Save as meal" and "Log saved meal". This part has no menu: "…" opens `SavedMealsPanel`, which holds the meal list and, when the slot has entries, the Save as meal field. The owner can ask for a two-item menu instead. Because the panel is one component, the Save as meal field also shows when the panel opens from Search and the preset or time-of-day slot has entries.
+
+**Rulings** (Opus orchestrator, with one advisor round, unless marked):
+
+- Blank names block Save and rename, names are trimmed, duplicate names are allowed, and saving always inserts a new meal.
+- After Save as meal the panel calls `onClose`, so Search stays on Search. After logging it calls `onLogged`: Today only closes the panel, and Search returns to Today.
+- The panel has no slot picker, so its header states the slot and day.
+- The Search shortcut uses `presetSlot ?? slotForTime()`, read when the panel opens (implementer's choice), so the slot does not change while the panel is open.
+- Logging a saved meal does not call `touchRecent`. Task 11b wires it only to `addEntry`, so a logged meal will not reach Recent unless Part K adds that.
+- Settings rows show the name only (implementer's choice). Delete uses `useConfirm`, destructive tone, and logged entries stay.
+- Commits use the Opus 5.5 trailer, because this session ran on Opus 5.5.
+
+**Parked review findings** (real, low impact, deferred):
+
+- The portion sheet path in Search has the same test gap the new pin closed for the panel: its tests assert one date without setting the clock, so a refactor that logs to today's date would pass when run on that date.
+- Removing `tone: "destructive"` from the saved meal delete passes all tests. `ConfirmProvider.ask` merges over earlier options, so an earlier tone would stay. Only gym code uses another tone, and `/food` does not render it.
+- A stored meal whose name normalises to `""` shows a row with no name, and its Rename and Delete labels and confirm text lack a name. It can still be logged, renamed and deleted. The app cannot create one; an import or damaged data can.
+- The panel closes as if it saved when `saveMealFromSlot` returns null. No path reaches this today.
+- Enter or the phone's Go key does not submit the Save as meal or rename fields, the same as the other food sheets.
+- The panel's meal rows use a raw `<button>`, like `EntryRow`; `SearchResultRow` uses `Button`.
+- `saveMealFromSlot` takes items in stored order while Today sorts by `createdAt`, so after a backup merge a meal's item order can differ from what the slot showed. Totals do not change.
+
+**Notes for later parts:**
+
+- Part J: `SearchView` now has one more sheet state beside `creating` and `selected`.
+- Part K: Task 11b's offline Saved meals shortcut can reuse this button and panel; add only the Custom foods shortcut as new. Task 15 should add `SavedMealsPanel` to `ARCHITECTURE.md`, and add `updateSavedMeal` and `deleteSavedMeal` to the action list in spec section 7. Spec 6.1's menu wording follows the owner's answer above.
+
+**Follow-ups:** #126, #129, #132, #133, #135, #137, #138 from earlier parts. Plan size: the plan file is still over the 30 KB limit in CLAUDE.md; the owner has not decided whether to cut it.
+
+**Unchecked steps moved:** none.
+
+**Next:** Part J, then K in the plan's default order.
