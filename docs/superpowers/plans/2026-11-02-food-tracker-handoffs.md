@@ -304,3 +304,46 @@ Recent: a stored row is replaced when the incoming row for that food has a newer
 **Unchecked steps moved:** none.
 
 **Next:** Part J, then K in the plan's default order.
+
+## Part J handoff
+
+**Shipped:** Tasks 14a and 14b. Commits on the branch before squash or merge: `374bb4f` (Task 14a: `barcode.js`, `@zxing/browser` 0.2.1 and `@zxing/library` 0.23.0), `68bf40a` (one `detectOnce` contract for both strategies), `a99a5ad` (zxing branch tests with a mocked reader), `fb5578d` (Task 14b: `BarcodeScanner`, Search wiring), `abf090d` (stale-lookup guard and a "Looking up barcode…" status line), `1771ad2` (drop the lookup when the user taps a result, opens Saved meals, types a query, or presses Scan again; camera-shutdown pins), plus this docs commit. New files: `src/food/lib/barcode.js` and test, `src/food/components/BarcodeScanner.jsx` and test. `SearchView.jsx` owns the scanner; its `onScan` prop is gone and the Scan button always renders. `FoodApp.jsx` is unchanged, although Task 14b's Files list names it. #102, #103 and #104 close with this PR; #105 (phone check) stays open. `npm run check` passed twice (1158 tests before the final fix wave, 1169 after); main had not moved, so no rebase was needed.
+
+**Cost:** $14.06 for the session at the second gate, read from `get_session`, before this handoff and the PR. The per-model split was not measured: `session-cost.mjs` is not on this machine. 595,292 subagent tokens across 13 runs on 9 agents: 2 implementers (Opus 5.5, 6 runs), 6 `opus55-reviewer` passes, 1 `opus55-reviewer-deep` whole-branch pass. Fix rounds: 2 on Task 14a (zxing cancel and one contract; zxing tests), 1 on Task 14b (stale lookup, status line, FoodRef pins), 1 final-review fix wave (lookup dropped on other actions, camera-shutdown pins). Decision rounds: 1 advisor call before the first dispatch and 1 before the PR. About 40 minutes of wall time to the second gate.
+
+**Verified in a browser:** Playwright on the dev server in fixture mode at 390 px wide, headless Chromium with no camera, so the scanner showed the manual field. The fixture barcode opened the portion sheet for the fixture product; an unknown code opened Create custom food with the Barcode field prefilled. No console errors, no horizontal page scroll. The production build puts zxing in two lazy chunks (27 kB and 458 kB) and the main chunk grew by about 6 kB.
+
+**Not verified:** a real camera on any device. Task 14b step 5 (Android Chrome native path, iPhone Safari zxing path) needs a phone and stays open as #105 for the owner; no later part can run it. The real barcode endpoint's `food.barcode` value (the stored entry gets `barcode` only if the API returns it on the food). Dark mode.
+
+**Rulings** (Fable, with the advisor before the first dispatch):
+
+- `SearchView` owns the scanner through a `scanning` state; the unused `onScan` prop from Part F is removed and `FoodApp.jsx` is not changed, because the decoded code must reach Search's `lookupBarcode` → `PortionSheet` flow. The Part F test that pinned the prop was rewritten.
+- One detector contract for both strategies: `detectOnce(videoEl)` resolves with the first decoded string, or null once `stop()` is called, never null on a miss. Native polls `BarcodeDetector.detect` every 200 ms; zxing uses `decodeFromVideoElement` with its controls so `stop()` is a real cancel. The plan's `decodeOnceFromVideoElement` cannot be cancelled in 0.2.1.
+- `lookupBarcode` errors other than `not_found` close the scanner and show the same error line as text search. Nothing opens.
+- The Scan button stays visible in every state this part knows; hiding it offline is Task 11b's line in the plan (Part K).
+- The scanner also stops the detector and camera tracks when it falls back to the manual field after the camera started.
+- The camera is requested before the detector is created, so the zxing import never runs in jsdom.
+- Three Minor review findings (stale lookup result, no feedback during the lookup, FoodRef barcode unpinned) were fixed in a round instead of deferred, because the stale-read class is one CLAUDE.md names.
+- The controller ran `npm install` for the two zxing packages before dispatch, because subagents never touch `node_modules`. The main checkout's `node_modules` does not have them: run `npm install` there after the merge.
+
+**Parked review findings** (real, low impact, deferred):
+
+- Rescanning a barcode already saved as a custom food asks the API again and can create a duplicate custom food; the spec does not cover it.
+- There is no manual code entry while the camera works but cannot read the label; only Cancel.
+- A browser that has `BarcodeDetector` but none of the EAN/UPC formats polls forever; `pickStrategy` checks existence only.
+- A zxing scan error that the library does not retry leaves the scanner waiting until Cancel.
+- Typing in the search box during a lookup drops the scan with no message (intended by the fix, noted as a product choice).
+- Test gaps: the unmount token bump; the `pending !== mine` guard in `barcode.js` (line 103) and its `.catch` path; the zxing mock's `controlsPromise` is not reset between tests; the not_found supersede test never resolves the second lookup; an invalid code held in view loops native detection with no extra delay beyond the 200 ms poll.
+- `submitCode` calls the `onDetected` prop directly while the loop uses a ref; harmless.
+
+**Follow-ups:** #145 (custom food form shows every validation message on open; pre-existing from Part H, seen in this part's browser check), #146 (CI runs Node 20; `@zxing/library` declares Node 24), #105 (phone check), plus #126, #129, #132, #133, #135, #137, #138 from earlier parts. Plan size: the plan file is still over the 30 KB limit in CLAUDE.md; the owner has not decided whether to cut it.
+
+**Notes for Part K:**
+
+- Task 11b hides the Scan button offline; the button is unconditional in `SearchView.jsx` now, next to the search input.
+- Task 15's `ARCHITECTURE.md` tree gains `barcode.js` and `BarcodeScanner.jsx`; `README.md` should name the two zxing packages and that scanning needs a connection.
+- `SearchView` has four sheet states now: `scanning`, `creating` (with `createInitial` for the prefilled barcode), `selected`, `mealsSlot`, plus a `lookupToken` ref and a `lookingUp` status line.
+
+**Unchecked steps moved:** Task 14b step 5 (phone check) cannot run in any session; it stays with #105 as an owner action, recorded here rather than in a later part.
+
+**Next:** Part K, the last part.

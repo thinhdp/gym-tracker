@@ -6,10 +6,12 @@ import { useFood } from "../context/FoodContext";
 import {
   FoodApiError,
   isFixtureMode,
+  lookupBarcode,
   normaliseQuery,
   searchFoods,
 } from "../lib/foodApi";
 import { slotForTime } from "../lib/slots";
+import BarcodeScanner from "./BarcodeScanner";
 import CustomFoodForm from "./CustomFoodForm";
 import PortionSheet from "./PortionSheet";
 import SavedMealsPanel from "./SavedMealsPanel";
@@ -28,22 +30,30 @@ function errorLine(error) {
 }
 
 /** Food search: debounced API lookup plus matching custom foods. */
-export default function SearchView({ date, presetSlot, onLogged, onScan }) {
+export default function SearchView({ date, presetSlot, onLogged }) {
   const { customFoods, addEntry } = useFood();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [errorText, setErrorText] = useState(null);
   const [selected, setSelected] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [createInitial, setCreateInitial] = useState(undefined);
+  const [scanning, setScanning] = useState(false);
   const [mealsSlot, setMealsSlot] = useState(null);
+  const [lookingUp, setLookingUp] = useState(false);
   const pending = useRef({ timer: null, controller: null });
+  // Bumped whenever a barcode lookup in flight stops being the latest one.
+  const lookupToken = useRef(0);
 
-  // On unmount, drop the waiting debounce and the request in flight.
+  // On unmount, drop the waiting debounce, the request in flight and any
+  // barcode lookup in flight.
   useEffect(() => {
     const current = pending.current;
+    const token = lookupToken;
     return () => {
       clearTimeout(current.timer);
       current.controller?.abort();
+      token.current += 1;
     };
   }, []);
 
@@ -61,6 +71,7 @@ export default function SearchView({ date, presetSlot, onLogged, onScan }) {
 
   const changeQuery = (event) => {
     const text = event.target.value;
+    dropLookup();
     setQuery(text);
     setErrorText(null);
     clearTimeout(pending.current.timer);
@@ -90,8 +101,67 @@ export default function SearchView({ date, presetSlot, onLogged, onScan }) {
     onLogged();
   };
 
-  const openCreated = (saved) => {
+  const openCreate = (initial) => {
+    setCreateInitial(initial);
+    setCreating(true);
+  };
+
+  const closeCreate = () => {
     setCreating(false);
+    setCreateInitial(undefined);
+  };
+
+  const dropLookup = () => {
+    lookupToken.current += 1;
+    setLookingUp(false);
+  };
+
+  const selectResult = (food) => {
+    dropLookup();
+    setSelected(food);
+  };
+
+  const openMeals = () => {
+    dropLookup();
+    setMealsSlot(presetSlot ?? slotForTime());
+  };
+
+  const openScanner = () => {
+    dropLookup();
+    setScanning(true);
+  };
+
+  const cancelScanner = () => {
+    dropLookup();
+    setScanning(false);
+  };
+
+  const lookupScanned = async (code) => {
+    lookupToken.current += 1;
+    const token = lookupToken.current;
+    setScanning(false);
+    setErrorText(null);
+    setLookingUp(true);
+    let found;
+    try {
+      found = await lookupBarcode(code);
+    } catch (error) {
+      if (lookupToken.current !== token) return;
+      setLookingUp(false);
+      if (error instanceof FoodApiError && error.kind === "not_found") {
+        openCreate({ barcode: code });
+        return;
+      }
+      setErrorText(errorLine(error));
+      return;
+    }
+    if (lookupToken.current !== token) return;
+    setLookingUp(false);
+    setSelected(found);
+  };
+
+  const openCreated = (saved) => {
+    closeCreate();
     setSelected({ ...saved, source: "custom" });
   };
 
@@ -114,14 +184,18 @@ export default function SearchView({ date, presetSlot, onLogged, onScan }) {
           value={query}
           onChange={changeQuery}
         />
-        {onScan && (
-          <Button type="button" aria-label="Scan barcode" onClick={onScan}>
-            Scan
-          </Button>
-        )}
+        <Button type="button" aria-label="Scan barcode" onClick={openScanner}>
+          Scan
+        </Button>
       </div>
 
       {isFixtureMode() && <Badge>demo data</Badge>}
+
+      {lookingUp && (
+        <p role="status" className="text-sm text-neutral-500">
+          Looking up barcode…
+        </p>
+      )}
 
       {errorText && (
         <p className="text-sm text-red-600 dark:text-red-400">{errorText}</p>
@@ -132,19 +206,22 @@ export default function SearchView({ date, presetSlot, onLogged, onScan }) {
           <SearchResultRow
             key={`${food.source}:${food.id}`}
             food={food}
-            onSelect={setSelected}
+            onSelect={selectResult}
           />
         ))}
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          onClick={() => setMealsSlot(presetSlot ?? slotForTime())}
-        >
+        <Button type="button" onClick={openMeals}>
           Saved meals
         </Button>
-        <Button type="button" onClick={() => setCreating(true)}>
+        <Button
+          type="button"
+          onClick={() => {
+            dropLookup();
+            openCreate(undefined);
+          }}
+        >
           Create custom food
         </Button>
       </div>
@@ -158,10 +235,15 @@ export default function SearchView({ date, presetSlot, onLogged, onScan }) {
         />
       )}
 
+      {scanning && (
+        <BarcodeScanner onDetected={lookupScanned} onCancel={cancelScanner} />
+      )}
+
       {creating && (
         <CustomFoodForm
+          initial={createInitial}
           onSaved={openCreated}
-          onClose={() => setCreating(false)}
+          onClose={closeCreate}
         />
       )}
 
