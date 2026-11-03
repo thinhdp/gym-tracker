@@ -10,6 +10,11 @@ function heading() {
 }
 
 describe("FoodApp", () => {
+  const originalTitle = document.title;
+  afterEach(() => {
+    document.title = originalTitle;
+  });
+
   it("defaults to Today and stores that tab when nothing is stored", () => {
     render(<FoodApp />);
     expect(heading()).toHaveTextContent("Today");
@@ -34,10 +39,24 @@ describe("FoodApp", () => {
     expect(heading()).toHaveTextContent("Settings");
   });
 
-  it("falls back to Today on an invalid stored tab", () => {
-    saveLS(K_FOOD_TAB, "bogus");
+  it.each([["bogus"], ["constructor"], [["trends"]]])(
+    "falls back to Today and rewrites storage on an invalid stored tab %j",
+    (stored) => {
+      saveLS(K_FOOD_TAB, stored);
+      render(<FoodApp />);
+      expect(heading()).toHaveTextContent("Today");
+      expect(screen.getByRole("button", { name: "Today" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      expect(loadLS(K_FOOD_TAB)).toBe("today");
+    },
+  );
+
+  it("sets the page title to Food Tracker", () => {
+    document.title = "Gym Tracker";
     render(<FoodApp />);
-    expect(heading()).toHaveTextContent("Today");
+    expect(document.title).toBe("Food Tracker");
   });
 
   it("links back to the gym app", () => {

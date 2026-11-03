@@ -97,6 +97,7 @@ describe("App path routing", () => {
   it("isFoodPath matches /food and /food/ but not /foods", () => {
     expect(isFoodPath("/food")).toBe(true);
     expect(isFoodPath("/food/")).toBe(true);
+    expect(isFoodPath("/food/x")).toBe(true);
     expect(isFoodPath("/foods")).toBe(false);
   });
 });

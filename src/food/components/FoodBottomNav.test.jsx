@@ -39,4 +39,13 @@ describe("FoodBottomNav", () => {
       screen.getByRole("navigation", { name: "Food" }),
     ).toBeInTheDocument();
   });
+
+  it("draws an icon in each tab button", () => {
+    render(<FoodBottomNav active="today" onSelect={() => {}} />);
+    for (const button of screen.getAllByRole("button")) {
+      const path = button.querySelector("svg path");
+      expect(path).not.toBeNull();
+      expect(path.getAttribute("d")).toBeTruthy();
+    }
+  });
 });

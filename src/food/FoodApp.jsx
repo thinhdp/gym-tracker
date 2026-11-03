@@ -12,21 +12,27 @@ const HEADINGS = {
 };
 
 export default function FoodApp() {
-  const [tab, setTab] = useState(() => loadLS(K_FOOD_TAB, "today"));
+  const [tab, setTab] = useState(() => {
+    const stored = loadLS(K_FOOD_TAB, "today");
+    return Object.keys(HEADINGS).includes(stored) ? stored : "today";
+  });
 
   useEffect(() => saveLS(K_FOOD_TAB, tab), [tab]);
 
-  const active = Object.hasOwn(HEADINGS, tab) ? tab : "today";
+  // No cleanup: the Gym link is a full page load.
+  useEffect(() => {
+    document.title = "Food Tracker";
+  }, []);
 
   return (
     <div className="mx-auto min-h-full max-w-3xl px-4 pb-24 pt-5">
       <header className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{HEADINGS[active]}</h1>
+        <h1 className="text-xl font-semibold">{HEADINGS[tab]}</h1>
         <a href="/" className="text-sm text-blue-600 dark:text-blue-400">
           Gym
         </a>
       </header>
-      <FoodBottomNav active={active} onSelect={setTab} />
+      <FoodBottomNav active={tab} onSelect={setTab} />
     </div>
   );
 }
