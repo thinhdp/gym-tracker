@@ -38,9 +38,11 @@ function CustomFoodsList() {
           >
             <div className="min-w-0">
               <div className="break-words font-medium">{food.name}</div>
-              <div className="text-neutral-600 dark:text-neutral-400">
-                {`${food.per100.kcal} kcal / 100 g`}
-              </div>
+              {Number.isFinite(food.per100?.kcal) && (
+                <div className="text-neutral-600 dark:text-neutral-400">
+                  {`${food.per100.kcal} kcal / 100 g`}
+                </div>
+              )}
             </div>
             <div className="flex shrink-0 gap-2">
               <Button

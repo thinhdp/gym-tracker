@@ -108,6 +108,34 @@ describe("CustomFoodForm", () => {
       expect(row.portions).toStrictEqual([{ label: "1 bar", grams: 45 }]);
       expect(normalizeCustomFood(row)).toEqual(row);
     });
+
+    it("saves no barcode key for a whitespace-only barcode", async () => {
+      const { user } = setup();
+      await fillValid(user);
+      await fill(user, "Barcode", "   ");
+      await user.click(saveButton());
+      expect(loadLS(K_FOOD_CUSTOM)[0]).not.toHaveProperty("barcode");
+    });
+
+    it("saves no portions key for a whitespace-only label with blank grams", async () => {
+      const { user } = setup();
+      await fillValid(user);
+      await fill(user, "Portion label", "   ");
+      await user.click(saveButton());
+      expect(loadLS(K_FOOD_CUSTOM)[0]).not.toHaveProperty("portions");
+    });
+
+    it("saves macros too large to compute from when calories are given, in a row that a restore keeps", async () => {
+      const { user } = setup();
+      await fillValid(user);
+      await fill(user, "Protein (g)", "1e308");
+      await fill(user, "Calories", "100");
+      await user.click(saveButton());
+
+      const [row] = loadLS(K_FOOD_CUSTOM);
+      expect(row.per100.kcal).toBe(100);
+      expect(normalizeCustomFood(row)).toEqual(row);
+    });
   });
 
   describe("validation", () => {
@@ -156,10 +184,20 @@ describe("CustomFoodForm", () => {
       expect(saveButton()).toBeDisabled();
     });
 
-    it("blocks a barcode that is not digits", async () => {
+    it("blocks blank calories when the macros compute to Infinity", async () => {
       const { user } = setup();
       await fillValid(user);
-      await fill(user, "Barcode", "12a");
+      await fill(user, "Protein (g)", "1e308");
+      expect(
+        screen.getByText("Macros are too large to compute calories"),
+      ).toBeVisible();
+      expect(saveButton()).toBeDisabled();
+    });
+
+    it.each(["12a", "a12", "1a2"])("blocks the barcode %s", async (barcode) => {
+      const { user } = setup();
+      await fillValid(user);
+      await fill(user, "Barcode", barcode);
       expect(screen.getByText("Barcode must be digits only")).toBeVisible();
       expect(saveButton()).toBeDisabled();
     });

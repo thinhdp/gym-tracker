@@ -85,6 +85,17 @@ describe("SettingsView custom foods", () => {
     ).toBeVisible();
   });
 
+  it("a stored row with no per100 shows its name and leaves the view working", () => {
+    saveLS(K_FOOD_CUSTOM, [{ id: "a", name: "Broken" }, SOUP]);
+    setup();
+    const rows = within(section()).getAllByRole("listitem");
+    expect(within(rows[0]).getByText("Broken")).toBeVisible();
+    expect(within(rows[0]).queryByText(/kcal/)).toBeNull();
+    expect(within(rows[1]).getByText("50 kcal / 100 g")).toBeVisible();
+    expect(screen.getByRole("region", { name: "Targets" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Back to Gym" })).toBeVisible();
+  });
+
   it("edit opens the form on that food and updates the row", async () => {
     saveLS(K_FOOD_CUSTOM, [BAR, SOUP]);
     const user = setup();

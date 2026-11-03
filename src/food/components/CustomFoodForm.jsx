@@ -42,13 +42,15 @@ function nextPortions(initial, form) {
     : [{ label, grams: toNumber(form.portionGrams) }, ...others];
 }
 
+const macrosOf = (form) => ({
+  protein: toNumber(form.protein),
+  carb: toNumber(form.carb),
+  fat: toNumber(form.fat),
+});
+
 /** The row to save. Keeps every other field of `initial`, so id and createdAt stay. */
 function buildRow(initial, form) {
-  const macros = {
-    protein: toNumber(form.protein),
-    carb: toNumber(form.carb),
-    fat: toNumber(form.fat),
-  };
+  const macros = macrosOf(form);
   const row = {
     ...initial,
     name: form.name.trim(),
@@ -77,10 +79,21 @@ function validate(form) {
   if (form.kcal.trim() !== "" && !isNonNegative(toNumber(form.kcal))) {
     messages.push("Calories must be 0 or more");
   }
+  const macrosValid = MACRO_FIELDS.every(([key]) =>
+    isNonNegative(toNumber(form[key])),
+  );
   for (const [key, , name] of MACRO_FIELDS) {
     if (!isNonNegative(toNumber(form[key]))) {
       messages.push(`${name} is required and must be 0 or more`);
     }
+  }
+  // Very large macros compute to Infinity, which would store as null kcal.
+  if (
+    form.kcal.trim() === "" &&
+    macrosValid &&
+    !Number.isFinite(kcalFromMacros(macrosOf(form)))
+  ) {
+    messages.push("Macros are too large to compute calories");
   }
   const hasLabel = form.portionLabel.trim() !== "";
   const hasGrams = form.portionGrams.trim() !== "";
