@@ -49,7 +49,12 @@ function SlotMenu({ slot, canSave, onSave, onLog, onClose }) {
 }
 
 /** One day's log: date navigation, macro bars and the six meal slots. */
-export default function TodayView({ date, onChangeDate, onAddTo }) {
+export default function TodayView({
+  date,
+  onChangeDate,
+  onAddTo,
+  onOpenSettings,
+}) {
   const { entries, targets, addEntry, updateEntry, deleteEntry } = useFood();
   const [editing, setEditing] = useState(null);
   const [menuSlot, setMenuSlot] = useState(null);
@@ -58,6 +63,7 @@ export default function TodayView({ date, onChangeDate, onAddTo }) {
   const [recentSheet, setRecentSheet] = useState(null);
 
   const dayEntries = entries.filter((entry) => entry.date === date);
+  const target = targetForDate(targets, date);
 
   return (
     <div className="space-y-4">
@@ -92,10 +98,23 @@ export default function TodayView({ date, onChangeDate, onAddTo }) {
         )}
       </div>
 
-      <MacroBars
-        totals={sumMacros(dayEntries)}
-        target={targetForDate(targets, date)}
-      />
+      <MacroBars totals={sumMacros(dayEntries)} target={target} />
+
+      {!target && (
+        <button
+          type="button"
+          className="text-sm text-blue-600 underline dark:text-blue-400"
+          onClick={onOpenSettings}
+        >
+          Set targets in Settings
+        </button>
+      )}
+
+      {dayEntries.length === 0 && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          Nothing logged yet
+        </p>
+      )}
 
       <RecentRow date={date} onOpen={setRecentSheet} />
 

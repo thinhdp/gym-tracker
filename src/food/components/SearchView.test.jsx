@@ -883,8 +883,124 @@ describe("SearchView", () => {
     });
   });
 
+  describe("no match line", () => {
+    const LINE = "No match. Create a custom food?";
+    const line = () => screen.queryByText(LINE);
+
+    it("shows only after the search for the current query finished empty", async () => {
+      const search = deferred();
+      searchFoods.mockReturnValueOnce(search.promise);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      expect(line()).toBeNull();
+      await tick(299);
+      expect(line()).toBeNull();
+      await tick(1);
+      expect(line()).toBeNull();
+
+      await settle(() => search.resolve([]));
+      expect(line()).toBeInTheDocument();
+      expect(
+        screen.getAllByRole("button", { name: "Create custom food" }),
+      ).toHaveLength(1);
+    });
+
+    it("hides again when the query changes, and while the next search is pending", async () => {
+      searchFoods.mockResolvedValueOnce([]);
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      expect(line()).toBeInTheDocument();
+
+      await user.type(box(), "z");
+      expect(line()).toBeNull();
+      await tick(300);
+      expect(line()).toBeNull();
+    });
+
+    it("does not return for an earlier query typed back during the debounce", async () => {
+      searchFoods.mockResolvedValueOnce([]);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      expect(line()).toBeInTheDocument();
+
+      await user.type(box(), "z");
+      await user.type(box(), "{Backspace}");
+      expect(box()).toHaveValue("zz");
+      expect(line()).toBeNull();
+    });
+
+    it("does not show below two characters", async () => {
+      const { user } = setup();
+      await user.type(box(), "z");
+      await tick(1000);
+      expect(line()).toBeNull();
+    });
+
+    it("does not show with API results", async () => {
+      searchFoods.mockResolvedValueOnce([food("a", "API chicken")]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(line()).toBeNull();
+    });
+
+    it("does not show when a custom food matches", async () => {
+      saveLS(K_FOOD_CUSTOM, [CUSTOM]);
+      const { user } = setup();
+      await user.type(box(), "chicken");
+      await tick(300);
+      expect(screen.getByText("Chicken Salad")).toBeInTheDocument();
+      expect(line()).toBeNull();
+    });
+
+    it("does not show after an error", async () => {
+      searchFoods.mockRejectedValueOnce(new FoodApiError("unavailable"));
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      expect(
+        screen.getByText("Search unavailable, try again"),
+      ).toBeInTheDocument();
+      expect(line()).toBeNull();
+    });
+
+    it("does not show for an aborted search that resolves late", async () => {
+      const first = deferred();
+      searchFoods.mockReturnValueOnce(first.promise);
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      await user.type(box(), "y");
+      await settle(() => first.resolve([]));
+      expect(line()).toBeNull();
+    });
+
+    it("does not show offline", async () => {
+      searchFoods.mockResolvedValueOnce([]);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      expect(line()).toBeInTheDocument();
+      await act(async () => {
+        window.dispatchEvent(new Event("offline"));
+      });
+      expect(line()).toBeNull();
+    });
+  });
+
   describe("custom foods shortcut", () => {
     const shortcut = () => screen.getByRole("button", { name: "Custom foods" });
+
+    it("shows No custom foods yet in the opened list when there are none", async () => {
+      const { user } = setup();
+      expect(screen.queryByText("No custom foods yet")).toBeNull();
+      await user.click(shortcut());
+      expect(screen.getByText("No custom foods yet")).toBeInTheDocument();
+    });
 
     it("lists the shortcuts in the order the spec gives", () => {
       setup();
@@ -1031,10 +1147,20 @@ describe("SearchView", () => {
       }
     });
 
-    it("shows no section for an empty list", () => {
+    it("shows an empty line for Recent and for Custom foods with none", () => {
       setOnLine(false);
       setup();
-      expect(screen.queryByRole("heading")).toBeNull();
+      expect(screen.getByText("No recent foods yet")).toBeInTheDocument();
+      expect(screen.getByText("No custom foods yet")).toBeInTheDocument();
+    });
+
+    it("shows no empty line for a list that has rows", () => {
+      setOnLine(false);
+      saveLS(K_FOOD_RECENT, [RECENT_DB]);
+      saveLS(K_FOOD_CUSTOM, [CUSTOM]);
+      setup();
+      expect(screen.queryByText("No recent foods yet")).toBeNull();
+      expect(screen.queryByText("No custom foods yet")).toBeNull();
     });
 
     it("the custom list stays while offline when the shortcut is pressed", async () => {

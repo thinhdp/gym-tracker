@@ -248,7 +248,8 @@ leaves the app with no target (plain totals, no bars).
 | `createdAt` | `number`                       |                                                                       |
 
 Editing a custom food changes future entries only. Existing entries keep their
-`per100` copy.
+`per100` copy. The food's Recent row is refreshed on an edit and removed when the
+food is deleted (`FoodProvider`, section 7).
 
 ### 5.5 SavedMeal
 
@@ -441,8 +442,10 @@ gym `BottomNav`. The active tab persists in `mgym.food.tab`.
 mount and on change, the same pattern as `AppProvider`. It exposes `useFood()` with the lists,
 `droppedRows` and these actions:
 `addEntry`, `updateEntry`, `deleteEntry`, `logSavedMeal`, `saveMealFromSlot`,
-`upsertCustomFood`, `deleteCustomFood`, `upsertTarget`, `deleteTarget`,
-`touchRecent`. Views read `useFood()` directly; presentational children get
+`updateSavedMeal`, `deleteSavedMeal`, `upsertCustomFood`, `deleteCustomFood`,
+`upsertTarget`, `deleteTarget`, `touchRecent`. `addEntry` takes an optional
+`portions` list that goes to the food's Recent row only and is not stored on the
+entry. Views read `useFood()` directly; presentational children get
 props.
 
 `searchCache` and `tab` are not in context; `foodApi.js` and `FoodApp` own them

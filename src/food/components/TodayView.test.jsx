@@ -235,6 +235,44 @@ describe("TodayView", () => {
     expect(screen.queryByRole("button", { name: "Today" })).toBeNull();
   });
 
+  it("shows Nothing logged yet on a day with no entries, and not on a day with some", async () => {
+    saveLS(K_FOOD_ENTRIES, [entry("rice")]);
+    const { user } = setup("2026-11-02");
+    expect(screen.queryByText("Nothing logged yet")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Next day" }));
+    expect(screen.getByText("Nothing logged yet")).toBeInTheDocument();
+  });
+
+  it("shows the Settings link with no target and calls onOpenSettings; hides it with a target", async () => {
+    const onOpenSettings = vi.fn();
+    const user = userEvent.setup();
+    const { unmount } = render(
+      <FoodProvider>
+        <TodayView
+          date="2026-11-02"
+          onChangeDate={() => {}}
+          onAddTo={() => {}}
+          onOpenSettings={onOpenSettings}
+        />
+      </FoodProvider>,
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Set targets in Settings" }),
+    );
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+    expect(totals().getByText("0 kcal")).toBeVisible();
+    unmount();
+
+    saveLS(K_FOOD_TARGETS, [
+      { from: "2026-11-01", kcal: 2000, protein: 100, carb: 200, fat: 50 },
+    ]);
+    setup("2026-11-02");
+    expect(
+      screen.queryByRole("button", { name: "Set targets in Settings" }),
+    ).toBeNull();
+  });
+
   it("shows plain totals and no bars with no target row", () => {
     saveLS(K_FOOD_ENTRIES, [entry("rice", { grams: 200 })]);
     setup();

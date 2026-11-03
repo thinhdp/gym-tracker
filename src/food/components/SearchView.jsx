@@ -33,12 +33,16 @@ function errorLine(error) {
 const isOfflineError = (error) =>
   error instanceof FoodApiError && error.kind === "offline";
 
-/** A titled list of foods; renders nothing without any. */
-function FoodList({ title, foods, onSelect }) {
-  if (foods.length === 0) return null;
+/** A titled list of foods, or its empty line when there are none. */
+function FoodList({ title, foods, emptyText, onSelect }) {
   return (
     <section className="space-y-2">
       <h3 className="text-sm font-medium">{title}</h3>
+      {foods.length === 0 && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          {emptyText}
+        </p>
+      )}
       {foods.map((food) => (
         <SearchResultRow
           key={`${food.source}:${food.id}`}
@@ -64,6 +68,8 @@ export default function SearchView({ date, presetSlot, onLogged }) {
   const [lookingUp, setLookingUp] = useState(false);
   const [offline, setOffline] = useState(() => navigator.onLine === false);
   const [showCustom, setShowCustom] = useState(false);
+  // The normalised query whose search finished, not aborted and without an error.
+  const [searchedQuery, setSearchedQuery] = useState(null);
   // What the window listeners and a settling request read: never a closure's copy.
   const offlineNow = useRef(offline);
   const latestQuery = useRef("");
@@ -96,6 +102,7 @@ export default function SearchView({ date, presetSlot, onLogged }) {
     dropLookup();
     setScanning(false);
     setResults([]);
+    setSearchedQuery(null);
     setErrorText(null);
   }, [dropLookup]);
 
@@ -105,6 +112,7 @@ export default function SearchView({ date, presetSlot, onLogged }) {
         const found = await searchFoods(q, { signal: controller.signal });
         if (controller.signal.aborted) return;
         setResults(found);
+        setSearchedQuery(q);
       } catch (error) {
         if (controller.signal.aborted || error?.name === "AbortError") return;
         if (isOfflineError(error)) {
@@ -145,6 +153,7 @@ export default function SearchView({ date, presetSlot, onLogged }) {
     latestQuery.current = text;
     setQuery(text);
     setErrorText(null);
+    setSearchedQuery(null);
     clearTimeout(pending.current.timer);
     pending.current.controller?.abort();
 
@@ -250,6 +259,13 @@ export default function SearchView({ date, presetSlot, onLogged }) {
       ? []
       : allCustomRows.filter((food) => normaliseQuery(food.name).includes(q));
   const customListShown = offline || showCustom;
+  const noMatch =
+    q.length >= MIN_QUERY_LENGTH &&
+    searchedQuery === q &&
+    results.length === 0 &&
+    customRows.length === 0 &&
+    !errorText &&
+    !offline;
 
   return (
     <div className="space-y-3">
@@ -307,9 +323,16 @@ export default function SearchView({ date, presetSlot, onLogged }) {
         </div>
       )}
 
+      {noMatch && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          No match. Create a custom food?
+        </p>
+      )}
+
       {offline && (
         <FoodList
           title="Recent"
+          emptyText="No recent foods yet"
           foods={recent.map((row) => ({
             ...recentToFood(row),
             defaultGrams: row.lastGrams,
@@ -321,6 +344,7 @@ export default function SearchView({ date, presetSlot, onLogged }) {
       {customListShown && (
         <FoodList
           title="Custom foods"
+          emptyText="No custom foods yet"
           foods={allCustomRows}
           onSelect={selectResult}
         />

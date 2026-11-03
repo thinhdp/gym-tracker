@@ -48,8 +48,22 @@ live-session check. Every other path renders the gym UI described above. This is
 path check, not a router: the `Gym` link in `FoodApp` is a plain `<a href="/">`, so
 leaving the food mode is a full page load. `FoodApp` wraps its content in `FoodProvider`
 (`src/food/context/FoodContext.jsx`), which owns the five stored food lists, and renders
-a placeholder heading per tab and its own four-tab `FoodBottomNav`; the active tab
-persists in `mgym.food.tab`.
+a heading per tab, that tab's view (`TodayView`, `SearchView`, `TrendsView` or
+`SettingsView`) and its own four-tab `FoodBottomNav`; the active tab persists in
+`mgym.food.tab`.
+
+**Food network client.** `src/food/lib/foodApi.js` is the only code that talks to the
+network (`searchFoods` and `lookupBarcode`). The base URL comes from
+`import.meta.env.VITE_FOOD_API_BASE`, set at build time; when it is unset or equals
+`fixture`, `isFixtureMode()` is true, the client answers from `foodApiFixture.js`
+and Search shows a "demo data" badge. A request has an 8 second timeout and takes an
+abort signal. Failures throw `FoodApiError` with a `kind` of `offline`,
+`rate_limited`, `not_found`, `invalid` or `unavailable`; the views map each kind to
+one line (`SearchView` also treats `offline` as a state with its own shortcuts).
+Successful results go through `searchCache.js`, stored under
+`mgym.food.searchCache.v1` with a 7 day expiry and a cap on the number of keys; a
+cache hit never throws. The cache and the tab are not in `FoodProvider`; the client
+and `FoodApp` read and write them with `loadLS`/`saveLS`.
 
 ## Tech stack and the role of each tool
 
@@ -90,21 +104,40 @@ gym-tracker/
     ├── food/                  # Food mode, rendered on /food
     │   ├── FoodApp.jsx           # Food mode shell: FoodProvider, tab heading, FoodBottomNav
     │   ├── components/
-    │   │   └── FoodBottomNav.jsx    # Fixed 4-tab bottom navigation
+    │   │   ├── FoodBottomNav.jsx    # Fixed 4-tab bottom navigation
+    │   │   ├── TodayView.jsx        # Today tab: day navigation, MacroBars, RecentRow, six MealSlots, sheets
+    │   │   ├── MacroBars.jsx        # Day totals: bars against the target, or plain numbers
+    │   │   ├── MealSlot.jsx         # One meal slot: total, EntryRows, + and … buttons
+    │   │   ├── EntryRow.jsx         # One logged entry
+    │   │   ├── EntryEditSheet.jsx   # Edit grams or slot, or delete (useConfirm)
+    │   │   ├── RecentRow.jsx        # Recent chips: one tap logs lastGrams, with an undo Toast
+    │   │   ├── Toast.jsx            # Timed message with one action button
+    │   │   ├── PortionSheet.jsx     # Pick portion, grams and slot, then Add
+    │   │   ├── SaveMealSheet.jsx    # Name and save a slot as a saved meal
+    │   │   ├── SavedMealsPanel.jsx  # Pick a saved meal to log into a slot
+    │   │   ├── SearchView.jsx       # Search tab: debounced search, offline state, shortcuts, scanner
+    │   │   ├── SearchResultRow.jsx  # One search or list row
+    │   │   ├── BarcodeScanner.jsx   # Camera scan with a manual code field
+    │   │   ├── CustomFoodForm.jsx   # Create or edit a custom food
+    │   │   ├── TrendsView.jsx       # Trends tab: weekly intake and bodyweight chart and table
+    │   │   ├── SettingsView.jsx     # Settings tab: targets, custom foods, saved meals (edit, rename, delete)
+    │   │   └── TargetsEditor.jsx    # Target periods editor
     │   ├── context/
     │   │   └── FoodContext.jsx      # FoodProvider / useFood: the five stored food lists, droppedRows
     │   └── lib/                  # Framework-free helpers
     │       ├── keys.js              # Food localStorage keys
     │       ├── backupFood.js        # exportFoodData / importFoodData for the backup
-    │       ├── foodApi.js           # Food search and barcode client
+    │       ├── foodApi.js           # Network client: searchFoods, lookupBarcode, FoodApiError
     │       ├── foodApiFixture.js    # Fixture data when no API base is set
     │       ├── searchCache.js       # Search cache: expiry and cap
+    │       ├── barcode.js           # Barcode detection: native detector or zxing, loaded on demand
     │       ├── normalize.js         # normalizeFoodData (import and load) / mergeFoodData (import)
     │       ├── localDate.js         # Local-date helpers
     │       ├── macros.js            # Macro scaling + totals
     │       ├── recent.js            # Recent-foods list helpers
     │       ├── slots.js             # Meal slots
-    │       └── targets.js           # Target periods: lookup, edit, validation
+    │       ├── targets.js           # Target periods: lookup, edit, validation
+    │       └── trends.js            # weeklyIntake: weekly averages joined with bodyweight
     ├── lib/                   # Framework-free helpers
     │   ├── storage.js            # localStorage keys + load/save + id/date helpers
     │   ├── backup.js             # Export/import normalize + merge logic
@@ -134,6 +167,7 @@ gym-tracker/
     │       └── buildReview.js      # Top-level orchestrator → ReviewResult
     └── components/
         ├── Home.jsx                 # Home dashboard (Home tab)
+        ├── FoodSummaryCard.jsx      # Home: today's food totals and a link to /food
         ├── NextSessionCard.jsx      # Home: PP21 next session (date, rest/deload banners, chips, Start)
         ├── DecisionChip.jsx         # PP21 decision pill (ADD/HOLD/REDUCE/RESET/SWAP/START)
         ├── WorkoutsTab.jsx          # Workouts tab shell: List/Calendar toggle + Start
@@ -184,7 +218,25 @@ main.jsx
             └── AppContent          (consumes useApp())
                 │
                 ├── food path? → FoodApp                 (replaces the gym UI; checked first)
-                │       └── FoodProvider → FoodBottomNav
+                │       └── FoodProvider
+                │               ├── DroppedRowsNote                       (when load removed damaged rows)
+                │               ├── [tab="today"]    TodayView
+                │               │       ├── MacroBars
+                │               │       ├── RecentRow → Toast
+                │               │       ├── MealSlot → EntryRow
+                │               │       ├── EntryEditSheet
+                │               │       ├── PortionSheet                   (options on a recent chip)
+                │               │       ├── SavedMealsPanel
+                │               │       └── SaveMealSheet
+                │               ├── [tab="search"]   SearchView
+                │               │       ├── SearchResultRow
+                │               │       ├── BarcodeScanner
+                │               │       ├── CustomFoodForm
+                │               │       ├── PortionSheet
+                │               │       └── SavedMealsPanel
+                │               ├── [tab="trends"]   TrendsView
+                │               ├── [tab="settings"] SettingsView → TargetsEditor, CustomFoodForm
+                │               └── FoodBottomNav
                 │
                 ├── session active? → LiveSession        (full-screen; bottom nav hidden)
                 │       ├── WeightRepInputs / NumberInputAutoClear   (per-set inputs)

@@ -26,6 +26,12 @@ export default function RecentRow({ date, onOpen }) {
 
   return (
     <>
+      {recent.length === 0 && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          Foods you log show here for one-tap logging
+        </p>
+      )}
+
       {recent.length > 0 && (
         <div
           role="group"

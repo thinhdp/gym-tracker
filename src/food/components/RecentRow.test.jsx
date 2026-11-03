@@ -54,9 +54,20 @@ describe("RecentRow", () => {
     expect(labels).toEqual(["Egg · 50 g", "…", "Rice · 200 g", "…"]);
   });
 
-  it("renders nothing with no recent rows", () => {
-    const { container } = setup([]);
-    expect(container).toBeEmptyDOMElement();
+  it("shows one line and no chips with no recent rows", () => {
+    setup([]);
+    expect(
+      screen.getByText("Foods you log show here for one-tap logging"),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Recent foods" })).toBeNull();
+    expect(screen.queryAllByRole("button")).toHaveLength(0);
+  });
+
+  it("shows no empty line while there are recent rows", () => {
+    setup();
+    expect(
+      screen.queryByText("Foods you log show here for one-tap logging"),
+    ).toBeNull();
   });
 
   it("one tap logs lastGrams into the time-of-day slot on the given date", () => {

@@ -16,6 +16,7 @@
 - **Notepad** – A simple notepad that autosaves content to localStorage. It auto‑expands as you type and allows you to keep training notes or todo items.
 - **Data Management Menu** – Export your entire dataset (exercises, workouts, bodyweight logs, notes and preferences) to a JSON file for backup. Import data back into the app in merge or replace mode. All export/import operations are available from a single dropdown in the header.
 - **Unit Toggle** – Switch between kilograms and pounds in one click. The UI displays your preferred unit throughout the app, and your choice is remembered.
+- **Food Tracking** – A separate mode at `/food` with its own four tabs (Today, Search, Trends, Settings): log foods into six meal slots against daily macro targets, search a food database or your own custom foods, keep saved meals, log recent foods in one tap with an undo, and see weekly intake next to bodyweight. Food search and barcode lookup call a food API whose base URL is set at build time with the env var `VITE_FOOD_API_BASE`. When it is unset or `fixture`, the app serves built-in demo data and shows a "demo data" badge. Barcode scanning uses the browser's `BarcodeDetector` when it has one and otherwise the `@zxing/browser` and `@zxing/library` packages, loaded on demand. Search and scanning need a connection; offline, Search shows Recent foods, Saved meals and Custom foods instead. All food data stays in localStorage.
 
 ## Screenshots
 
