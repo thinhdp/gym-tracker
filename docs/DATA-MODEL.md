@@ -422,9 +422,13 @@ the remaining fields are written straight back to their keys.
 applies it as follows:
 
 - **Merge** adds incoming rows and rewrites no stored row, except a recent row
-  replaced by an incoming row with a newer `lastAt`.
-- **Replace** normalises the incoming lists and overwrites each one.
-- A backup with no `food` field leaves food data untouched in both modes.
+  replaced by an incoming row with a newer `lastAt`. Targets are re-sorted by `from`.
+  Recent is re-sorted newest first and capped at 50, so the cap can remove the oldest
+  stored row.
+- **Replace** normalises the incoming lists and overwrites each one. A list missing
+  from `food` counts as `[]`, so `food: {}` empties all five lists.
+- A backup with no `food` field, or a `food` value that is not a plain object, leaves
+  food data untouched in both modes.
 
 The `mgym.theme` preference and the `mgym.session.v1` live session are **not**
 part of the backup payload — they are device-local UI state.
