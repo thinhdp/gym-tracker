@@ -99,7 +99,7 @@ gym-tracker/
     │       ├── foodApi.js           # Food search and barcode client
     │       ├── foodApiFixture.js    # Fixture data when no API base is set
     │       ├── searchCache.js       # Search cache: expiry and cap
-    │       ├── normalize.js         # normalizeFoodData / mergeFoodData for import
+    │       ├── normalize.js         # normalizeFoodData (import and load) / mergeFoodData (import)
     │       ├── localDate.js         # Local-date helpers
     │       ├── macros.js            # Macro scaling + totals
     │       ├── recent.js            # Recent-foods list helpers

@@ -256,8 +256,11 @@ payload. See `src/food/lib/searchCache.js` and `src/food/lib/foodApi.js`.
 
 The food tracker's stored shapes. `FoodProvider` owns the lists through
 `loadLS`/`saveLS`. Constants live in `src/food/lib/keys.js`.
-`FoodSummaryCard` on gym Home reads the entries and targets keys directly and
-writes nothing.
+`FoodProvider` loads every list through `normalizeFoodData`, so a stored row that
+fails its rules is deleted from storage on `/food` load and `/food` shows a one-line
+note with the count. `FoodSummaryCard` on gym Home reads the entries and targets keys
+directly, applies the same rules to its own copy, and writes nothing. Rules and the
+count: spec section 5.9 of `docs/superpowers/specs/2026-11-02-food-tracker-design.md`.
 
 #### FoodRef
 
