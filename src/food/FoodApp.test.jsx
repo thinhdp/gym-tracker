@@ -3,7 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ConfirmProvider } from "../components/ConfirmDialog";
 import { loadLS, saveLS } from "../lib/storage";
-import { K_FOOD_ENTRIES, K_FOOD_TAB } from "./lib/keys";
+import { K_FOOD_ENTRIES, K_FOOD_TAB, K_FOOD_TARGETS } from "./lib/keys";
 import { addDays, formatDayHeader, todayLocal } from "./lib/localDate";
 import FoodApp from "./FoodApp";
 
@@ -95,6 +95,68 @@ describe("FoodApp", () => {
     render(<FoodApp />);
     expect(heading()).toHaveTextContent("Today");
     expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
+  });
+
+  describe("dropped-row note", () => {
+    const note = () => screen.queryByText(/damaged food row/);
+
+    it("uses the singular wording for one row", () => {
+      saveLS(K_FOOD_ENTRIES, [null]);
+      render(<FoodApp />);
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /^Removed 1 damaged food row from this device\. A backup can restore it\.$/,
+      );
+    });
+
+    it("uses the plural wording and the count summed over the lists", () => {
+      saveLS(K_FOOD_ENTRIES, [null, { id: "bad" }]);
+      saveLS(K_FOOD_TARGETS, [null]);
+      render(<FoodApp />);
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /^Removed 3 damaged food rows from this device\. A backup can restore them\.$/,
+      );
+    });
+
+    it("stays on every tab, above the tab content", async () => {
+      const user = userEvent.setup();
+      saveLS(K_FOOD_ENTRIES, [null]);
+      render(
+        <ConfirmProvider>
+          <FoodApp />
+        </ConfirmProvider>,
+      );
+      for (const tab of ["Search", "Trends", "Settings", "Today"]) {
+        await user.click(navButton(tab));
+        expect(heading()).toHaveTextContent(tab);
+        expect(note()).toBeInTheDocument();
+      }
+      await user.click(navButton("Trends"));
+      expect(
+        note().compareDocumentPosition(screen.getByRole("table")) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it("is absent with clean storage", () => {
+      render(<FoodApp />);
+      expect(note()).toBeNull();
+    });
+
+    it("is absent for a stored non-array", () => {
+      saveLS(K_FOOD_ENTRIES, { not: "an array" });
+      render(<FoodApp />);
+      expect(note()).toBeNull();
+    });
+
+    it("is absent on the next mount, and stores nothing about itself", () => {
+      saveLS(K_FOOD_ENTRIES, [null]);
+      const { unmount } = render(<FoodApp />);
+      expect(note()).toBeInTheDocument();
+      unmount();
+      expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
+      render(<FoodApp />);
+      expect(note()).toBeNull();
+    });
   });
 
   it("links back to the gym app", () => {

@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { loadLS } from "../lib/storage";
 import { K_FOOD_ENTRIES, K_FOOD_TARGETS } from "../food/lib/keys";
+import { normalizeFoodData } from "../food/lib/normalize";
 import { targetForDate } from "../food/lib/targets";
 import { sumMacros, pct, barTone } from "../food/lib/macros";
 import { todayLocal } from "../food/lib/localDate";
@@ -11,14 +12,14 @@ const CARD =
 const LABEL =
   "text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400";
 
-const asArray = (v) => (Array.isArray(v) ? v : []);
-
 /** Home card: today's food against target. Read-only; links to /food. */
 export default function FoodSummaryCard() {
   const { target, totals } = useMemo(() => {
     const today = todayLocal();
-    const entries = asArray(loadLS(K_FOOD_ENTRIES, []));
-    const targets = asArray(loadLS(K_FOOD_TARGETS, []));
+    const { entries, targets } = normalizeFoodData({
+      entries: loadLS(K_FOOD_ENTRIES, []),
+      targets: loadLS(K_FOOD_TARGETS, []),
+    });
     return {
       target: targetForDate(targets, today),
       totals: sumMacros(entries.filter((e) => e.date === today)),

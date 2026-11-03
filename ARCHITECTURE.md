@@ -92,14 +92,14 @@ gym-tracker/
     │   ├── components/
     │   │   └── FoodBottomNav.jsx    # Fixed 4-tab bottom navigation
     │   ├── context/
-    │   │   └── FoodContext.jsx      # FoodProvider / useFood: the five stored food lists
+    │   │   └── FoodContext.jsx      # FoodProvider / useFood: the five stored food lists, droppedRows
     │   └── lib/                  # Framework-free helpers
     │       ├── keys.js              # Food localStorage keys
     │       ├── backupFood.js        # exportFoodData / importFoodData for the backup
     │       ├── foodApi.js           # Food search and barcode client
     │       ├── foodApiFixture.js    # Fixture data when no API base is set
     │       ├── searchCache.js       # Search cache: expiry and cap
-    │       ├── normalize.js         # normalizeFoodData / mergeFoodData for import
+    │       ├── normalize.js         # normalizeFoodData (import and load) / mergeFoodData (import)
     │       ├── localDate.js         # Local-date helpers
     │       ├── macros.js            # Macro scaling + totals
     │       ├── recent.js            # Recent-foods list helpers

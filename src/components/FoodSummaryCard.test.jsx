@@ -19,6 +19,7 @@ const entry = (date, kcal, protein = 0) => ({
   slot: "lunch",
   grams: 100,
   per100: { kcal, protein, carb: 0, fat: 0 },
+  food: { kind: "db", id: "rice" },
 });
 
 const ORIGINAL_TZ = process.env.TZ;
@@ -124,6 +125,58 @@ describe("FoodSummaryCard", () => {
     ]);
     render(<FoodSummaryCard />);
     expect(screen.getByText("400 / 2000 kcal")).toBeInTheDocument();
+  });
+
+  describe("malformed stored rows", () => {
+    const stored = () => [
+      localStorage.getItem(K_FOOD_ENTRIES),
+      localStorage.getItem(K_FOOD_TARGETS),
+    ];
+
+    it("renders with [null] in entries, counts the valid rows and writes nothing", () => {
+      saveLS(K_FOOD_TARGETS, [TARGET]);
+      saveLS(K_FOOD_ENTRIES, [null, entry(todayLocal(), 300)]);
+      const before = stored();
+      render(<FoodSummaryCard />);
+      expect(screen.getByText("300 / 2000 kcal")).toBeInTheDocument();
+      expect(stored()).toEqual(before);
+    });
+
+    it("renders with [null] in targets, uses the valid row and writes nothing", () => {
+      saveLS(K_FOOD_TARGETS, [null, TARGET]);
+      const before = stored();
+      render(<FoodSummaryCard />);
+      expect(screen.getByText("0 / 2000 kcal")).toBeInTheDocument();
+      expect(stored()).toEqual(before);
+    });
+
+    it("shows the set-up prompt when targets holds only [null]", () => {
+      saveLS(K_FOOD_TARGETS, [null]);
+      const before = stored();
+      render(<FoodSummaryCard />);
+      expect(screen.getByText(/Set up food tracking/)).toBeInTheDocument();
+      expect(stored()).toEqual(before);
+    });
+
+    it("renders with an entry dated today with no per100 and writes nothing", () => {
+      const noPer100 = { ...entry(todayLocal(), 900), per100: undefined };
+      saveLS(K_FOOD_TARGETS, [TARGET]);
+      saveLS(K_FOOD_ENTRIES, [noPer100, entry(todayLocal(), 300)]);
+      const before = stored();
+      render(<FoodSummaryCard />);
+      expect(screen.getByText("300 / 2000 kcal")).toBeInTheDocument();
+      expect(stored()).toEqual(before);
+    });
+
+    it("counts a duplicate entry once, the same total /food shows", () => {
+      saveLS(K_FOOD_TARGETS, [TARGET]);
+      saveLS(K_FOOD_ENTRIES, [
+        entry(todayLocal(), 300),
+        entry(todayLocal(), 300),
+      ]);
+      render(<FoodSummaryCard />);
+      expect(screen.getByText("300 / 2000 kcal")).toBeInTheDocument();
+    });
   });
 
   it("is back on the machine zone after the UTC+7 tests", () => {

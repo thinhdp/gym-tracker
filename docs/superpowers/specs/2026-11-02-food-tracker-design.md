@@ -82,7 +82,7 @@ src/food/
 │   ├── foodApi.js              # the only file that knows the API shape
 │   ├── foodApiFixture.js       # fixture fetch used in tests and when VITE_FOOD_API_BASE=fixture
 │   ├── barcode.js              # detector selection (BarcodeDetector | zxing), format list
-│   └── normalize.js            # normalizeFoodData() for backup import
+│   └── normalize.js            # normalizeFoodData() for backup import and load
 └── components/
     ├── FoodBottomNav.jsx       # Today | Search | Trends | Settings
     ├── TodayView.jsx           # date header, MacroBars, RecentRow, six MealSlots
@@ -316,8 +316,38 @@ A backup without a `food` field leaves food data untouched in both modes.
 
 Merge rewrites no stored row, except a recent row replaced by a newer `lastAt`. The
 recent list is also de-duplicated and capped, which can remove stored rows.
-`normalizeFoodData` runs on incoming rows only. The detailed row rules are in
+A merge runs `normalizeFoodData` on incoming rows only. The detailed row rules are in
 `docs/superpowers/plans/2026-11-02-food-tracker-handoffs.md` (Part E rulings).
+
+**Loading stored rows (issue #126).** The same rules also apply when stored rows are
+read, so one shape rule covers load and import:
+
+- `FoodProvider` loads all five lists through `normalizeFoodData`. Its existing
+  write-back then saves the result, so a row that fails the rules is deleted from
+  storage for good, and a row the rules repair (a missing `createdAt`, an optional
+  field of the wrong type) is saved repaired. Valid rows the app wrote keep every value
+  they hold. A stored non-array still loads as `[]` and is overwritten, as before.
+- A merge restore can still keep a malformed stored row. The next `/food` load removes
+  it. For entries, targets, custom foods and saved meals, if the backup holds a valid
+  row with the same key, a merge made before that load keeps the malformed row and skips
+  the valid one; a second merge after the load adds the valid one. Recent rows follow
+  the newer `lastAt` and the cap instead. A row the load repaired keeps its key, so a
+  later merge does not replace it.
+- `FoodProvider` exposes `droppedRows`: for the lists stored as arrays, the number of
+  rows in storage minus the number of rows after normalising, summed over the five
+  lists. A duplicate counts as removed. A stored non-array counts as 0. A saved meal
+  that loses some items but stays counts as 0, and so does a repaired row.
+- When `droppedRows` is above 0, `/food` shows a one-line note on every tab until the
+  next page load: "Removed N damaged food rows from this device. A backup can restore
+  them." For one row it reads "Removed 1 damaged food row from this device. A backup can
+  restore it." Nothing about the note is stored. The write-back has already removed the rows,
+  so the next load counts 0 and shows no note. The owner chose this on 2026-11-03.
+- `FoodSummaryCard` on gym Home reads entries and targets through the same rules and
+  uses the result for that render only. It writes nothing, so it deletes nothing and
+  shows no note. Home shows the same totals `/food` will show. Other views read these
+  lists from `FoodProvider`.
+- A backup export reads storage as it is, so it includes a malformed row until `/food`
+  has loaded once.
 
 ## 6. Screens
 
@@ -399,15 +429,16 @@ gym `BottomNav`. The active tab persists in `mgym.food.tab`.
   `<a href="/food">`.
 - Without a target or with no entries ever: "Set up food tracking →".
 - Reads `mgym.food.entries.v1` and `mgym.food.targets.v1` directly through the
-  food lib (`loadLS` + `targetForDate` + `sumMacros`); it does not use
+  food lib (`loadLS` + `normalizeFoodData` + `targetForDate` + `sumMacros`); it does not use
   `FoodContext`.
 
 ## 7. State and persistence inside the food app
 
 `FoodProvider` (in `src/food/context/FoodContext.jsx`) owns `entries`,
 `targets`, `customFoods`, `savedMeals`, `recent`, each initialised lazily with
-`loadLS` and written back by a `useEffect` on change, the same pattern as
-`AppProvider`. It exposes `useFood()` with the lists and these actions:
+`loadLS` and `normalizeFoodData` (section 5.9) and written back by a `useEffect` at
+mount and on change, the same pattern as `AppProvider`. It exposes `useFood()` with the lists,
+`droppedRows` and these actions:
 `addEntry`, `updateEntry`, `deleteEntry`, `logSavedMeal`, `saveMealFromSlot`,
 `upsertCustomFood`, `deleteCustomFood`, `upsertTarget`, `deleteTarget`,
 `touchRecent`. Views read `useFood()` directly; presentational children get
@@ -428,6 +459,7 @@ with `loadLS`/`saveLS` directly.
 | Invalid grams (≤ 0, NaN)         | Add/Save disabled; field outlined.                                                |
 | Target with kcal ≤ 0             | Save disabled.                                                                    |
 | Backup import with bad food rows | Rows dropped by `normalizeFoodData`; import continues.                            |
+| Malformed stored food rows       | Removed on `/food` load, with a one-line note (section 5.9). Home ignores them.   |
 | localStorage write throws        | Existing `saveLS` behaviour (unchanged).                                          |
 
 No `window.alert` / `window.confirm`; use `useConfirm()` and inline notes.

@@ -7,6 +7,7 @@ import {
   K_FOOD_MEALS,
   K_FOOD_RECENT,
 } from "../lib/keys";
+import { normalizeFoodData } from "../lib/normalize";
 import {
   upsertTarget as upsertTargetRow,
   deleteTarget as deleteTargetRow,
@@ -14,20 +15,42 @@ import {
 
 const FoodContext = createContext(null);
 
-// loadLS returns any parsed JSON value, so a stored non-array needs this guard.
-const loadList = (key) => {
-  const stored = loadLS(key, []);
-  return Array.isArray(stored) ? stored : [];
+const LIST_KEYS = {
+  entries: K_FOOD_ENTRIES,
+  targets: K_FOOD_TARGETS,
+  customFoods: K_FOOD_CUSTOM,
+  savedMeals: K_FOOD_MEALS,
+  recent: K_FOOD_RECENT,
 };
 
 /**
- * One stored list: loaded lazily and written back on change, the same pattern as
- * AppProvider. `update` applies its change to `latest` at once, so an action can
+ * The five stored lists through the shared shape rules, and how many rows those
+ * rules removed. loadLS returns any parsed JSON value, so a stored non-array loads
+ * as [] and counts as 0.
+ */
+const loadLists = () => {
+  const raw = {};
+  for (const [name, key] of Object.entries(LIST_KEYS)) {
+    raw[name] = loadLS(key, []);
+  }
+  const lists = normalizeFoodData(raw);
+  let droppedRows = 0;
+  for (const name of Object.keys(LIST_KEYS)) {
+    if (Array.isArray(raw[name])) {
+      droppedRows += raw[name].length - lists[name].length;
+    }
+  }
+  return { lists, droppedRows };
+};
+
+/**
+ * One stored list: starts from `initial` and is written back on change, the same
+ * pattern as AppProvider. `update` applies its change to `latest` at once, so an action can
  * read the current list and return synchronously, even in the same batch as an
  * earlier action or from a function held since an earlier render.
  */
-function useStoredList(key) {
-  const [list, setList] = useState(() => loadList(key));
+function useStoredList(key, initial) {
+  const [list, setList] = useState(initial);
   const latest = useRef(list);
   useEffect(() => saveLS(key, list), [key, list]);
   const update = (change) => {
@@ -39,12 +62,22 @@ function useStoredList(key) {
 
 /** Owns the food app's stored lists. */
 export function FoodProvider({ children }) {
-  const [entries, updateEntries, latestEntries] = useStoredList(K_FOOD_ENTRIES);
-  const [targets, updateTargets] = useStoredList(K_FOOD_TARGETS);
-  const [customFoods, updateCustomFoods] = useStoredList(K_FOOD_CUSTOM);
-  const [savedMeals, updateSavedMeals, latestSavedMeals] =
-    useStoredList(K_FOOD_MEALS);
-  const [recent, updateRecent] = useStoredList(K_FOOD_RECENT);
+  // Lazy, so storage is read at mount only. droppedRows does not change after load.
+  const [{ lists, droppedRows }] = useState(loadLists);
+  const [entries, updateEntries, latestEntries] = useStoredList(
+    K_FOOD_ENTRIES,
+    lists.entries,
+  );
+  const [targets, updateTargets] = useStoredList(K_FOOD_TARGETS, lists.targets);
+  const [customFoods, updateCustomFoods] = useStoredList(
+    K_FOOD_CUSTOM,
+    lists.customFoods,
+  );
+  const [savedMeals, updateSavedMeals, latestSavedMeals] = useStoredList(
+    K_FOOD_MEALS,
+    lists.savedMeals,
+  );
+  const [recent, updateRecent] = useStoredList(K_FOOD_RECENT, lists.recent);
 
   const addEntry = ({
     date,
@@ -147,6 +180,7 @@ export function FoodProvider({ children }) {
     customFoods,
     savedMeals,
     recent,
+    droppedRows,
     addEntry,
     updateEntry,
     deleteEntry,
