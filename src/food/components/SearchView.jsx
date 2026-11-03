@@ -12,6 +12,7 @@ import {
 import { slotForTime } from "../lib/slots";
 import CustomFoodForm from "./CustomFoodForm";
 import PortionSheet from "./PortionSheet";
+import SavedMealsPanel from "./SavedMealsPanel";
 import SearchResultRow from "./SearchResultRow";
 
 const MIN_QUERY_LENGTH = 2;
@@ -34,6 +35,7 @@ export default function SearchView({ date, presetSlot, onLogged, onScan }) {
   const [errorText, setErrorText] = useState(null);
   const [selected, setSelected] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [mealsSlot, setMealsSlot] = useState(null);
   const pending = useRef({ timer: null, controller: null });
 
   // On unmount, drop the waiting debounce and the request in flight.
@@ -80,6 +82,11 @@ export default function SearchView({ date, presetSlot, onLogged, onScan }) {
   const addFromSheet = (payload) => {
     addEntry({ ...payload, date });
     setSelected(null);
+    onLogged();
+  };
+
+  const logMeal = () => {
+    setMealsSlot(null);
     onLogged();
   };
 
@@ -130,9 +137,26 @@ export default function SearchView({ date, presetSlot, onLogged, onScan }) {
         ))}
       </div>
 
-      <Button type="button" onClick={() => setCreating(true)}>
-        Create custom food
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          onClick={() => setMealsSlot(presetSlot ?? slotForTime())}
+        >
+          Saved meals
+        </Button>
+        <Button type="button" onClick={() => setCreating(true)}>
+          Create custom food
+        </Button>
+      </div>
+
+      {mealsSlot && (
+        <SavedMealsPanel
+          date={date}
+          slot={mealsSlot}
+          onLogged={logMeal}
+          onClose={() => setMealsSlot(null)}
+        />
+      )}
 
       {creating && (
         <CustomFoodForm

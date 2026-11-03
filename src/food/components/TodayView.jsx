@@ -13,11 +13,13 @@ import { targetForDate } from "../lib/targets";
 import EntryEditSheet from "./EntryEditSheet";
 import MacroBars from "./MacroBars";
 import MealSlot from "./MealSlot";
+import SavedMealsPanel from "./SavedMealsPanel";
 
 /** One day's log: date navigation, macro bars and the six meal slots. */
 export default function TodayView({ date, onChangeDate, onAddTo }) {
   const { entries, targets, updateEntry, deleteEntry } = useFood();
   const [editing, setEditing] = useState(null);
+  const [mealsSlot, setMealsSlot] = useState(null);
 
   const dayEntries = entries.filter((entry) => entry.date === date);
 
@@ -68,8 +70,18 @@ export default function TodayView({ date, onChangeDate, onAddTo }) {
             .sort((a, b) => a.createdAt - b.createdAt)}
           onAdd={onAddTo}
           onEdit={setEditing}
+          onMenu={setMealsSlot}
         />
       ))}
+
+      {mealsSlot && (
+        <SavedMealsPanel
+          date={date}
+          slot={mealsSlot}
+          onLogged={() => setMealsSlot(null)}
+          onClose={() => setMealsSlot(null)}
+        />
+      )}
 
       {editing && (
         <EntryEditSheet

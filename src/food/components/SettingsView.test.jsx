@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { ConfirmProvider } from "../../components/ConfirmDialog";
 import { loadLS, saveLS } from "../../lib/storage";
 import { FoodProvider } from "../context/FoodContext";
-import { K_FOOD_CUSTOM, K_FOOD_ENTRIES } from "../lib/keys";
+import { K_FOOD_CUSTOM, K_FOOD_ENTRIES, K_FOOD_MEALS } from "../lib/keys";
 import SettingsView from "./SettingsView";
 
 const BAR = {
@@ -188,5 +188,143 @@ describe("SettingsView custom foods", () => {
 
     expect(within(section()).getByText("Oat bar")).toBeVisible();
     expect(loadLS(K_FOOD_CUSTOM)).toEqual([BAR]);
+  });
+});
+
+describe("SettingsView saved meals", () => {
+  const ITEM = {
+    name: "Oat bar",
+    grams: 45,
+    per100: BAR.per100,
+    food: { kind: "custom", id: "c1" },
+  };
+  const BREAKFAST = {
+    id: "m1",
+    name: "Breakfast",
+    items: [ITEM],
+    createdAt: 1,
+  };
+  const SUPPER = { id: "m2", name: "Supper", items: [ITEM], createdAt: 2 };
+  const meals = () => screen.getByRole("region", { name: "Saved meals" });
+
+  it("shows one line and no buttons when there are none", () => {
+    setup();
+    expect(within(meals()).getByText("No saved meals yet")).toBeVisible();
+    expect(within(meals()).queryAllByRole("button")).toEqual([]);
+  });
+
+  it("places the section after Custom foods and before the Back to Gym link", () => {
+    setup();
+    const back = screen.getByRole("link", { name: "Back to Gym" });
+    expect(
+      section().compareDocumentPosition(meals()) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      meals().compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("rename and delete in Settings", async () => {
+    saveLS(K_FOOD_MEALS, [BREAKFAST, SUPPER]);
+    const user = setup();
+
+    await user.click(screen.getByRole("button", { name: "Rename Breakfast" }));
+    const input = within(meals()).getByLabelText("Name for Breakfast");
+    expect(input).toHaveValue("Breakfast");
+    await user.clear(input);
+    await user.type(input, "  Big breakfast  ");
+    await user.click(within(meals()).getByRole("button", { name: "Save" }));
+
+    expect(within(meals()).getByText("Big breakfast")).toBeVisible();
+    expect(loadLS(K_FOOD_MEALS)).toEqual([
+      { ...BREAKFAST, name: "Big breakfast" },
+      SUPPER,
+    ]);
+
+    await user.click(
+      screen.getByRole("button", { name: "Delete Big breakfast" }),
+    );
+    expect(loadLS(K_FOOD_MEALS)).toHaveLength(2);
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(await within(meals()).findByText("Supper")).toBeVisible();
+    expect(within(meals()).queryByText("Big breakfast")).toBeNull();
+    expect(loadLS(K_FOOD_MEALS)).toEqual([SUPPER]);
+  });
+
+  it("a blank rename blocks Save and leaves the name alone", async () => {
+    saveLS(K_FOOD_MEALS, [BREAKFAST]);
+    const user = setup();
+    await user.click(screen.getByRole("button", { name: "Rename Breakfast" }));
+    const input = within(meals()).getByLabelText("Name for Breakfast");
+    const save = within(meals()).getByRole("button", { name: "Save" });
+
+    await user.clear(input);
+    expect(save).toBeDisabled();
+    await user.type(input, "   ");
+    expect(save).toBeDisabled();
+    expect(loadLS(K_FOOD_MEALS)).toEqual([BREAKFAST]);
+  });
+
+  it("Cancel on a rename restores the row and changes nothing", async () => {
+    saveLS(K_FOOD_MEALS, [BREAKFAST]);
+    const user = setup();
+    await user.click(screen.getByRole("button", { name: "Rename Breakfast" }));
+    await user.type(within(meals()).getByLabelText("Name for Breakfast"), "x");
+    await user.click(within(meals()).getByRole("button", { name: "Cancel" }));
+
+    expect(within(meals()).queryByRole("textbox")).toBeNull();
+    expect(within(meals()).getByText("Breakfast")).toBeVisible();
+    expect(loadLS(K_FOOD_MEALS)).toEqual([BREAKFAST]);
+  });
+
+  it("renames only the row it was opened on", async () => {
+    saveLS(K_FOOD_MEALS, [BREAKFAST, SUPPER]);
+    const user = setup();
+    await user.click(screen.getByRole("button", { name: "Rename Supper" }));
+
+    const rows = within(meals()).getAllByRole("listitem");
+    expect(within(rows[0]).queryByRole("textbox")).toBeNull();
+    expect(within(rows[1]).getByRole("textbox")).toHaveValue("Supper");
+  });
+
+  it("the delete confirm is destructive and says logged entries keep their values", async () => {
+    saveLS(K_FOOD_MEALS, [BREAKFAST]);
+    const user = setup();
+    await user.click(screen.getByRole("button", { name: "Delete Breakfast" }));
+
+    expect(
+      screen.getByText(
+        "Breakfast will be removed. Entries already logged keep their values.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Delete" })).toHaveClass(
+      "bg-red-600",
+    );
+  });
+
+  it("cancelling the confirm keeps the meal", async () => {
+    saveLS(K_FOOD_MEALS, [BREAKFAST]);
+    const user = setup();
+    await user.click(screen.getByRole("button", { name: "Delete Breakfast" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(within(meals()).getByText("Breakfast")).toBeVisible();
+    expect(loadLS(K_FOOD_MEALS)).toEqual([BREAKFAST]);
+  });
+
+  it("deleting a meal leaves logged entries as they are", async () => {
+    saveLS(K_FOOD_MEALS, [BREAKFAST]);
+    saveLS(K_FOOD_ENTRIES, [ENTRY]);
+    const user = setup();
+    await user.click(screen.getByRole("button", { name: "Delete Breakfast" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(
+      await within(meals()).findByText("No saved meals yet"),
+    ).toBeVisible();
+    expect(loadLS(K_FOOD_MEALS)).toEqual([]);
+    expect(loadLS(K_FOOD_ENTRIES)).toEqual([ENTRY]);
   });
 });

@@ -550,6 +550,66 @@ describe("FoodProvider saved meals", () => {
   });
 });
 
+describe("FoodProvider saved meal edits", () => {
+  it("updateSavedMeal merges the patch into that meal only and persists", () => {
+    const first = mealRow("a");
+    const second = mealRow("b");
+    saveLS(K_FOOD_MEALS, [first, second]);
+    const { result } = setup();
+    act(() => {
+      result.current.updateSavedMeal("a", { name: "Renamed" });
+    });
+    const expected = [{ ...first, name: "Renamed" }, second];
+    expect(result.current.savedMeals).toEqual(expected);
+    expect(loadLS(K_FOOD_MEALS)).toEqual(expected);
+  });
+
+  it("updateSavedMeal with an unknown id changes nothing", () => {
+    const first = mealRow("a");
+    saveLS(K_FOOD_MEALS, [first]);
+    const { result } = setup();
+    act(() => {
+      result.current.updateSavedMeal("missing", { name: "Renamed" });
+    });
+    expect(result.current.savedMeals).toEqual([first]);
+    expect(loadLS(K_FOOD_MEALS)).toEqual([first]);
+  });
+
+  it("deleteSavedMeal removes that meal only and persists", () => {
+    const first = mealRow("a");
+    const second = mealRow("b");
+    saveLS(K_FOOD_MEALS, [first, second]);
+    const { result } = setup();
+    act(() => {
+      result.current.deleteSavedMeal("a");
+    });
+    expect(result.current.savedMeals).toEqual([second]);
+    expect(loadLS(K_FOOD_MEALS)).toEqual([second]);
+  });
+
+  it("deleteSavedMeal leaves logged entries alone", () => {
+    const logged = storedEntry("e");
+    saveLS(K_FOOD_MEALS, [mealRow("a")]);
+    saveLS(K_FOOD_ENTRIES, [logged]);
+    const { result } = setup();
+    act(() => {
+      result.current.deleteSavedMeal("a");
+    });
+    expect(loadLS(K_FOOD_ENTRIES)).toEqual([logged]);
+  });
+
+  it("logSavedMeal does not find a meal deleted earlier in the same batch", () => {
+    saveLS(K_FOOD_MEALS, [mealRow("a")]);
+    const { result } = setup();
+    let added;
+    act(() => {
+      result.current.deleteSavedMeal("a");
+      added = result.current.logSavedMeal("a", "2026-11-03", "dinner");
+    });
+    expect(added).toEqual([]);
+  });
+});
+
 describe("FoodProvider custom foods", () => {
   it("upsertCustomFood adds id and createdAt when missing", () => {
     const { result } = setup();

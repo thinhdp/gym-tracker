@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ConfirmProvider } from "../../components/ConfirmDialog";
 import { loadLS, saveLS } from "../../lib/storage";
 import { FoodProvider } from "../context/FoodContext";
-import { K_FOOD_ENTRIES, K_FOOD_TARGETS } from "../lib/keys";
+import { K_FOOD_ENTRIES, K_FOOD_MEALS, K_FOOD_TARGETS } from "../lib/keys";
 import { formatDayHeader, todayLocal } from "../lib/localDate";
 import { SLOTS } from "../lib/slots";
 import TodayView from "./TodayView";
@@ -298,10 +298,96 @@ describe("TodayView", () => {
     expect(onAddTo).toHaveBeenCalledWith("snack2");
   });
 
-  it("disables the options button while there is no menu", () => {
-    setup();
-    expect(
-      screen.getByRole("button", { name: "Lunch options" }),
-    ).toBeDisabled();
+  describe("saved meals panel", () => {
+    const MEAL = {
+      id: "m1",
+      name: "Rice bowl",
+      items: [
+        {
+          name: "rice",
+          grams: 200,
+          per100: PER100,
+          food: { kind: "db", id: "food-rice" },
+        },
+      ],
+      createdAt: 500,
+    };
+    const panel = () => screen.getByRole("dialog", { name: "Saved meals" });
+
+    it("the options button is enabled and opens the panel for that slot and date", async () => {
+      const { user } = setup();
+      const options = screen.getByRole("button", { name: "Lunch options" });
+      expect(options).toBeEnabled();
+      expect(screen.queryByRole("dialog")).toBeNull();
+
+      await user.click(options);
+
+      expect(
+        within(panel()).getByText(`Lunch · ${formatDayHeader("2026-11-02")}`),
+      ).toBeVisible();
+    });
+
+    it("opens on the slot whose button was pressed", async () => {
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Dinner options" }));
+      expect(
+        within(panel()).getByText(`Dinner · ${formatDayHeader("2026-11-02")}`),
+      ).toBeVisible();
+    });
+
+    it("logging a meal adds its items to the viewed day and slot and closes the panel", async () => {
+      saveLS(K_FOOD_MEALS, [MEAL]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Next day" }));
+      await user.click(screen.getByRole("button", { name: "Dinner options" }));
+      await user.click(
+        within(panel()).getByRole("button", { name: /Rice bowl/ }),
+      );
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(slotRegion("Dinner").getByText("rice")).toBeVisible();
+      const stored = loadLS(K_FOOD_ENTRIES);
+      expect(stored).toHaveLength(1);
+      expect(stored[0].date).toBe("2026-11-03");
+      expect(stored[0].slot).toBe("dinner");
+    });
+
+    it("offers Save as meal only on a slot with entries on the viewed day", async () => {
+      saveLS(K_FOOD_ENTRIES, [entry("rice", { slot: "lunch" })]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Dinner options" }));
+      expect(within(panel()).queryByLabelText("Save as meal")).toBeNull();
+      await user.click(within(panel()).getByRole("button", { name: "Close" }));
+
+      await user.click(screen.getByRole("button", { name: "Lunch options" }));
+      expect(within(panel()).getByLabelText("Save as meal")).toBeVisible();
+    });
+
+    it("Save as meal stores the meal and closes the panel", async () => {
+      saveLS(K_FOOD_ENTRIES, [entry("rice", { slot: "lunch" })]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Lunch options" }));
+      await user.type(
+        within(panel()).getByLabelText("Save as meal"),
+        "Usual lunch",
+      );
+      await user.click(within(panel()).getByRole("button", { name: "Save" }));
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(loadLS(K_FOOD_MEALS).map((meal) => meal.name)).toEqual([
+        "Usual lunch",
+      ]);
+    });
+
+    it("Close leaves the panel closed with nothing changed", async () => {
+      saveLS(K_FOOD_MEALS, [MEAL]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Lunch options" }));
+      await user.click(within(panel()).getByRole("button", { name: "Close" }));
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
+      expect(loadLS(K_FOOD_MEALS)).toEqual([MEAL]);
+    });
   });
 });

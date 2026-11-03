@@ -148,6 +148,14 @@ export function FoodProvider({ children }) {
     return newEntries;
   };
 
+  const updateSavedMeal = (id, patch) =>
+    updateSavedMeals((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+    );
+
+  const deleteSavedMeal = (id) =>
+    updateSavedMeals((prev) => prev.filter((m) => m.id !== id));
+
   const upsertCustomFood = (food) => {
     const row = {
       ...food,
@@ -186,6 +194,8 @@ export function FoodProvider({ children }) {
     deleteEntry,
     logSavedMeal,
     saveMealFromSlot,
+    updateSavedMeal,
+    deleteSavedMeal,
     upsertCustomFood,
     deleteCustomFood,
     upsertTarget,
