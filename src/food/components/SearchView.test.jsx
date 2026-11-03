@@ -1254,8 +1254,8 @@ describe("SearchView", () => {
     });
 
     it("clearing with a short query clears the state and searches nothing", async () => {
-      setOnLine(false);
       const { user } = setup();
+      await fire("offline");
       await user.click(tryAgain());
       expectOnline();
       expect(searchFoods).not.toHaveBeenCalled();
@@ -1345,6 +1345,101 @@ describe("SearchView", () => {
       await fire("online");
       expect(recentHeading()).toBeNull();
       expect(screen.queryByRole("button", { name: /Boiled egg/ })).toBeNull();
+    });
+
+    it("hides Try again while navigator.onLine is false; the online event still clears the state", async () => {
+      setOnLine(false);
+      setup();
+      expect(screen.getByText(NOTE)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+
+      setOnLine(true);
+      await fire("online");
+      expectOnline();
+    });
+
+    it("shows Try again when the browser reports a connection but a request failed offline", async () => {
+      searchFoods.mockRejectedValueOnce(new FoodApiError("offline"));
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(tryAgain()).toBeInTheDocument();
+    });
+
+    it("an offline event closes an open scanner", async () => {
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Scan barcode" }));
+      expect(
+        screen.getByRole("dialog", { name: "Scan barcode" }),
+      ).toBeInTheDocument();
+
+      await fire("offline");
+      expect(screen.queryByRole("dialog", { name: "Scan barcode" })).toBeNull();
+      expectOffline();
+    });
+
+    it("a lookup that fails with unavailable after going offline shows no error once back online", async () => {
+      const lookup = deferred();
+      lookupBarcode.mockReturnValueOnce(lookup.promise);
+      const { user } = setup();
+      await enterCode(user);
+      await fire("offline");
+      await settle(() => lookup.reject(new FoodApiError("unavailable")));
+      await fire("online");
+      expect(screen.queryByText("Search unavailable, try again")).toBeNull();
+    });
+
+    it("a second online event after the state cleared does not search again", async () => {
+      const { user } = setup();
+      await user.type(box(), "chicken");
+      await fire("offline");
+      await fire("online");
+      expect(searchFoods).toHaveBeenCalledTimes(1);
+
+      await fire("online");
+      expect(searchFoods).toHaveBeenCalledTimes(1);
+    });
+
+    it("going offline empties the results, so they do not return while a re-run is pending", async () => {
+      searchFoods.mockResolvedValueOnce([food("a", "API chicken")]);
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(screen.getByText("API chicken")).toBeInTheDocument();
+
+      await fire("offline");
+      await fire("online");
+      expect(screen.queryByText("API chicken")).toBeNull();
+    });
+
+    it("an error line from before going offline is gone after coming back online", async () => {
+      searchFoods.mockRejectedValueOnce(new FoodApiError("unavailable"));
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      const line = () => screen.queryByText("Search unavailable, try again");
+      expect(line()).toBeInTheDocument();
+
+      await fire("offline");
+      expect(line()).toBeNull();
+      await fire("online");
+      expect(line()).toBeNull();
+    });
+
+    it("pressing Custom foods while offline does not change the online list state", async () => {
+      setOnLine(false);
+      saveLS(K_FOOD_CUSTOM, [CUSTOM]);
+      const { user } = setup();
+      await user.click(screen.getByRole("button", { name: "Custom foods" }));
+
+      setOnLine(true);
+      await fire("online");
+      expect(screen.queryByText("Chicken Salad")).toBeNull();
+      expect(
+        screen.getByRole("button", { name: "Custom foods" }),
+      ).toHaveAttribute("aria-pressed", "false");
     });
 
     it("an online event while online changes nothing", async () => {

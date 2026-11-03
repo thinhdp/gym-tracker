@@ -825,7 +825,7 @@ describe("FoodProvider recent", () => {
     ]);
     const { result } = setup();
     const portions = [
-      { label: "1 bar", grams: 60 },
+      { label: "1 bar", grams: 45 },
       { label: "half", grams: 30 },
     ];
     act(() => {
@@ -838,6 +838,7 @@ describe("FoodProvider recent", () => {
     });
 
     const expected = customRecent("x", {
+      food: { kind: "custom", id: "x", barcode: "8934563138165" },
       name: "Edited",
       per100: NEW_PER100,
       portions,
@@ -862,6 +863,72 @@ describe("FoodProvider recent", () => {
     });
     expect(result.current.recent[0]).not.toHaveProperty("lastPortionLabel");
     expect(result.current.recent[0].lastGrams).toBe(45);
+  });
+
+  it("editing a custom food removes lastPortionLabel when the portion with that label has other grams", () => {
+    saveLS(K_FOOD_CUSTOM, [customRow("x")]);
+    saveLS(K_FOOD_RECENT, [customRecent("x")]);
+    const { result } = setup();
+    act(() => {
+      result.current.upsertCustomFood({
+        ...customRow("x"),
+        portions: [{ label: "1 bar", grams: 60 }],
+      });
+    });
+    expect(result.current.recent[0]).not.toHaveProperty("lastPortionLabel");
+    expect(result.current.recent[0].lastGrams).toBe(45);
+    expect(result.current.recent[0].portions).toEqual([
+      { label: "1 bar", grams: 60 },
+    ]);
+  });
+
+  it("editing a custom food keeps lastPortionLabel when a portion has that label and the grams of lastGrams", () => {
+    saveLS(K_FOOD_CUSTOM, [customRow("x")]);
+    saveLS(K_FOOD_RECENT, [customRecent("x")]);
+    const { result } = setup();
+    act(() => {
+      result.current.upsertCustomFood({
+        ...customRow("x"),
+        portions: [
+          { label: "1 bar", grams: 45 },
+          { label: "other", grams: 90 },
+        ],
+      });
+    });
+    expect(result.current.recent[0].lastPortionLabel).toBe("1 bar");
+  });
+
+  it("editing a custom food updates the barcode on its recent row's food, and removes it when the food has none", () => {
+    saveLS(K_FOOD_CUSTOM, [customRow("x")]);
+    saveLS(K_FOOD_RECENT, [
+      customRecent("x", {
+        food: { kind: "custom", id: "x", barcode: "111" },
+      }),
+    ]);
+    const { result } = setup();
+    act(() => {
+      result.current.upsertCustomFood({ ...customRow("x"), barcode: "222" });
+    });
+    expect(result.current.recent[0].food).toStrictEqual({
+      kind: "custom",
+      id: "x",
+      barcode: "222",
+    });
+
+    act(() => {
+      result.current.upsertCustomFood({
+        ...customRow("x"),
+        barcode: undefined,
+      });
+    });
+    expect(result.current.recent[0].food).toStrictEqual({
+      kind: "custom",
+      id: "x",
+    });
+    expect(loadLS(K_FOOD_RECENT)[0].food).toStrictEqual({
+      kind: "custom",
+      id: "x",
+    });
   });
 
   it("editing a custom food to no portions gives [] and removes lastPortionLabel", () => {

@@ -65,14 +65,25 @@ const customRecentKey = (id) => recentKey({ kind: "custom", id });
 
 /**
  * A recent row after its custom food was edited. Position, lastAt and lastGrams
- * stay; a last portion label stays only while the food still has that portion.
+ * stay; the last portion label stays only while the food has a portion with that
+ * label and the grams of lastGrams. The food's barcode follows the edited food.
  */
 const refreshRecentRow = (row, food) => {
   const portions = food.portions ?? [];
   const next = { ...row, name: food.name, per100: food.per100, portions };
-  if (!portions.some((portion) => portion.label === row.lastPortionLabel)) {
+  if (
+    !portions.some(
+      (portion) =>
+        portion.label === row.lastPortionLabel &&
+        portion.grams === row.lastGrams,
+    )
+  ) {
     delete next.lastPortionLabel;
   }
+  const ref = { ...row.food };
+  if (food.barcode) ref.barcode = food.barcode;
+  else delete ref.barcode;
+  next.food = ref;
   return next;
 };
 

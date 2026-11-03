@@ -108,6 +108,9 @@ describe("TodayView", () => {
         screen.getByRole("button", { name: "Options for Protein bar" }),
       );
       const sheet = within(screen.getByRole("dialog", { name: "Protein bar" }));
+      expect(
+        sheet.getByText(formatDayHeader("2026-11-03")),
+      ).toBeInTheDocument();
       expect(sheet.getByRole("spinbutton", { name: "Grams" })).toHaveValue(90);
       expect(sheet.getByRole("button", { name: "2 bars" })).toHaveAttribute(
         "aria-pressed",

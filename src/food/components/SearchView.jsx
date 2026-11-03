@@ -94,6 +94,7 @@ export default function SearchView({ date, presetSlot, onLogged }) {
     clearTimeout(pending.current.timer);
     pending.current.controller?.abort();
     dropLookup();
+    setScanning(false);
     setResults([]);
     setErrorText(null);
   }, [dropLookup]);
@@ -282,9 +283,11 @@ export default function SearchView({ date, presetSlot, onLogged }) {
           <p className="text-sm text-red-600 dark:text-red-400">
             {OFFLINE_NOTE}
           </p>
-          <Button type="button" size="sm" onClick={clearOffline}>
-            Try again
-          </Button>
+          {navigator.onLine !== false && (
+            <Button type="button" size="sm" onClick={clearOffline}>
+              Try again
+            </Button>
+          )}
         </div>
       )}
 
