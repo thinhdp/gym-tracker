@@ -199,11 +199,7 @@ Recent: a stored row is replaced when the incoming row for that food has a newer
 - Range and metric are component state, so no stored key or `docs/DATA-MODEL.md` change is needed.
 - The axis tick is a short date plus `(n/7)`, not the plan's `<label> (n/7)`, which does not fit a phone. The table keeps the full label.
 - Next day has no upper limit, so a future day can be viewed and logged to (owner ruling: allow for now, change later in #137). Trends ignores entries after today's week.
-- Tick labels are angled, and Recharts drops some when they do not fit. In the longer ranges some weeks have no tick, so their logged-day count shows only in the table. Spec 6.3 can be read as each drawn label or each week; this takes the first reading. Measured with `interval={0}` at 390 px, 12 weeks overlapped.
-
-**Open for the owner:**
-
-- The per-week count reading above.
+- Tick labels are angled, and Recharts drops some when they do not fit. In the longer ranges some weeks have no tick, so their logged-day count shows only in the table. Spec 6.3 can be read as each drawn label or each week; this takes the first reading. The owner's decision is tracked in #138. Measured with `interval={0}` at 390 px, 12 weeks overlapped.
 
 **Parked review findings** (real, low impact, deferred):
 
@@ -217,7 +213,7 @@ Recent: a stored row is replaced when the incoming row for that food has a newer
 - Part I: pass `onMenu` from `TodayView` to `MealSlot`. It receives the slot id, as `onAdd` does. Add a test that the button is enabled with `onMenu`.
 - Part K: add the Recent row to `TodayView` and empty states to `TrendsView` (All with no entries renders only the controls and an empty chart). A row with a null value is still a crash until #126 ships; `TodayView` and `weeklyIntake` read entries the same way.
 
-**Follow-ups:** #135, #137, and #126, #129, #132, #133 from earlier parts. Plan size: the plan file is still over the 30 KB limit in CLAUDE.md; the owner has not decided whether to cut it.
+**Follow-ups:** #135, #137, #138, and #126, #129, #132, #133 from earlier parts. Plan size: the plan file is still over the 30 KB limit in CLAUDE.md; the owner has not decided whether to cut it.
 
 **Unchecked steps moved:** none.
 
