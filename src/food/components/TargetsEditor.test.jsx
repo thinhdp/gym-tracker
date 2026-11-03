@@ -116,4 +116,37 @@ describe("TargetsEditor", () => {
     expect(loadLS(K_FOOD_TARGETS)).toEqual([OLDER]);
     expect(screen.getByLabelText("Calories")).toHaveValue(1700);
   });
+
+  it("prefills from the target in force today, not a future one, and keeps from at today", () => {
+    const past = {
+      from: "2000-01-01",
+      kcal: 1500,
+      protein: 100,
+      carb: 150,
+      fat: 50,
+    };
+    const future = {
+      from: "2999-01-01",
+      kcal: 3000,
+      protein: 200,
+      carb: 300,
+      fat: 100,
+    };
+    saveLS(K_FOOD_TARGETS, [past, future]);
+    setup();
+    expect(screen.getByLabelText("Calories")).toHaveValue(1500);
+    expect(screen.getByLabelText("Protein (g)")).toHaveValue(100);
+    expect(screen.getByLabelText("Carbs (g)")).toHaveValue(150);
+    expect(screen.getByLabelText("Fat (g)")).toHaveValue(50);
+    expect(screen.getByLabelText("Applies from")).toHaveValue(todayLocal());
+  });
+
+  it("deleting the only target leaves no target", async () => {
+    saveLS(K_FOOD_TARGETS, [OLD]);
+    const user = setup();
+    await user.click(screen.getByRole("button", { name: "Delete 2026-11-01" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    expect(loadLS(K_FOOD_TARGETS)).toEqual([]);
+    expect(screen.queryByRole("button", { name: /^Edit / })).toBeNull();
+  });
 });
