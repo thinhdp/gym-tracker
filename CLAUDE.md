@@ -281,6 +281,7 @@ the guard and confirm tests fail.
 - Never `--amend` when HEAD may be a merge commit (after `gh pr merge` and pull);
   check `git log -1` first.
 - Subagents never create or remove worktrees or touch `node_modules`. Fable creates
-  the worktree before dispatch and removes it after merge.
+  the worktree before dispatch and removes it after merge. Create it with the
+  final branch name; the **git-workflow** skill has the commands.
 - Inline `node -e`, `python -c` and `tsx -e` one-liners are blocked by a global hook:
   write a script file and run it.
