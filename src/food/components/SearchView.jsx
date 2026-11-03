@@ -71,6 +71,7 @@ export default function SearchView({ date, presetSlot, onLogged }) {
 
   const changeQuery = (event) => {
     const text = event.target.value;
+    dropLookup();
     setQuery(text);
     setErrorText(null);
     clearTimeout(pending.current.timer);
@@ -113,6 +114,16 @@ export default function SearchView({ date, presetSlot, onLogged }) {
   const dropLookup = () => {
     lookupToken.current += 1;
     setLookingUp(false);
+  };
+
+  const selectResult = (food) => {
+    dropLookup();
+    setSelected(food);
+  };
+
+  const openMeals = () => {
+    dropLookup();
+    setMealsSlot(presetSlot ?? slotForTime());
   };
 
   const openScanner = () => {
@@ -195,16 +206,13 @@ export default function SearchView({ date, presetSlot, onLogged }) {
           <SearchResultRow
             key={`${food.source}:${food.id}`}
             food={food}
-            onSelect={setSelected}
+            onSelect={selectResult}
           />
         ))}
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          onClick={() => setMealsSlot(presetSlot ?? slotForTime())}
-        >
+        <Button type="button" onClick={openMeals}>
           Saved meals
         </Button>
         <Button

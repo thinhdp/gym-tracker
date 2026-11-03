@@ -435,6 +435,96 @@ describe("SearchView", () => {
     });
   });
 
+  describe("barcode lookup superseded by another action", () => {
+    const CODE = "8934563138165";
+    const late = () => food("late", "Late food", { barcode: CODE });
+
+    async function enterCode(user, code = CODE) {
+      await user.click(screen.getByRole("button", { name: "Scan barcode" }));
+      const scanner = within(
+        screen.getByRole("dialog", { name: "Scan barcode" }),
+      );
+      await user.type(await scanner.findByLabelText("Barcode"), code);
+      await user.click(scanner.getByRole("button", { name: "Use" }));
+    }
+
+    it("tapping a search result keeps its sheet when the lookup settles later", async () => {
+      searchFoods.mockResolvedValueOnce([food("egg", "Egg")]);
+      const lookup = deferred();
+      lookupBarcode.mockReturnValueOnce(lookup.promise);
+      const { user } = setup();
+      await user.type(box(), "eg");
+      await tick(300);
+      await enterCode(user);
+      await user.click(rowButton(/Egg/));
+      expect(screen.queryByRole("status")).toBeNull();
+
+      await settle(() => lookup.resolve(late()));
+      expect(screen.getByRole("dialog", { name: "Egg" })).toBeInTheDocument();
+      expect(screen.queryByRole("dialog", { name: "Late food" })).toBeNull();
+    });
+
+    it("opening Saved meals keeps a late lookup from opening a sheet over it", async () => {
+      const lookup = deferred();
+      lookupBarcode.mockReturnValueOnce(lookup.promise);
+      const { user } = setup();
+      await enterCode(user);
+      await user.click(screen.getByRole("button", { name: "Saved meals" }));
+      expect(screen.queryByRole("status")).toBeNull();
+
+      await settle(() => lookup.resolve(late()));
+      expect(screen.queryByRole("dialog", { name: "Late food" })).toBeNull();
+      expect(screen.getAllByRole("dialog")).toHaveLength(1);
+      expect(
+        screen.getByRole("dialog", { name: "Saved meals" }),
+      ).toBeInTheDocument();
+    });
+
+    it("typing a query clears the status line and the late lookup opens nothing", async () => {
+      const lookup = deferred();
+      lookupBarcode.mockReturnValueOnce(lookup.promise);
+      const { user } = setup();
+      await enterCode(user);
+      expect(screen.getByRole("status")).toBeInTheDocument();
+
+      await user.type(box(), "e");
+      expect(screen.queryByRole("status")).toBeNull();
+      await settle(() => lookup.resolve(late()));
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("a not_found that settles after a newer scan started opens no form", async () => {
+      const first = deferred();
+      const second = deferred();
+      lookupBarcode
+        .mockReturnValueOnce(first.promise)
+        .mockReturnValueOnce(second.promise);
+      const { user } = setup();
+      await enterCode(user, CODE);
+      await enterCode(user, "12345678");
+
+      await settle(() => first.reject(new FoodApiError("not_found")));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(screen.getByRole("status")).toBeInTheDocument();
+    });
+
+    it("pressing Scan again drops the lookup in flight", async () => {
+      const lookup = deferred();
+      lookupBarcode.mockReturnValueOnce(lookup.promise);
+      const { user } = setup();
+      await enterCode(user);
+      await user.click(screen.getByRole("button", { name: "Scan barcode" }));
+      expect(screen.queryByRole("status")).toBeNull();
+
+      await settle(() => lookup.resolve(late()));
+      expect(screen.queryByRole("dialog", { name: "Late food" })).toBeNull();
+      expect(screen.getAllByRole("dialog")).toHaveLength(1);
+      expect(
+        screen.getByRole("dialog", { name: "Scan barcode" }),
+      ).toBeInTheDocument();
+    });
+  });
+
   describe("errors", () => {
     it("shows the rate-limited message on FoodApiError('rate_limited')", async () => {
       searchFoods.mockRejectedValueOnce(new FoodApiError("rate_limited"));

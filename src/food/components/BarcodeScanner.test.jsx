@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createDetector } from "../lib/barcode";
 import BarcodeScanner from "./BarcodeScanner";
@@ -17,6 +17,18 @@ function setMediaDevices(value) {
     writable: true,
   });
 }
+
+/** A promise the test settles by hand. */
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+const flush = () => act(async () => {});
 
 function setup() {
   const onDetected = vi.fn();
@@ -131,5 +143,98 @@ describe("BarcodeScanner", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(track.stop).toHaveBeenCalled();
     expect(detector.stop).toHaveBeenCalled();
+  });
+
+  describe("camera shutdown", () => {
+    it("stops a stream that arrives after unmount and creates no detector", async () => {
+      const track = { stop: vi.fn() };
+      const media = deferred();
+      setMediaDevices({ getUserMedia: vi.fn(() => media.promise) });
+      const { unmount } = setup();
+      unmount();
+
+      media.resolve({ getTracks: () => [track] });
+      await flush();
+      expect(track.stop).toHaveBeenCalled();
+      expect(createDetector).not.toHaveBeenCalled();
+    });
+
+    it("stops a stream that arrives after Cancel and attaches no video", async () => {
+      const track = { stop: vi.fn() };
+      const media = deferred();
+      setMediaDevices({ getUserMedia: vi.fn(() => media.promise) });
+      const { user, container, onCancel } = setup();
+      await user.click(screen.getByRole("button", { name: "Cancel" }));
+      expect(onCancel).toHaveBeenCalledTimes(1);
+
+      const stream = { getTracks: () => [track] };
+      media.resolve(stream);
+      await flush();
+      expect(track.stop).toHaveBeenCalled();
+      expect(container.querySelector("video").srcObject).not.toBe(stream);
+      expect(createDetector).not.toHaveBeenCalled();
+    });
+
+    it("stops a detector created after Cancel and never scans with it", async () => {
+      setMediaDevices({
+        getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [] }),
+      });
+      const created = deferred();
+      createDetector.mockReturnValue(created.promise);
+      const { user } = setup();
+      await waitFor(() => expect(createDetector).toHaveBeenCalled());
+      await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+      const detector = { detectOnce: vi.fn(), stop: vi.fn() };
+      created.resolve(detector);
+      await flush();
+      expect(detector.stop).toHaveBeenCalled();
+      expect(detector.detectOnce).not.toHaveBeenCalled();
+    });
+
+    it("does not report a code that decodes after Cancel", async () => {
+      setMediaDevices({
+        getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [] }),
+      });
+      const scan = deferred();
+      const detector = { detectOnce: vi.fn(() => scan.promise), stop: vi.fn() };
+      createDetector.mockResolvedValue(detector);
+      const { user, onDetected } = setup();
+      await waitFor(() => expect(detector.detectOnce).toHaveBeenCalled());
+      await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+      scan.resolve("8934563138165");
+      await flush();
+      expect(onDetected).not.toHaveBeenCalled();
+    });
+
+    it("stops the camera when the detector fails and shows the manual field", async () => {
+      const track = { stop: vi.fn() };
+      setMediaDevices({
+        getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [track] }),
+      });
+      const detector = {
+        detectOnce: vi.fn().mockRejectedValue(new Error("no scanner")),
+        stop: vi.fn(),
+      };
+      createDetector.mockResolvedValue(detector);
+      setup();
+
+      await screen.findByText("Camera unavailable");
+      expect(track.stop).toHaveBeenCalled();
+      expect(detector.stop).toHaveBeenCalled();
+    });
+
+    it("shows the manual field and stops the camera when createDetector rejects", async () => {
+      const track = { stop: vi.fn() };
+      setMediaDevices({
+        getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [track] }),
+      });
+      createDetector.mockRejectedValue(new Error("chunk failed"));
+      setup();
+
+      await screen.findByText("Camera unavailable");
+      expect(track.stop).toHaveBeenCalled();
+    });
   });
 });
