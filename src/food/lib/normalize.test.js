@@ -69,6 +69,56 @@ const recent = (id, overrides = {}) => ({
 /** Parsed JSON that String() throws on. */
 const unprintable = () => JSON.parse('{"toString":null}');
 
+/** Values that are not a valid FoodRef. */
+const BAD_FOOD_REFS = [
+  ["missing", undefined],
+  ["null", null],
+  ["a string", "egg"],
+  ["an array", []],
+  ["without a kind", { id: "egg" }],
+  ["of an unknown kind", { kind: "api", id: "egg" }],
+  ["without an id", { kind: "db" }],
+  ["with a numeric id", { kind: "db", id: 7 }],
+  ["with an empty id", { kind: "db", id: "" }],
+];
+
+/** Values that are not a string, for optional string fields. */
+const NON_STRINGS = [
+  ["a number", 42],
+  ["null", null],
+  ["a boolean", true],
+  ["an object", { a: 1 }],
+  ["an array", ["x"]],
+];
+
+const NON_ARRAYS = [
+  ["a string", "nope"],
+  ["a number", 7],
+  ["null", null],
+  ["an object", { label: "1 cup", grams: 240 }],
+];
+
+/** Mixed portion rows, and the ones that must survive. */
+const goodPortions = [
+  { label: "1 cup", grams: 240, isDefault: true },
+  { label: "", grams: 0.5 },
+];
+const mixedPortions = [
+  goodPortions[0],
+  null,
+  "1 cup",
+  ["1 cup", 240],
+  { grams: 240 },
+  { label: 7, grams: 240 },
+  { label: "1 cup" },
+  { label: "1 cup", grams: 0 },
+  { label: "1 cup", grams: -5 },
+  { label: "1 cup", grams: "240" },
+  { label: "1 cup", grams: Infinity },
+  { label: "1 cup", grams: NaN },
+  goodPortions[1],
+];
+
 const emptyData = () => ({
   entries: [],
   targets: [],
@@ -83,10 +133,12 @@ describe("normalizeEntry", () => {
     expect(normalizeEntry(valid)).toEqual(valid);
     expect(normalizeEntry(entry({ date: "03/01/2026" }))).toBeNull();
     expect(normalizeEntry(entry({ date: 20260301 }))).toBeNull();
+    expect(normalizeEntry(entry({ date: ["2026-03-01"] }))).toBeNull();
     expect(normalizeEntry(entry({ slot: "brunch" }))).toBeNull();
     expect(normalizeEntry(entry({ grams: 0 }))).toBeNull();
     expect(normalizeEntry(entry({ grams: -5 }))).toBeNull();
     expect(normalizeEntry(entry({ grams: "50" }))).toBeNull();
+    expect(normalizeEntry(entry({ grams: Infinity }))).toBeNull();
     expect(normalizeEntry(entry({ per100: undefined }))).toBeNull();
     expect(normalizeEntry(entry({ per100: null }))).toBeNull();
     expect(
@@ -128,20 +180,43 @@ describe("normalizeEntry", () => {
       expect(normalizeEntry(entry({ name: undefined })).name).toBe("");
       expect(normalizeEntry(entry({ name: unprintable() })).name).toBe("");
       expect(normalizeEntry(entry({ name: { a: 1 } })).name).toBe("");
+      expect(normalizeEntry(entry({ name: true })).name).toBe("true");
+      expect(normalizeEntry(entry({ name: false })).name).toBe("false");
       expect(normalizeEntry(entry({ createdAt: "1234" })).createdAt).toBe(1234);
       expect(normalizeEntry(entry({ createdAt: "soon" })).createdAt).toBe(5555);
       expect(normalizeEntry(entry({ createdAt: null })).createdAt).toBe(5555);
+      expect(normalizeEntry(entry({ createdAt: "" })).createdAt).toBe(5555);
+      expect(normalizeEntry(entry({ createdAt: "   " })).createdAt).toBe(5555);
     } finally {
       vi.restoreAllMocks();
     }
   });
 
-  it("keeps optional fields and an entry whose food is missing or malformed", () => {
+  it("keeps a string portionLabel and every valid kind of FoodRef", () => {
     expect(
       normalizeEntry(entry({ portionLabel: "1 large egg" })).portionLabel,
     ).toBe("1 large egg");
-    expect(normalizeEntry(entry({ food: undefined }))).not.toBeNull();
-    expect(normalizeEntry(entry({ food: "egg" })).food).toBe("egg");
+    const scanned = { kind: "custom", id: "c1", barcode: "123" };
+    expect(normalizeEntry(entry({ food: scanned })).food).toEqual(scanned);
+  });
+
+  it.each(BAD_FOOD_REFS)("returns null for a food %s", (_label, food) => {
+    expect(normalizeEntry(entry({ food }))).toBeNull();
+  });
+
+  it.each(NON_STRINGS)(
+    "removes a portionLabel that is %s and keeps the row",
+    (_label, portionLabel) => {
+      const input = entry({ portionLabel });
+      const result = normalizeEntry(input);
+      expect(result).not.toHaveProperty("portionLabel");
+      expect(result).toEqual(entry());
+      expect(input.portionLabel).toEqual(portionLabel);
+    },
+  );
+
+  it("does not add a portionLabel key when the row has none", () => {
+    expect(normalizeEntry(entry())).not.toHaveProperty("portionLabel");
   });
 
   it.each([null, undefined, "row", 7, []])("returns null for %j", (bad) => {
@@ -156,6 +231,28 @@ describe("normalizeTarget", () => {
     expect(normalizeTarget(target({ protein: -1 }))).toBeNull();
     expect(normalizeTarget(target({ from: "2026-02-31" }))).toBeNull();
     expect(normalizeTarget(null)).toBeNull();
+  });
+
+  it("keeps extra fields", () => {
+    expect(normalizeTarget(target({ note: "cut" }))).toEqual(
+      target({ note: "cut" }),
+    );
+  });
+
+  it.each(NON_STRINGS)(
+    "removes a barcode that is %s and keeps the row",
+    (_label, barcode) => {
+      const input = target({ barcode });
+      const result = normalizeTarget(input);
+      expect(result).not.toHaveProperty("barcode");
+      expect(result).toEqual(target());
+      expect(input.barcode).toEqual(barcode);
+    },
+  );
+
+  it("keeps a string barcode and adds no barcode key when the row has none", () => {
+    expect(normalizeTarget(target({ barcode: "123" })).barcode).toBe("123");
+    expect(normalizeTarget(target())).not.toHaveProperty("barcode");
   });
 });
 
@@ -186,6 +283,42 @@ describe("normalizeCustomFood", () => {
       vi.restoreAllMocks();
     }
   });
+
+  it.each(NON_STRINGS)(
+    "removes a barcode that is %s and keeps the row",
+    (_label, barcode) => {
+      const input = custom({ barcode });
+      const result = normalizeCustomFood(input);
+      expect(result).not.toHaveProperty("barcode");
+      expect(result).toEqual(custom());
+      expect(input.barcode).toEqual(barcode);
+    },
+  );
+
+  it.each(NON_ARRAYS)(
+    "removes portions that are %s and keeps the row",
+    (_label, portions) => {
+      const input = custom({ portions });
+      const result = normalizeCustomFood(input);
+      expect(result).not.toHaveProperty("portions");
+      expect(result).toEqual(custom());
+      expect(input.portions).toEqual(portions);
+    },
+  );
+
+  it("keeps only valid portion rows and does not change the input list", () => {
+    const portions = [...mixedPortions];
+    const result = normalizeCustomFood(custom({ portions }));
+    expect(result.portions).toEqual(goodPortions);
+    expect(portions).toEqual(mixedPortions);
+  });
+
+  it("keeps an empty portions list and adds no key for absent optional fields", () => {
+    expect(normalizeCustomFood(custom({ portions: [] })).portions).toEqual([]);
+    const result = normalizeCustomFood(custom());
+    expect(result).not.toHaveProperty("barcode");
+    expect(result).not.toHaveProperty("portions");
+  });
 });
 
 describe("normalizeSavedMeal", () => {
@@ -204,6 +337,52 @@ describe("normalizeSavedMeal", () => {
     expect(result.items).toEqual([good]);
   });
 
+  it.each(BAD_FOOD_REFS)("drops an item with a food %s", (_label, food) => {
+    const result = normalizeSavedMeal(
+      meal({ items: [item({ food }), item()] }),
+    );
+    expect(result.items).toEqual([item()]);
+  });
+
+  it.each(BAD_FOOD_REFS)(
+    "returns null when the only item has a food %s",
+    (_label, food) => {
+      expect(normalizeSavedMeal(meal({ items: [item({ food })] }))).toBeNull();
+    },
+  );
+
+  it.each(NON_STRINGS)(
+    "removes an item portionLabel that is %s and keeps the item",
+    (_label, portionLabel) => {
+      const input = item({ portionLabel });
+      const result = normalizeSavedMeal(meal({ items: [input] }));
+      expect(result.items[0]).not.toHaveProperty("portionLabel");
+      expect(result.items).toEqual([item()]);
+      expect(input.portionLabel).toEqual(portionLabel);
+    },
+  );
+
+  it("does not add a portionLabel key to an item that has none", () => {
+    const result = normalizeSavedMeal(meal());
+    expect(result.items[0]).not.toHaveProperty("portionLabel");
+  });
+
+  it.each(NON_STRINGS)(
+    "removes a meal barcode that is %s and keeps the row",
+    (_label, barcode) => {
+      const input = meal({ barcode });
+      const result = normalizeSavedMeal(input);
+      expect(result).not.toHaveProperty("barcode");
+      expect(result).toEqual(meal());
+      expect(input.barcode).toEqual(barcode);
+    },
+  );
+
+  it("keeps a string meal barcode and adds no barcode key when the row has none", () => {
+    expect(normalizeSavedMeal(meal({ barcode: "123" })).barcode).toBe("123");
+    expect(normalizeSavedMeal(meal())).not.toHaveProperty("barcode");
+  });
+
   it("returns null when no item survives or items is not a list", () => {
     expect(
       normalizeSavedMeal(meal({ items: [item({ grams: 0 })] })),
@@ -217,6 +396,7 @@ describe("normalizeSavedMeal", () => {
     vi.spyOn(Date, "now").mockReturnValue(5555);
     try {
       expect(normalizeSavedMeal(meal({ id: undefined }))).toBeNull();
+      expect(normalizeSavedMeal(meal({ id: 7 }))).toBeNull();
       expect(normalizeSavedMeal(meal({ id: "" }))).toBeNull();
       const result = normalizeSavedMeal(
         meal({ name: 42, createdAt: undefined }),
@@ -247,16 +427,11 @@ describe("normalizeRecent", () => {
     expect(normalizeRecent(row)).toEqual(row);
   });
 
-  it("returns null for a bad food, lastAt or per100", () => {
-    expect(normalizeRecent(recent("a", { food: undefined }))).toBeNull();
-    expect(normalizeRecent(recent("a", { food: "a" }))).toBeNull();
-    expect(
-      normalizeRecent(recent("a", { food: { kind: "db", id: 7 } })),
-    ).toBeNull();
-    expect(normalizeRecent(recent("a", { food: { id: "a" } }))).toBeNull();
-    expect(
-      normalizeRecent(recent("a", { food: { kind: "api", id: "a" } })),
-    ).toBeNull();
+  it.each(BAD_FOOD_REFS)("returns null for a food %s", (_label, food) => {
+    expect(normalizeRecent(recent("a", { food }))).toBeNull();
+  });
+
+  it("returns null for a bad lastAt or per100", () => {
     expect(normalizeRecent(recent("a", { lastAt: "1000" }))).toBeNull();
     expect(normalizeRecent(recent("a", { lastAt: NaN }))).toBeNull();
     expect(
@@ -265,12 +440,54 @@ describe("normalizeRecent", () => {
     expect(normalizeRecent(null)).toBeNull();
   });
 
-  it.each([undefined, null, 0, -5, "100", NaN, Infinity])(
-    "returns null for a lastGrams of %j",
-    (lastGrams) => {
-      expect(normalizeRecent(recent("a", { lastGrams }))).toBeNull();
+  it.each([
+    ["undefined", undefined],
+    ["null", null],
+    ["zero", 0],
+    ["negative", -5],
+    ["a numeric string", "100"],
+    ["NaN", NaN],
+    ["Infinity", Infinity],
+  ])("returns null for a lastGrams that is %s", (_label, lastGrams) => {
+    expect(normalizeRecent(recent("a", { lastGrams }))).toBeNull();
+  });
+
+  it.each(NON_STRINGS)(
+    "removes a lastPortionLabel that is %s and keeps the row",
+    (_label, lastPortionLabel) => {
+      const input = recent("a", { lastPortionLabel });
+      const result = normalizeRecent(input);
+      expect(result).not.toHaveProperty("lastPortionLabel");
+      expect(result).toEqual(recent("a"));
+      expect(input.lastPortionLabel).toEqual(lastPortionLabel);
     },
   );
+
+  it.each(NON_ARRAYS)(
+    "removes portions that are %s and keeps the row",
+    (_label, portions) => {
+      const input = recent("a", { portions });
+      const result = normalizeRecent(input);
+      expect(result).not.toHaveProperty("portions");
+      expect(result.food).toEqual(input.food);
+      expect(input.portions).toEqual(portions);
+    },
+  );
+
+  it("keeps only valid portion rows and does not change the input list", () => {
+    const portions = [...mixedPortions];
+    const result = normalizeRecent(recent("a", { portions }));
+    expect(result.portions).toEqual(goodPortions);
+    expect(portions).toEqual(mixedPortions);
+  });
+
+  it("adds no key for absent optional fields", () => {
+    const row = recent("a");
+    delete row.portions;
+    const result = normalizeRecent(row);
+    expect(result).not.toHaveProperty("portions");
+    expect(result).not.toHaveProperty("lastPortionLabel");
+  });
 
   it("coerces name to a string and keeps the row", () => {
     const names = [42, undefined, { a: 1 }, unprintable()].map(

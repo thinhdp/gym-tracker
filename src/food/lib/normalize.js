@@ -20,6 +20,36 @@ const validPer100 = (per100) =>
   Number.isFinite(per100.carb) &&
   Number.isFinite(per100.fat);
 
+/** A FoodRef needs a known `kind` and a non-empty string `id`. */
+const validFoodRef = (food) =>
+  isObject(food) && FOOD_KINDS.includes(food.kind) && hasId(food.id);
+
+const validPortion = (portion) =>
+  isObject(portion) &&
+  typeof portion.label === "string" &&
+  validGrams(portion.grams);
+
+/** Copy of `row` without `key` when it holds a non-string. An absent key stays absent. */
+const withoutNonString = (row, key) => {
+  const copy = { ...row };
+  if (typeof copy[key] !== "string") delete copy[key];
+  return copy;
+};
+
+/**
+ * Copy of `row` with only the valid portion rows, or without `portions` when it
+ * holds a non-array. An absent key stays absent.
+ */
+const withValidPortions = (row) => {
+  const copy = { ...row };
+  if (Array.isArray(copy.portions)) {
+    copy.portions = copy.portions.filter(validPortion);
+  } else {
+    delete copy.portions;
+  }
+  return copy;
+};
+
 /** A string as is, a number or boolean as text; anything else, objects included, is "". */
 const toName = (name) => {
   if (typeof name === "string") return name;
@@ -48,30 +78,44 @@ export const normalizeEntry = (e) => {
   }
   if (!SLOT_IDS.includes(e.slot)) return null;
   if (!validGrams(e.grams) || !validPer100(e.per100)) return null;
-  return { ...e, name: toName(e.name), createdAt: toCreatedAt(e.createdAt) };
+  if (!validFoodRef(e.food)) return null;
+  return {
+    ...withoutNonString(e, "portionLabel"),
+    name: toName(e.name),
+    createdAt: toCreatedAt(e.createdAt),
+  };
 };
 
 export const normalizeTarget = (t) =>
-  isObject(t) && validateTarget(t).length === 0 ? { ...t } : null;
+  isObject(t) && validateTarget(t).length === 0
+    ? withoutNonString(t, "barcode")
+    : null;
 
 export const normalizeCustomFood = (c) => {
   if (!isObject(c) || !hasId(c.id)) return null;
   if (typeof c.name !== "string" || c.name === "") return null;
   if (!validPer100(c.per100)) return null;
-  return { ...c, createdAt: toCreatedAt(c.createdAt) };
+  return {
+    ...withValidPortions(withoutNonString(c, "barcode")),
+    createdAt: toCreatedAt(c.createdAt),
+  };
 };
 
 const validMealItem = (item) =>
-  isObject(item) && validGrams(item.grams) && validPer100(item.per100);
+  isObject(item) &&
+  validGrams(item.grams) &&
+  validPer100(item.per100) &&
+  validFoodRef(item.food);
 
 export const normalizeSavedMeal = (m) => {
   if (!isObject(m) || !hasId(m.id) || !Array.isArray(m.items)) return null;
-  const items = m.items
-    .filter(validMealItem)
-    .map((item) => ({ ...item, name: toName(item.name) }));
+  const items = m.items.filter(validMealItem).map((item) => ({
+    ...withoutNonString(item, "portionLabel"),
+    name: toName(item.name),
+  }));
   if (items.length === 0) return null;
   return {
-    ...m,
+    ...withoutNonString(m, "barcode"),
     name: toName(m.name),
     items,
     createdAt: toCreatedAt(m.createdAt),
@@ -79,11 +123,13 @@ export const normalizeSavedMeal = (m) => {
 };
 
 export const normalizeRecent = (r) => {
-  if (!isObject(r) || !isObject(r.food)) return null;
-  if (!FOOD_KINDS.includes(r.food.kind) || !hasId(r.food.id)) return null;
+  if (!isObject(r) || !validFoodRef(r.food)) return null;
   if (!Number.isFinite(r.lastAt) || !validPer100(r.per100)) return null;
   if (!validGrams(r.lastGrams)) return null;
-  return { ...r, name: toName(r.name) };
+  return {
+    ...withValidPortions(withoutNonString(r, "lastPortionLabel")),
+    name: toName(r.name),
+  };
 };
 
 /** First row for each key wins; order of first appearance is kept. */

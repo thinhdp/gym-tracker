@@ -101,10 +101,6 @@ const incoming = () => ({
   recent: [recent("new", { lastAt: 2000 })],
 });
 
-beforeEach(() => {
-  localStorage.clear();
-});
-
 describe("exportFoodData", () => {
   it("returns the five stored lists", () => {
     seed();
@@ -162,7 +158,7 @@ describe("importFoodData", () => {
     expect(storedLists()).toEqual(seededLists());
   });
 
-  it("replace overwrites each list; merge unions", () => {
+  it("replace overwrites each list", () => {
     seed();
     expect(importFoodData({ food: incoming() }, "replace")).toBe(true);
     expect(storedLists()).toEqual({
@@ -172,8 +168,9 @@ describe("importFoodData", () => {
       [K_FOOD_MEALS]: [meal("new")],
       [K_FOOD_RECENT]: [recent("new", { lastAt: 2000 })],
     });
+  });
 
-    localStorage.clear();
+  it("merge unions each list", () => {
     seed();
     expect(importFoodData({ food: incoming() }, "merge")).toBe(true);
     expect(storedLists()).toEqual({
@@ -184,6 +181,24 @@ describe("importFoodData", () => {
       [K_FOOD_RECENT]: [recent("new", { lastAt: 2000 }), recent("old")],
     });
   });
+
+  it.each([
+    ["missing", undefined],
+    ["unknown", "overwrite"],
+  ])(
+    "acts as merge and keeps existing rows when mode is %s",
+    (_label, mode) => {
+      seed();
+      expect(importFoodData({ food: incoming() }, mode)).toBe(true);
+      expect(storedLists()).toEqual({
+        [K_FOOD_ENTRIES]: [entry("old"), entry("new")],
+        [K_FOOD_TARGETS]: [target("2026-01-01"), target("2026-02-01")],
+        [K_FOOD_CUSTOM]: [custom("old"), custom("new")],
+        [K_FOOD_MEALS]: [meal("old"), meal("new")],
+        [K_FOOD_RECENT]: [recent("new", { lastAt: 2000 }), recent("old")],
+      });
+    },
+  );
 
   it("replace mode overwrites a list that is missing from a plain-object food with []", () => {
     seed();
