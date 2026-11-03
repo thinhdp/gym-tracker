@@ -149,7 +149,7 @@ Recent: a stored row is replaced when the incoming row for that food has a newer
 - `not_found` and non-`FoodApiError` failures read as "Search unavailable, try again".
 - `TargetsEditor`: an empty field converts to `NaN`, so it blocks Save. The form prefills on mount and Applies from defaults to today, not the row's `from`. Messages show on a new empty form, as the plan states. `SettingsView` has no placeholder sections for Tasks 9 and 10.
 - `PortionSheet` is keyed by `source:id`, so choosing another row resets it (review fix).
-- Midnight (advisor, in the Task 5 workflow): no code change here. The decision moves to Part G through #131.
+- Midnight (owner): an entry logs to the day shown, so no midnight handling is needed. A display left open overnight keeps showing the earlier day until the user changes it. #131 is closed with this ruling.
 - Commits use the Opus 5.5 trailer, because this session ran on Opus 5.5.
 
 **Parked review findings** (real, low impact, deferred):
@@ -161,7 +161,7 @@ Recent: a stored row is replaced when the incoming row for that food has a newer
 
 **Notes for later parts:**
 
-- Part G: replace `date={todayLocal()}` with the new state, add the `presetSlot` setter, and settle #131 with the owner. `onLogged` already switches to Today.
+- Part G: replace `date={todayLocal()}` with the new state and add the `presetSlot` setter. Search logs to that state's day, including a past day the user is viewing, and no midnight logic is added (#131, owner ruling). `onLogged` already switches to Today.
 - Part H: add the Custom foods section to `SettingsView` and pass custom rows as today; `SearchView` sets `source: "custom"` on them.
 - Part J: pass `onScan`; `PortionSheet` takes `defaultGrams` and keeps the rules above.
 - Part K: `SearchView` has no "no results" line yet (Task 15). The offline state is only the one error line (Task 11b).
@@ -169,7 +169,7 @@ Recent: a stored row is replaced when the incoming row for that food has a newer
 
 **Owner action before deploying:** set `VITE_FOOD_API_BASE` in the gym-tracker Vercel project to the deployed API URL (plan, "Part finish"). Until then production runs in fixture mode and shows the demo data badge. This session could not read the Vercel project, so whether it is already set is not known.
 
-**Follow-ups:** #131, #132, #133, and #129 and #126 from earlier parts. Plan size: the plan file is still over the 30 KB limit in CLAUDE.md; the owner has not decided whether to cut it.
+**Follow-ups:** #132, #133, and #129 and #126 from earlier parts. Plan size: the plan file is still over the 30 KB limit in CLAUDE.md; the owner has not decided whether to cut it.
 
 **Unchecked steps moved:** none.
 
