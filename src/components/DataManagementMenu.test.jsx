@@ -177,4 +177,21 @@ describe("DataManagementMenu", () => {
       recent: [recent],
     });
   });
+
+  it("import with a food field in replace mode overwrites each list", async () => {
+    seedFood();
+
+    await importBackup(
+      { schema: "mgym.v1", food: { entries: [entry("e2")] } },
+      "replace",
+    );
+
+    expect(readFood()).toEqual({
+      entries: [entry("e2")],
+      targets: [],
+      customFoods: [],
+      savedMeals: [],
+      recent: [],
+    });
+  });
 });
