@@ -611,7 +611,9 @@ describe("SearchView", () => {
       await open(user);
       expect(panel()).toBeVisible();
       expect(screen.queryByLabelText("Save as meal")).toBeNull();
-      expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: /^save( as meal)?$/i }),
+      ).toBeNull();
     });
 
     it("Close does not call onLogged", async () => {

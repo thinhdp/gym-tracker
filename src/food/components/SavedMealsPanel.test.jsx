@@ -117,7 +117,9 @@ describe("SavedMealsPanel", () => {
     setup();
     expect(screen.getByText("No saved meals yet")).toBeVisible();
     expect(screen.queryByLabelText("Save as meal")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /^save( as meal)?$/i }),
+    ).toBeNull();
   });
 
   it("Close calls onClose and writes nothing", async () => {
