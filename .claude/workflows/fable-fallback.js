@@ -3,17 +3,17 @@ export const meta = {
   description:
     "Delegation pipeline for when Opus 5.5 is the main model (Fable out of usage): evidence -> plan -> implement -> coverage-first review -> fix",
   whenToUse:
-    "Fable usage is exhausted and the session runs on Opus 5.5 (session effort: medium). Pass the task description as args (a string).",
+    "Fable usage is exhausted and the session runs on Opus 5.5 (session effort: medium). Pass the task description as args (a string). Plan-task mode: pass args = { task, planTask: { size, has_test_signal, high_risk, reportDir? } } for a certain task from an approved plan; Evidence and Plan are skipped and task is the spec verbatim.",
   phases: [
     {
       title: "Evidence",
-      detail: "haiku-scout gathers code/context",
+      detail: "haiku-scout gathers code/context (skipped in plan-task mode)",
       model: "haiku",
     },
     {
       title: "Plan",
       detail:
-        "The session model (Opus 5.5) diagnoses, sizes the task, and writes an implementation spec at high effort",
+        "The session model (Opus 5.5) diagnoses, sizes the task, and writes an implementation spec at high effort. Skipped in plan-task mode (args.planTask): the plan task text is the spec and args.planTask gives the sizing",
     },
     {
       title: "Implement",
@@ -23,7 +23,7 @@ export const meta = {
     {
       title: "Review",
       detail:
-        "opus55-reviewer (or -deep for localStorage data-model, backup envelope, unit conversion, or shared-context work) coverage-first review, then a targeted fix pass on the same implementer agent",
+        "opus55-reviewer (or -deep for localStorage data-model, backup envelope, unit conversion, or shared-context work) coverage-first review written to review-1.md, then a targeted fix pass on the same implementer agent and a re-review of the fix written to review-2.md",
     },
     {
       title: "Decide",
@@ -32,6 +32,40 @@ export const meta = {
     },
   ],
 };
+
+// Per-stage usage. agent() returns no token usage and Date.now() throws in workflow scripts, so the
+// only measure is the budget.spent() difference around each call: output tokens only, from a pool
+// shared with the main loop, so it is approximate; the full cost comes from the session transcript
+// after the run.
+const stage_usage = [];
+function spentNow() {
+  try {
+    return typeof budget !== "undefined" && budget?.spent
+      ? budget.spent()
+      : null;
+  } catch {
+    return null;
+  }
+}
+async function trackedAgent(prompt, opts) {
+  const before = spentNow();
+  try {
+    return await agent(prompt, opts);
+  } finally {
+    const after = spentNow();
+    const output_tokens_delta =
+      before === null || after === null ? null : after - before;
+    const agentType = opts?.agentType ?? "session-model";
+    stage_usage.push({
+      stage: opts?.label ?? "agent",
+      agentType,
+      output_tokens_delta,
+    });
+    log(
+      `usage ${opts?.label ?? "agent"} (${agentType}): output_tokens_delta=${output_tokens_delta}`,
+    );
+  }
+}
 
 // Shared prompt rules per CLAUDE.md "Model delegation" and the Feature path escalation gate:
 // - no "double-check"/"verify" nags (Opus 5.5 self-verifies; do state the test command)
@@ -64,7 +98,7 @@ const DECISION_SCHEMA = {
 async function decide(openItem, source, context) {
   let d = null;
   try {
-    d = await agent(
+    d = await trackedAgent(
       `You are the orchestrator for this run. The ${source} stopped on an open item and needs a decision.
 
 Task: ${task}
@@ -124,7 +158,7 @@ async function runImplementer(impl, prompt, stage) {
   for (const agentType of tries) {
     let out = null;
     try {
-      out = await agent(prompt, {
+      out = await trackedAgent(prompt, {
         label: `${stage}:${agentType}`,
         phase: stage === "implement" ? "Implement" : "Review",
         agentType,
@@ -195,25 +229,66 @@ function reviewerFor(sizing) {
     : "opus55-reviewer";
 }
 
-const task = typeof args === "string" ? args : JSON.stringify(args);
+// args is either a task string (full pipeline) or an object { task, planTask?, reportDir? }.
+// planTask = { size, has_test_signal, high_risk, reportDir? } selects plan-task mode: a certain task
+// from an approved plan, so Evidence and Plan are skipped and the task text is the spec verbatim.
+const isObjectArgs = args !== null && typeof args === "object";
+const planTask = isObjectArgs && args.planTask ? args.planTask : null;
+const task =
+  typeof args === "string"
+    ? args
+    : isObjectArgs && typeof args.task === "string"
+      ? args.task
+      : JSON.stringify(args);
 if (!task || task === "undefined") {
   return {
     error: "No task provided. Re-run with args = a task description string.",
   };
 }
+if (planTask) {
+  const problems = [];
+  if (typeof args.task !== "string" || args.task.trim() === "")
+    problems.push("args.task must be a non-empty string");
+  if (!["S", "M", "L"].includes(planTask.size))
+    problems.push("args.planTask.size must be one of S, M, L");
+  if (typeof planTask.has_test_signal !== "boolean")
+    problems.push("args.planTask.has_test_signal must be a boolean");
+  if (typeof planTask.high_risk !== "boolean")
+    problems.push("args.planTask.high_risk must be a boolean");
+  if (problems.length > 0) {
+    return { error: `Invalid plan-task args: ${problems.join("; ")}.` };
+  }
+}
+const reportDir = isObjectArgs
+  ? (planTask?.reportDir ?? args.reportDir ?? null)
+  : null;
 
-phase("Evidence");
-const evidence = await agent(
-  `You are gathering evidence only - do not change any files. Task under investigation: ${task}
+let evidence = null;
+let plan;
+if (planTask) {
+  // A plan task is certain by definition (the controller uses this mode only for certain tasks),
+  // so uncertain_item is empty and the decision chain is not entered before Implement.
+  plan = {
+    size: planTask.size,
+    has_test_signal: planTask.has_test_signal,
+    high_risk: planTask.high_risk,
+    uncertain_item: "",
+    spec: task,
+  };
+  log("Plan-task mode: Evidence and Plan skipped; the task text is the spec");
+} else {
+  phase("Evidence");
+  evidence = await trackedAgent(
+    `You are gathering evidence only - do not change any files. Task under investigation: ${task}
 Find and summarize everything an implementer needs: relevant files with paths and line numbers, how the current code works, related tests, and any project conventions that apply (check CLAUDE.md and docs/). Use grep and file reads. Return a compact structured summary.`,
-  { label: "evidence", phase: "Evidence", agentType: "haiku-scout" },
-);
+    { label: "evidence", phase: "Evidence", agentType: "haiku-scout" },
+  );
 
-phase("Plan");
-// No agentType here on purpose: this is the Fable role (diagnose, size, write the spec), so it
-// runs on the session model (Opus 5.5) and is the one stage pinned to high effort.
-const plan = await agent(
-  `Task: ${task}
+  phase("Plan");
+  // No agentType here on purpose: this is the Fable role (diagnose, size, write the spec), so it
+  // runs on the session model (Opus 5.5) and is the one stage pinned to high effort.
+  plan = await trackedAgent(
+    `Task: ${task}
 
 Evidence gathered by a scout agent:
 ${evidence}
@@ -223,30 +298,31 @@ Diagnose the root cause (if a bug) or design the change (if a feature). Produce 
 Also size the task per CLAUDE.md "Execution part sizing": S (one source file plus its test, known change, no shared state), M (2-4 files in one subsystem, one test file proves it), L (5+ files, more than one view, or a localStorage key or stored shape, the backup envelope, unit conversion, or AppContext shared state). State whether a test command proves the change (has_test_signal) and whether it touches a localStorage key or stored shape, the backup envelope (export/import), kg/lb unit conversion, or AppContext shared state (high_risk).
 
 Then check certainty (same section). The task is certain only if all six hold: (1) the spec states the exact behavior; (2) the files are named; (3) the ground truth it needs (spec section, docs/DATA-MODEL.md key, ARCHITECTURE.md section) is already written down; (4) a named test proves it; (5) it uses a mechanism the code already has; (6) no user-visible choice is left open. If any item fails, set uncertain_item to the item number and what is open; otherwise set it to an empty string. Do not settle an open item here and do not call the advisor tool - the Decide stage settles it.${RULES}`,
-  {
-    label: "plan",
-    phase: "Plan",
-    effort: "high",
-    schema: {
-      type: "object",
-      additionalProperties: false,
-      required: [
-        "size",
-        "has_test_signal",
-        "high_risk",
-        "uncertain_item",
-        "spec",
-      ],
-      properties: {
-        size: { enum: ["S", "M", "L"] },
-        has_test_signal: { type: "boolean" },
-        high_risk: { type: "boolean" },
-        uncertain_item: { type: "string" },
-        spec: { type: "string" },
+    {
+      label: "plan",
+      phase: "Plan",
+      effort: "high",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "size",
+          "has_test_signal",
+          "high_risk",
+          "uncertain_item",
+          "spec",
+        ],
+        properties: {
+          size: { enum: ["S", "M", "L"] },
+          has_test_signal: { type: "boolean" },
+          high_risk: { type: "boolean" },
+          uncertain_item: { type: "string" },
+          spec: { type: "string" },
+        },
       },
     },
-  },
-);
+  );
+}
 
 // An open item goes through the decision chain before any code changes. A ruling is appended to
 // the spec; a stop for the user returns before Implement, and the session writes a handoff.
@@ -263,6 +339,7 @@ if (plan?.uncertain_item) {
     return {
       plan,
       rulings,
+      stage_usage,
       stopped: `Task is uncertain and needs the user: ${d.question_for_user}`,
     };
   }
@@ -295,6 +372,7 @@ if (implOut === null) {
   return {
     plan,
     rulings,
+    stage_usage,
     error: `Implementation failed (server failure) on ${[implementer.agentType, implementer.fallback].filter(Boolean).join(" and ")}.`,
   };
 }
@@ -302,55 +380,62 @@ if (implStopped) {
   return {
     plan,
     rulings,
+    stage_usage,
     implementation: implOut.report,
     stopped: `Implementation needs the user: ${implStopped}`,
   };
 }
 const implementation = implOut.report;
 
+const FINDINGS_ITEMS = {
+  type: "object",
+  additionalProperties: false,
+  required: ["file", "defect", "failure_scenario", "confidence", "severity"],
+  properties: {
+    file: { type: "string" },
+    line: { type: "integer" },
+    defect: { type: "string" },
+    failure_scenario: { type: "string" },
+    confidence: { enum: ["high", "medium", "low"] },
+    severity: { enum: ["high", "medium", "low"] },
+  },
+};
+// report_path: the file the reviewer wrote. reviewed_head: `git rev-parse HEAD` when the review
+// began, so the re-review can diff only the fix commit(s) from there.
+const REVIEW_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["tests_pass", "findings", "report_path", "reviewed_head"],
+  properties: {
+    tests_pass: { type: "boolean" },
+    test_output_summary: { type: "string" },
+    report_path: { type: "string", minLength: 1 },
+    reviewed_head: { type: "string", minLength: 1 },
+    findings: { type: "array", items: FINDINGS_ITEMS },
+  },
+};
+
+// Where review-1.md goes. Date.now() and new Date() throw in workflow scripts, so without a
+// reportDir from args the reviewer resolves today's date itself with `date +%F`.
+const review1Where = reportDir
+  ? `Write your full review (every finding, the test result) to the file ${reportDir.replace(/\/+$/, "")}/review-1.md before returning, creating the directory if needed, and set report_path to that path.`
+  : `Run \`date +%F\` in the working directory, then write your full review (every finding, the test result) to the file .superpowers/sdd/<that date>-workflow/review-1.md before returning, creating the directory if needed, and set report_path to the path you wrote.`;
+
 phase("Review");
-const review = await agent(
+const review = await trackedAgent(
   `Review the changes just made for this task: ${task}
 
 Implementer's report:
 ${implementation}
 
-Run git diff to see the actual changes. Review standard (CLAUDE.md "Review dispatch standard"): verify claims against primary sources (the design spec under docs/superpowers/specs/, ARCHITECTURE.md, docs/DATA-MODEL.md, docs/TESTING.md, CONTRIBUTING.md, the tests), never against the implementer's report. Re-derive load-bearing work a different way and diff the results. Mutation-check every load-bearing guard: delete or invert it, confirm the tests fail, then revert; a test that still passes with the guard removed is a finding. Hunt the stale-read race (a value read before an await and used after it must be re-read after the await). Check the hard invariants in CLAUDE.md (weights stored in kg, no direct localStorage, useConfirm for destructive actions, no new libraries or CSS files). Report EVERY issue you find, including ones you are uncertain about or consider low-severity - do not filter for importance or confidence; a downstream step will do that. For each finding give: file:line, the defect, a concrete failure scenario, your confidence (high/medium/low), and estimated severity. Also confirm whether the tests actually pass by running the focused test file(s) in the foreground. Do not fix anything; revert any mutation-check edit before finishing.`,
+First record \`git rev-parse HEAD\` in reviewed_head. Run git diff against the commit before the implementer's work (git log will show it) so committed changes are included, to see the actual changes. Review standard (CLAUDE.md "Review dispatch standard"): verify claims against primary sources (the design spec under docs/superpowers/specs/, ARCHITECTURE.md, docs/DATA-MODEL.md, docs/TESTING.md, CONTRIBUTING.md, the tests), never against the implementer's report. Re-derive load-bearing work a different way and diff the results. Mutation-check every load-bearing guard: delete or invert it, confirm the tests fail, then revert; a test that still passes with the guard removed is a finding. Hunt the stale-read race (a value read before an await and used after it must be re-read after the await). Check the hard invariants in CLAUDE.md (weights stored in kg, no direct localStorage, useConfirm for destructive actions, no new libraries or CSS files). Report EVERY issue you find, including ones you are uncertain about or consider low-severity - do not filter for importance or confidence; a downstream step will do that. For each finding give: file:line, the defect, a concrete failure scenario, your confidence (high/medium/low), and estimated severity. Also confirm whether the tests actually pass by running the focused test file(s) in the foreground. Do not fix anything; revert any mutation-check edit before finishing.
+
+Report file: ${review1Where}`,
   {
     label: `review:${reviewer}`,
     phase: "Review",
     agentType: reviewer,
-    schema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["tests_pass", "findings"],
-      properties: {
-        tests_pass: { type: "boolean" },
-        test_output_summary: { type: "string" },
-        findings: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: [
-              "file",
-              "defect",
-              "failure_scenario",
-              "confidence",
-              "severity",
-            ],
-            properties: {
-              file: { type: "string" },
-              line: { type: "integer" },
-              defect: { type: "string" },
-              failure_scenario: { type: "string" },
-              confidence: { enum: ["high", "medium", "low"] },
-              severity: { enum: ["high", "medium", "low"] },
-            },
-          },
-        },
-      },
-    },
+    schema: REVIEW_SCHEMA,
   },
 );
 
@@ -363,6 +448,8 @@ const toFix = (review?.findings || []).filter(
 // CLAUDE.md "resume the implementer for rounds 1-3" rule does not apply here; a second round,
 // if the controller wants one, is a fresh run of this workflow with the open findings as args.
 let fixReport = null;
+let fixRan = false;
+let fixError = null;
 if (!review?.tests_pass || toFix.length > 0) {
   log(`${toFix.length} finding(s) to fix; tests_pass=${review?.tests_pass}`);
   const fixImpl = { agentType: implementedBy, fallback: implementer.fallback };
@@ -379,19 +466,66 @@ Fix only these items - nothing else. Run the stated test command and report resu
     specContext,
   ));
   fixReport = fixOut?.report ?? null;
+  fixRan = fixOut !== null && fixOut !== undefined;
   if (fixStopped) {
     return {
       plan,
       rulings,
+      stage_usage,
       implementedBy,
       implementation,
       review,
+      review_report_path: review?.report_path ?? null,
       fixReport,
       stopped: `Fix pass needs the user: ${fixStopped}`,
     };
   }
+  if (!fixRan) {
+    fixError = `Fix pass failed (server failure) on ${[...new Set([fixImpl.agentType, fixImpl.fallback].filter(Boolean))].join(" and ")}.`;
+    log(`${fixError} No re-review.`);
+  }
 } else {
   log("Review clean and tests pass - no fix pass needed");
+}
+
+// Re-review of the fix commit(s) only, by the same reviewer agent type, after a fix pass ran.
+// No second fix pass: its findings that pass the toFix filter go to deferred_findings for the controller.
+let rereview = null;
+let rereviewReportPath = null;
+if (fixRan) {
+  const review1Path = review?.report_path || "";
+  // review-2.md goes next to review-1.md; never re-run `date +%F` (a run crossing midnight would split them).
+  const dir = review1Path.includes("/")
+    ? review1Path.slice(0, review1Path.lastIndexOf("/"))
+    : review1Path
+      ? "."
+      : reportDir
+        ? reportDir.replace(/\/+$/, "")
+        : ".";
+  const review2Where = `Write your full re-review to the file ${dir}/review-2.md (the directory of the first review's report) before returning and set report_path to that path.`;
+  const base = review?.reviewed_head || "";
+  rereview = await trackedAgent(
+    `Re-review the fix pass for this task: ${task}
+
+Review only the fix: ${base ? "run \`git diff " + base + "\` (from the commit the first review covered to HEAD and the working tree)." : "the first review recorded no commit, so run git diff against the merge-base with origin/main (\`git diff $(git merge-base HEAD origin/main)\`)."} Check it against the findings it was asked to fix, listed below, and report anything new the fix introduced. Do not re-review the original implementation beyond what the fix touched.
+
+Findings the fix pass was asked to fix:
+${JSON.stringify(toFix, null, 2)}
+${!review?.tests_pass ? `\nThe first review also found failing tests: ${review?.test_output_summary || "unknown"}\n` : ""}
+Fix pass report:
+${fixReport}
+
+Same review standard as the first review (CLAUDE.md "Review dispatch standard"): verify against primary sources, mutation-check every guard the fix adds or changes, hunt the stale-read race. For each finding still open or newly introduced give: file:line, the defect, a concrete failure scenario, your confidence (high/medium/low), and estimated severity. Report every issue; do not filter. Run the focused test file(s) in the foreground and set tests_pass. Set reviewed_head to \`git rev-parse HEAD\`. Do not fix anything; revert any mutation-check edit before finishing.
+
+Report file: ${review2Where}`,
+    {
+      label: `rereview:${reviewer}`,
+      phase: "Review",
+      agentType: reviewer,
+      schema: REVIEW_SCHEMA,
+    },
+  );
+  rereviewReportPath = rereview?.report_path ?? null;
 }
 
 return {
@@ -399,7 +533,18 @@ return {
   implementedBy,
   implementation,
   review,
-  deferred_findings: (review?.findings || []).filter((f) => !toFix.includes(f)),
+  review_report_path: review?.report_path ?? null,
+  deferred_findings: [
+    ...(review?.findings || []).filter((f) => !toFix.includes(f)),
+    ...(rereview?.findings || []).filter(
+      (f) => f.severity !== "low" && f.confidence !== "low",
+    ),
+  ],
   fixReport,
+  rereview,
+  rereview_report_path: rereviewReportPath,
+  rereview_tests_pass: rereview ? rereview.tests_pass === true : null,
+  ...(fixError ? { error: fixError } : {}),
   rulings,
+  stage_usage,
 };
