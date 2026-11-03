@@ -20,8 +20,13 @@ const validPer100 = (per100) =>
   Number.isFinite(per100.carb) &&
   Number.isFinite(per100.fat);
 
-const toName = (name) =>
-  typeof name === "string" ? name : name == null ? "" : String(name);
+/** A string as is, a number or boolean as text; anything else, objects included, is "". */
+const toName = (name) => {
+  if (typeof name === "string") return name;
+  return typeof name === "number" || typeof name === "boolean"
+    ? String(name)
+    : "";
+};
 
 const toCreatedAt = (createdAt) => {
   if (Number.isFinite(createdAt)) return createdAt;
@@ -61,7 +66,9 @@ const validMealItem = (item) =>
 
 export const normalizeSavedMeal = (m) => {
   if (!isObject(m) || !hasId(m.id) || !Array.isArray(m.items)) return null;
-  const items = m.items.filter(validMealItem);
+  const items = m.items
+    .filter(validMealItem)
+    .map((item) => ({ ...item, name: toName(item.name) }));
   if (items.length === 0) return null;
   return {
     ...m,
@@ -75,7 +82,8 @@ export const normalizeRecent = (r) => {
   if (!isObject(r) || !isObject(r.food)) return null;
   if (!FOOD_KINDS.includes(r.food.kind) || !hasId(r.food.id)) return null;
   if (!Number.isFinite(r.lastAt) || !validPer100(r.per100)) return null;
-  return { ...r };
+  if (!validGrams(r.lastGrams)) return null;
+  return { ...r, name: toName(r.name) };
 };
 
 /** First row for each key wins; order of first appearance is kept. */

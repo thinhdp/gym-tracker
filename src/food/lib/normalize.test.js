@@ -66,6 +66,9 @@ const recent = (id, overrides = {}) => ({
   ...overrides,
 });
 
+/** Parsed JSON that String() throws on. */
+const unprintable = () => JSON.parse('{"toString":null}');
+
 const emptyData = () => ({
   entries: [],
   targets: [],
@@ -94,6 +97,19 @@ describe("normalizeEntry", () => {
     ).toBeNull();
   });
 
+  it.each(["10", null, undefined])(
+    "drops a per100 protein of %j",
+    (protein) => {
+      expect(
+        normalizeEntry(entry({ per100: { ...per100, protein } })),
+      ).toBeNull();
+    },
+  );
+
+  it("drops a real date that is not zero-padded YYYY-MM-DD", () => {
+    expect(normalizeEntry(entry({ date: "2026-3-1" }))).toBeNull();
+  });
+
   it("drops an impossible calendar date", () => {
     expect(normalizeEntry(entry({ date: "2026-02-31" }))).toBeNull();
     expect(normalizeEntry(entry({ date: "2026-13-01" }))).toBeNull();
@@ -110,6 +126,8 @@ describe("normalizeEntry", () => {
     try {
       expect(normalizeEntry(entry({ name: 42 })).name).toBe("42");
       expect(normalizeEntry(entry({ name: undefined })).name).toBe("");
+      expect(normalizeEntry(entry({ name: unprintable() })).name).toBe("");
+      expect(normalizeEntry(entry({ name: { a: 1 } })).name).toBe("");
       expect(normalizeEntry(entry({ createdAt: "1234" })).createdAt).toBe(1234);
       expect(normalizeEntry(entry({ createdAt: "soon" })).createdAt).toBe(5555);
       expect(normalizeEntry(entry({ createdAt: null })).createdAt).toBe(5555);
@@ -205,9 +223,18 @@ describe("normalizeSavedMeal", () => {
       );
       expect(result.name).toBe("42");
       expect(result.createdAt).toBe(5555);
+      expect(normalizeSavedMeal(meal({ name: unprintable() })).name).toBe("");
     } finally {
       vi.restoreAllMocks();
     }
+  });
+
+  it("coerces an item name to a string and keeps the item", () => {
+    const names = [42, undefined, { a: 1 }, unprintable()].map(
+      (name) =>
+        normalizeSavedMeal(meal({ items: [item({ name })] })).items[0].name,
+    );
+    expect(names).toEqual(["42", "", "", ""]);
   });
 });
 
@@ -236,6 +263,20 @@ describe("normalizeRecent", () => {
       normalizeRecent(recent("a", { per100: { ...per100, fat: null } })),
     ).toBeNull();
     expect(normalizeRecent(null)).toBeNull();
+  });
+
+  it.each([undefined, null, 0, -5, "100", NaN, Infinity])(
+    "returns null for a lastGrams of %j",
+    (lastGrams) => {
+      expect(normalizeRecent(recent("a", { lastGrams }))).toBeNull();
+    },
+  );
+
+  it("coerces name to a string and keeps the row", () => {
+    const names = [42, undefined, { a: 1 }, unprintable()].map(
+      (name) => normalizeRecent(recent("a", { name })).name,
+    );
+    expect(names).toEqual(["42", "", "", ""]);
   });
 });
 
@@ -268,6 +309,19 @@ describe("normalizeFoodData", () => {
       savedMeals: [meal()],
       recent: [recent("a")],
     });
+  });
+
+  it("does not throw on a name that String() cannot convert", () => {
+    const name = unprintable();
+    const result = normalizeFoodData({
+      entries: [entry({ name })],
+      savedMeals: [meal({ name, items: [item({ name })] })],
+      recent: [recent("a", { name })],
+    });
+    expect(result.entries.map((r) => r.name)).toEqual([""]);
+    expect(result.savedMeals.map((r) => r.name)).toEqual([""]);
+    expect(result.savedMeals[0].items.map((r) => r.name)).toEqual([""]);
+    expect(result.recent.map((r) => r.name)).toEqual([""]);
   });
 
   it("keeps the first row of a duplicate in entries, customFoods, savedMeals and targets", () => {
