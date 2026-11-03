@@ -8,6 +8,7 @@ import Progress from "./components/Progress";
 import ExerciseManager from "./components/ExerciseManager";
 import MoreMenu from "./components/MoreMenu";
 import LiveSession from "./components/LiveSession";
+import FoodApp from "./food/FoodApp";
 
 // The five primary destinations rendered by the bottom nav.
 const VIEWS = {
@@ -27,10 +28,16 @@ const LEGACY = {
   notepad: "more",
 };
 
+export function isFoodPath(pathname = window.location.pathname) {
+  return pathname === "/food" || pathname.startsWith("/food/");
+}
+
 function AppContent() {
   const { tab, setTab, session } = useApp();
   const active = VIEWS[tab] ? tab : LEGACY[tab] || "home";
   const View = VIEWS[active];
+
+  if (isFoodPath()) return <FoodApp />;
 
   // A live-logging session takes over the whole screen.
   if (session) return <LiveSession />;

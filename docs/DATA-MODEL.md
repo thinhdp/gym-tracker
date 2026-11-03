@@ -10,20 +10,28 @@ versioned, and that is the only versioning.
 
 ## localStorage keys
 
-| Key                        | Written by                 | Holds                                                                                    | Default when absent                              |
-| -------------------------- | -------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `mgym.exercises.v1`        | `AppContext` (`K_EX`)      | `Exercise[]`                                                                             | the 76-entry seed `src/data/exercises_seed.json` |
-| `mgym.workouts.v1`         | `AppContext` (`K_WO`)      | `Workout[]`                                                                              | `[]`                                             |
-| `mgym.unit`                | `AppContext` (`K_UNIT`)    | `"kg"` \| `"lb"` (toggle UI hidden; effectively `"kg"`)                                  | `"kg"`                                           |
-| `mgym.tab`                 | `AppContext` (`K_TAB`)     | active tab: `home`/`workouts`/`progress`/`exercises`/`more` (legacy values remapped)     | `"workouts"`                                     |
-| `mgym.theme`               | `AppContext` (`K_THEME`)   | `"system"` \| `"light"` \| `"dark"`                                                      | `"system"`                                       |
-| `mgym.session.v1`          | `AppContext` (`K_SESSION`) | live-logging session object, or `null`                                                   | `null`                                           |
-| `mgym.note.v1`             | `Notepad` (`K_NOTE`)       | `string` — global note                                                                   | `""`                                             |
-| `weightLogs`               | `WeightTracker`            | `{ [YYYY-MM-DD]: number }` — bodyweight                                                  | `{}`                                             |
-| `mgym.profile.v1`          | `MoreMenu`                 | `{ sex?: "male"\|"female", birthYear?: number }` — lifter profile for strength standards | `{}`                                             |
-| `mgym.fvCache.v1`          | `fvApi`                    | cache of FitnessVolt percentile + standards responses (see below)                        | `{}`                                             |
-| `weekly-note:<weekKey>`    | _legacy_ (no longer used)  | `string` — one note per ISO week (written by the removed `WeeklyNotes`)                  | `""`                                             |
-| `summary-open:<periodKey>` | _legacy_ (no longer used)  | `boolean` — card collapse state (written by the removed `PeriodCard`)                    | card default                                     |
+| Key                        | Written by                        | Holds                                                                                    | Default when absent                              |
+| -------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `mgym.exercises.v1`        | `AppContext` (`K_EX`)             | `Exercise[]`                                                                             | the 76-entry seed `src/data/exercises_seed.json` |
+| `mgym.workouts.v1`         | `AppContext` (`K_WO`)             | `Workout[]`                                                                              | `[]`                                             |
+| `mgym.routines.v1`         | `AppContext` (`K_ROUTINES`)       | `Routine[]` (built by `routineFromWorkout`, `src/lib/routines.js`)                       | `[]`                                             |
+| `mgym.unit`                | `AppContext` (`K_UNIT`)           | `"kg"` \| `"lb"` (toggle UI hidden; effectively `"kg"`)                                  | `"kg"`                                           |
+| `mgym.tab`                 | `AppContext` (`K_TAB`)            | active tab: `home`/`workouts`/`progress`/`exercises`/`more` (legacy values remapped)     | `"workouts"`                                     |
+| `mgym.theme`               | `AppContext` (`K_THEME`)          | `"system"` \| `"light"` \| `"dark"`                                                      | `"system"`                                       |
+| `mgym.session.v1`          | `AppContext` (`K_SESSION`)        | live-logging session object, or `null`                                                   | `null`                                           |
+| `mgym.note.v1`             | `Notepad` (`K_NOTE`)              | `string` — global note                                                                   | `""`                                             |
+| `weightLogs`               | `WeightTracker`                   | `{ [YYYY-MM-DD]: number }` — bodyweight                                                  | `{}`                                             |
+| `mgym.profile.v1`          | `MoreMenu`                        | `{ sex?: "male"\|"female", birthYear?: number }` — lifter profile for strength standards | `{}`                                             |
+| `mgym.fvCache.v1`          | `fvApi`                           | cache of FitnessVolt percentile + standards responses (see below)                        | `{}`                                             |
+| `mgym.food.entries.v1`     | `FoodProvider` (`K_FOOD_ENTRIES`) | `FoodEntry[]`                                                                            | `[]`                                             |
+| `mgym.food.targets.v1`     | `FoodProvider` (`K_FOOD_TARGETS`) | `TargetPeriod[]`                                                                         | `[]`                                             |
+| `mgym.food.customFoods.v1` | `FoodProvider` (`K_FOOD_CUSTOM`)  | `CustomFood[]`                                                                           | `[]`                                             |
+| `mgym.food.savedMeals.v1`  | `FoodProvider` (`K_FOOD_MEALS`)   | `SavedMeal[]`                                                                            | `[]`                                             |
+| `mgym.food.recent.v1`      | `FoodProvider` (`K_FOOD_RECENT`)  | `RecentFood[]`                                                                           | `[]`                                             |
+| `mgym.food.searchCache.v1` | `foodApi` (`K_FOOD_SEARCH_CACHE`) | `{ [normQuery]: { at, results } }`                                                       | `{}`                                             |
+| `mgym.food.tab`            | `FoodApp` (`K_FOOD_TAB`)          | active food tab: `today`/`search`/`trends`/`settings`                                    | `"today"`                                        |
+| `weekly-note:<weekKey>`    | _legacy_ (no longer used)         | `string` — one note per ISO week (written by the removed `WeeklyNotes`)                  | `""`                                             |
+| `summary-open:<periodKey>` | _legacy_ (no longer used)         | `boolean` — card collapse state (written by the removed `PeriodCard`)                    | card default                                     |
 
 All values are stored with `JSON.stringify`. String values (the notes) are
 stored as JSON strings (e.g. the literal `""`).
@@ -266,6 +274,9 @@ they are **not** persisted. See `src/lib/strength.js`, `src/lib/metrics.js`, and
   "workouts": [
     /* Workout[] */
   ],
+  "routines": [
+    /* Routine[] */
+  ],
   "unit": "kg",
   "tab": "workouts",
   "note": "…",
@@ -278,10 +289,10 @@ they are **not** persisted. See `src/lib/strength.js`, `src/lib/metrics.js`, and
 | ------------------------------------------------------ | ------------------- | ------------------------------------------------------------------------ |
 | `schema`                                               | `string`            | Format tag `"mgym.v1"`. Not validated on import.                         |
 | `exportedAt`                                           | `string` (ISO 8601) | When generated.                                                          |
-| `exercises` / `workouts`                               | arrays              | Validated via `normalizeData()` on import.                               |
+| `exercises` / `workouts` / `routines`                  | arrays              | Validated via `normalizeData()` on import.                               |
 | `unit` / `tab` / `note` / `weightLogs` / `weeklyNotes` | misc                | Restored **directly** to localStorage on import, **without** validation. |
 
-On import, exercises/workouts go through `normalizeData()` then **merge** or
+On import, exercises/workouts/routines go through `normalizeData()` then **merge** or
 **replace** (rules in
 [ARCHITECTURE.md → Export / import](../ARCHITECTURE.md#export--import-backup));
 the remaining fields are written straight back to their keys.

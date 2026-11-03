@@ -74,7 +74,7 @@ L: it defines the seven `mgym.food.*` keys and writes `mgym.food.tab`.
   - `FoodBottomNav.jsx` (default export, props `{ active, onSelect }`): same markup pattern as `ui/BottomNav.jsx` with four tabs `[["today","Today"],["search","Search"],["trends","Trends"],["settings","Settings"]]` and inline SVG icons; `aria-label="Food"`.
   - `vercel.json` gains `"rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `src/App.test.jsx` (render `<ConfirmProvider><App/></ConfirmProvider>`; stub the path with `vi.spyOn(window, "location", "get")` or by `window.history.pushState({}, "", "/food")` before render):
 
@@ -86,15 +86,15 @@ it("isFoodPath matches /food and /food/ but not /foods", () => { expect(isFoodPa
 
 `FoodBottomNav.test.jsx`: four buttons in order; the active one has `aria-current="page"`; clicking calls `onSelect("trends")`.
 
-- [ ] **Step 2: Run tests to verify they fail** — `npx vitest run src/App.test.jsx src/food` — FAIL.
+- [x] **Step 2: Run tests to verify they fail** — `npx vitest run src/App.test.jsx src/food` — FAIL.
 
-- [ ] **Step 3: Implement** the files above. In `FoodApp`, persist the tab with the `useState(() => loadLS(K_FOOD_TAB, "today"))` + `useEffect(saveLS)` pattern.
+- [x] **Step 3: Implement** the files above. In `FoodApp`, persist the tab with the `useState(() => loadLS(K_FOOD_TAB, "today"))` + `useEffect(saveLS)` pattern.
 
-- [ ] **Step 4: Run tests to verify they pass** — PASS.
+- [x] **Step 4: Run tests to verify they pass** — PASS.
 
-- [ ] **Step 5: Manual check:** `npm run dev`, open `http://localhost:5173/food` → food shell with four tabs; `http://localhost:5173/` → gym app unchanged.
+- [x] **Step 5: Manual check:** `npm run dev`, open `http://localhost:5173/food` → food shell with four tabs; `http://localhost:5173/` → gym app unchanged.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add vercel.json src/App.jsx src/App.test.jsx src/food docs/DATA-MODEL.md
@@ -844,3 +844,29 @@ The former Task 15 "finish" steps assumed one long-lived branch. The workflow is
 - [ ] **Handoff:** append a `## Part <X> handoff` section to this file: shipped commits, cost (session tokens, fix rounds, wall time), rulings, follow-ups, unchecked steps moved into a named later part.
 
 Before the first production deploy that includes Part F, set `VITE_FOOD_API_BASE` in the gym-tracker Vercel project to the deployed API URL (macro-calculator Part G handoff). Until then the app runs in fixture mode.
+
+## Part A handoff
+
+**Shipped:** Task 1, commits `2f64093` (shell) and `44d9301` (theme test), plus the review follow-ups the owner asked to fold in: `aeaeba8` and `463749b` (#113, #114), `64f0b3d` (#115). Issues #85, #88, #113, #114 and #115 close with this PR. All 20 focused tests pass. A Playwright run on the dev server passed Step 5.
+
+**Cost:** 520,529 subagent tokens across 8 agents in the workflow, plus about 80,000 for the follow-ups and the controller session (not measured); 2 fix rounds; 17 minutes for the workflow run.
+
+**Rulings** (made by the Opus orchestrator; none went to the advisor or the user):
+
+- Added `keys.test.js` and `FoodApp.test.jsx`, which Task 1's Files list omits but Global Constraints requires.
+- An invalid `mgym.food.tab` value shows Today and is rewritten to `today` on load. The plan did not state this; `AppContent` also falls back for the gym tab.
+- `/food` sets the page title to Food Tracker with an effect in `FoodApp`, for spec section 3.1's home screen icon. The owner did not name the text. Home screen naming on a real phone is not tested.
+- Chose the four nav icon paths. The plan names none.
+- Added the "live session still wins on /" test from spec section 9.
+- The test in Step 1 for a stored session did not guard the line order. Its session names a workout that does not exist, so `LiveSession` ends it and the Food nav appears anyway. The test now also asserts the session stays stored, and a second test seeds a real workout.
+- Commits carry the Opus trailer, not the Fable trailer in Global Constraints, because the session ran on Opus.
+
+**Plan and spec differences left in place:** spec section 3.1 says "path starts with /food", while this plan excludes `/foods`. The code follows the plan.
+
+**Not verified:** the `vercel.json` rewrite cannot run locally. Check `/food`, a hard reload and the browser console on the preview deployment.
+
+**Follow-ups:** none open. `ARCHITECTURE.md` does not mention the `/food` branch yet; Task 15 covers that in Part K.
+
+**Unchecked steps moved:** none.
+
+**Next:** Part B can run now. Parts C, D and E need Parts A and B merged (D needs only A).
