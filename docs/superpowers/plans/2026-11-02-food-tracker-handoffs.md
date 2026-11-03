@@ -80,14 +80,14 @@ Spec 5.9 and Task 8a leave these points open. They were decided while Task 8a ra
 **Incoming rows (`normalizeFoodData`, used on `raw.food` only):**
 
 1. An entry date must be a real calendar date, as for targets. `isRealDate` is exported from `targets.js`.
-2. A row with a missing, empty or non-string `id` is dropped. No id is created for it.
+2. An entry, custom food or saved meal with a missing, empty or non-string `id` is dropped. No id is created for it.
 3. `raw.food` counts as absent unless it is a plain object. Missing, null, a string, a number and an array all return `false` and write nothing. A plain object with a missing list means that list is `[]`, so replace mode overwrites it.
 4. Targets: the first row wins for a `from`, and the list is sorted ascending by `from`.
 5. Recent rows need a valid FoodRef, a finite `lastAt`, numeric `per100` and `lastGrams` above 0. The newer `lastAt` wins for a food; the list is sorted newest first and capped at `RECENT_MAX`.
 6. Duplicates inside one list are removed. The first row wins for entries, custom foods and saved meals.
 7. Entries and saved meal items need a valid FoodRef: `food` is an object, `kind` is `db` or `custom`, and `id` is a non-empty string. An entry without one is dropped. A meal item without one is dropped, and a meal left with no items is dropped.
 8. An optional field of the wrong type is removed and the row stays: `portionLabel`, `lastPortionLabel`, `barcode`, `food.barcode`. A non-array `portions` is removed, and inside an array only rows with a string `label` and grams above 0 stay.
-9. A number or boolean `name` becomes text, and an object, array or null `name` becomes `""`; the row stays. The exception is a custom food, whose `name` must be a non-empty string.
+9. A number or boolean `name` becomes text, and a missing, null, object or array `name` becomes `""`; the row stays. The exception is a custom food, whose `name` must be a non-empty string.
 
 **Stored rows (merge mode):** for entries, targets, custom foods and saved meals, a merge keeps every stored row unchanged, including malformed rows and duplicates, and adds incoming rows whose key matches no stored row. Targets are re-sorted by `from`. A stored list that is not an array counts as `[]`. Recent follows its own rule below. Replace mode writes the normalised incoming lists.
 
@@ -95,10 +95,10 @@ Recent: a stored row is replaced when the incoming row for that food has a newer
 
 **Reversed ruling:** the first version of Task 8a normalised the stored lists before a merge, so that the merge never met a malformed row. Review showed that this deletes logged history and saved meals with no message, even when the backup does not mention them. Spec 5.9 says "union" and "existing rows win", so that ruling was wrong and was reversed.
 
-**Notes for later parts.** A restore in replace mode drops any row that fails the checks above, so every writer must produce valid rows:
+**Notes for later parts.** Merge and replace both drop incoming rows that fail the checks above, so a restore loses any row the app wrote wrongly. Every writer must produce valid rows:
 
 - **#126 (provider load):** a merge keeps malformed stored rows, and `FoodProvider` does not filter them, so Part C's notes on `targetForDate` and `sumMacros` still apply. Part E unblocks #126: `normalizeFoodData` now exists. It drops rows, and the provider's write-back would delete them for good, so #126 still needs the owner's decision on a notice.
-- **Part F (`PortionSheet`):** the API row has `source`, not `kind`. Map it to `kind: "db"` when building `food`. `addEntry` stores `food` as given, with no check. The test asserts that the entry logged through `addEntry` passes `normalizeEntry`; this test also covers the Part C provider, which merged before `normalize.js` existed. Task 5's text does not state this. Without it, a restore in replace mode drops every entry logged from Search.
+- **Part F (`PortionSheet`):** the API row has `source`, not `kind`. Map it to `kind: "db"` when building `food`, and keep `kind: "custom"` for a custom food. `addEntry` stores `food` as given, with no check. The test asserts that the entry logged through `addEntry` passes `normalizeEntry`; this test also covers the Part C provider, which merged before `normalize.js` existed. Task 5's text does not state this. Without it, a restore drops every entry logged from Search. Task 5's test list now names this test.
 - **Part K (`RecentRow`):** pass `recent.food` as `food`, not the recent row itself. The test asserts that the logged entry passes `normalizeEntry`.
 
 ## Part E handoff

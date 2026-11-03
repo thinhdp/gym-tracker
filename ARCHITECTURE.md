@@ -88,7 +88,7 @@ gym-tracker/
     ├── data/
     │   └── exercises_seed.json   # 76 default exercises (first-run seed)
     ├── food/                  # Food mode, rendered on /food
-    │   ├── FoodApp.jsx           # Food mode shell: tab heading + FoodBottomNav
+    │   ├── FoodApp.jsx           # Food mode shell: FoodProvider, tab heading, FoodBottomNav
     │   ├── components/
     │   │   └── FoodBottomNav.jsx    # Fixed 4-tab bottom navigation
     │   ├── context/
@@ -389,10 +389,12 @@ restored directly to their localStorage keys **without** going through
 
 `food` goes through `importFoodData` (`src/food/lib/backupFood.js`) after those
 fields. It holds the five lists; `mgym.food.searchCache.v1` and `mgym.food.tab` are
-excluded. Merge adds incoming rows and rewrites no stored row, except a recent row
-replaced by an incoming row with a newer `lastAt`. Replace normalises the incoming
-lists and overwrites each one. A backup with no `food` field leaves food data
-untouched in both modes.
+excluded. A backup with no `food` field, or a `food` value that is not a plain object,
+leaves food data untouched in both modes. Merge adds incoming rows and keeps stored
+rows, except that a recent row is replaced by a newer `lastAt`, and the recent list is
+de-duplicated and capped at 50. Replace normalises the incoming lists and overwrites
+each one; a list missing from `food` counts as `[]`. Full rules:
+[docs/DATA-MODEL.md](docs/DATA-MODEL.md#backup--export-payload).
 
 ## Data flow: one full lifecycle
 
