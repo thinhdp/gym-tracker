@@ -832,7 +832,7 @@ B (Opus: pure helpers) ─┘  (B feeds C, E, F, G, H, K)
 
 A and B run at the same time; B is the clean parallel (new files only). After A and B merge, C, D and E run at the same time; they share only `docs/DATA-MODEL.md` (each adds its own rows, so rebases are trivial). F waits for C and D. G and H run at the same time in wave 4; G follows F only because both wire `FoodApp.jsx`. Waves 5 to 7 are serialized by `SearchView.jsx`, `TodayView.jsx` and `FoodApp.jsx`, not by needs: I, J and K all edit `SearchView.jsx`, so they run one after another; J before K so that Task 15's final docs describe the scanner. Default order: A, B, C, D, E, F, G, H, I, J, K. Seven waves; the longest needs chain is A → C → F → H → K (five parts).
 
-Every part handoff records its cost (session tokens, fix rounds, wall time) in this file.
+Every part handoff records its cost (session tokens, fix rounds, wall time). Handoffs from Part E on are in `2026-11-02-food-tracker-handoffs.md`.
 
 ### Part finish (every part; not a sized task)
 
