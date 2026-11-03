@@ -77,7 +77,7 @@ Handoffs for `2026-11-02-food-tracker.md` from Part D on (CLAUDE.md, Execution p
 
 Spec 5.9 and Task 8a leave these points open. They were decided while Task 8a ran, and they bind later parts.
 
-**Incoming rows (`normalizeFoodData`, used on `raw.food` only):**
+**Incoming rows (`normalizeFoodData`, used on `raw.food` only when these rulings were made; since #126 `FoodProvider` and the Home card also load through it, see spec section 5.9):**
 
 1. An entry date must be a real calendar date, as for targets. `isRealDate` is exported from `targets.js`.
 2. An entry, custom food or saved meal with a missing, empty or non-string `id` is dropped. No id is created for it.

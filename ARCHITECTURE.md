@@ -92,7 +92,7 @@ gym-tracker/
     │   ├── components/
     │   │   └── FoodBottomNav.jsx    # Fixed 4-tab bottom navigation
     │   ├── context/
-    │   │   └── FoodContext.jsx      # FoodProvider / useFood: the five stored food lists
+    │   │   └── FoodContext.jsx      # FoodProvider / useFood: the five stored food lists, droppedRows
     │   └── lib/                  # Framework-free helpers
     │       ├── keys.js              # Food localStorage keys
     │       ├── backupFood.js        # exportFoodData / importFoodData for the backup

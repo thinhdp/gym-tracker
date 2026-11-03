@@ -435,6 +435,8 @@ applies it as follows:
   from `food` counts as `[]`, so `food: {}` empties all five lists.
 - A backup with no `food` field, or a `food` value that is not a plain object, leaves
   food data untouched in both modes.
+- An export reads storage as it is, so it includes a malformed row until `/food` has
+  loaded once and removed it.
 
 The `mgym.theme` preference and the `mgym.session.v1` live session are **not**
 part of the backup payload — they are device-local UI state.
