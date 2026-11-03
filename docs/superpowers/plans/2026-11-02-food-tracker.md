@@ -870,3 +870,27 @@ Before the first production deploy that includes Part F, set `VITE_FOOD_API_BASE
 **Unchecked steps moved:** none.
 
 **Next:** Part B can run now. Parts C, D and E need Parts A and B merged (D needs only A).
+
+## Part B handoff
+
+**Shipped:** `85c4de1` (Task 2), `fe42d01` (Task 11a), `1ac68fb` (review fixes). New files under `src/food/lib` only: `slots`, `macros`, `localDate`, `targets`, `recent`, each with a test.
+
+**Cost:** 374,570 subagent tokens across 6 agents; controller session tokens not measured; 1 fix round; about 15 minutes in the workflow.
+
+**Rulings** (from the `fable-fallback` decide stage, using the Fable advisor):
+
+- `sumMacros` adds the rounded `entryMacros` values, so visible rows add up to the visible total.
+- `validateTarget` messages for the other fields: `carb must be 0 or more`, `fat must be 0 or more`.
+- The recent helper is named `touchRecent`, as in this plan. The spec says `touch`.
+- `formatDayHeader` keeps the `undefined` locale, so an en-US user sees `Mon, Nov 2`, not `Mon 2 Nov`. It matches `src/components/Home.jsx`.
+- Local-date tests add zone-stubbed cases, because the plan's 23:30 case cannot fail against the UTC bug.
+- Commits use the Opus 5.5 trailer, because this session ran on Opus 5.5.
+
+**Notes for later parts:**
+
+- Part F (Task 7): `validateTarget` uses `Number.isFinite`, so numeric strings fail. `TargetsEditor` must convert inputs to numbers before calling it, or Save stays disabled.
+- Part F and Part G (any test of the day header): do not assert the literal text `Mon 2 Nov`; the output depends on the machine locale.
+- Part G (Task 6): `barTone(null)` returns `ok`. `MacroBars` must hide bars itself when there is no target.
+- Part C and Part E: `targetForDate` throws on a null row, and `touchRecent` throws on a row with no `food`. Both rely on `FoodProvider` and `normalizeFoodData` to drop malformed rows. `addDays` returns `NaN-NaN-NaN` on a malformed date.
+
+**Follow-ups:** #116 (spec wording), #117 (`FROM_RE` anchors, impossible dates). No plan steps are left undone. Issue #86 stays open until Part A also merges, because it includes `keys.js`. Issue #97 stays open until Part K.
