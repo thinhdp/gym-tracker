@@ -7,18 +7,27 @@ import {
   K_FOOD_RECENT,
   K_FOOD_TARGETS,
 } from "../lib/keys";
+import { targetForDate } from "../lib/targets";
 import { FoodProvider, useFood } from "./FoodContext";
-
-const LIST_KEYS = [
-  ["entries", K_FOOD_ENTRIES],
-  ["targets", K_FOOD_TARGETS],
-  ["customFoods", K_FOOD_CUSTOM],
-  ["savedMeals", K_FOOD_MEALS],
-  ["recent", K_FOOD_RECENT],
-];
 
 const PER100 = { kcal: 155, protein: 13, carb: 1.1, fat: 11 };
 const FOOD = { kind: "db", id: "egg" };
+const MEAL_ITEM = { name: "Egg", grams: 50, per100: PER100, food: FOOD };
+
+const LIST_KEYS = [
+  ["entries", K_FOOD_ENTRIES, [{ id: "a" }, { id: "b" }]],
+  ["targets", K_FOOD_TARGETS, [{ from: "2026-11-01" }, { from: "2026-11-02" }]],
+  ["customFoods", K_FOOD_CUSTOM, [{ id: "a" }, { id: "b" }]],
+  [
+    "savedMeals",
+    K_FOOD_MEALS,
+    [
+      { id: "a", items: [MEAL_ITEM] },
+      { id: "b", items: [MEAL_ITEM] },
+    ],
+  ],
+  ["recent", K_FOOD_RECENT, [{ food: FOOD }, { food: FOOD }]],
+];
 
 const draft = (overrides = {}) => ({
   date: "2026-11-02",
@@ -43,8 +52,7 @@ const setup = () => renderHook(() => useFood(), { wrapper: FoodProvider });
 describe("FoodProvider loading", () => {
   it.each(LIST_KEYS)(
     "loads %s from storage when it holds an array",
-    (name, key) => {
-      const rows = [{ id: "a" }, { id: "b" }];
+    (name, key, rows) => {
       saveLS(key, rows);
       const { result } = setup();
       expect(result.current[name]).toEqual(rows);
@@ -77,6 +85,86 @@ describe("FoodProvider loading", () => {
     const { result } = setup();
     expect(result.current.entries).toEqual([]);
     expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
+  });
+});
+
+describe("FoodProvider malformed rows", () => {
+  it.each(LIST_KEYS)(
+    "drops rows that are not objects from %s and rewrites storage",
+    (name, key, rows) => {
+      saveLS(key, [null, rows[0], 5, "text", [], rows[1]]);
+      const { result } = setup();
+      expect(result.current[name]).toEqual(rows);
+      expect(loadLS(key)).toEqual(rows);
+    },
+  );
+
+  it("every action and targetForDate work after a stored null row", () => {
+    const a = storedEntry("a");
+    const row = { from: "2026-11-01", kcal: 2000 };
+    const meal = { id: "m", name: "Eggs", items: [MEAL_ITEM], createdAt: 1 };
+    saveLS(K_FOOD_ENTRIES, [null, a]);
+    saveLS(K_FOOD_TARGETS, [null, row]);
+    saveLS(K_FOOD_CUSTOM, [null, { id: "x" }]);
+    saveLS(K_FOOD_MEALS, [null, meal]);
+    const { result } = setup();
+    expect(targetForDate(result.current.targets, "2026-11-02")).toEqual(row);
+    act(() => {
+      result.current.updateEntry("a", { grams: 120 });
+      result.current.saveMealFromSlot("Eggs", a.date, a.slot);
+      result.current.logSavedMeal("m", a.date, a.slot);
+      result.current.deleteEntry("a");
+      result.current.upsertTarget({ from: "2026-11-03", kcal: 1800 });
+      result.current.deleteTarget("2026-11-03");
+      result.current.upsertCustomFood({ id: "y" });
+      result.current.deleteCustomFood("y");
+    });
+    expect(result.current.entries).toHaveLength(1);
+    expect(result.current.targets).toEqual([row]);
+    expect(result.current.customFoods).toEqual([{ id: "x" }]);
+  });
+
+  it.each([
+    ["no items", { id: "m" }],
+    ["items that are not an array", { id: "m", items: "text" }],
+    ["only null items", { id: "m", items: [null] }],
+    ["zero items", { id: "m", items: [] }],
+  ])("drops a saved meal with %s", (_label, meal) => {
+    const kept = { id: "k", items: [MEAL_ITEM] };
+    saveLS(K_FOOD_MEALS, [meal, kept]);
+    const { result } = setup();
+    expect(result.current.savedMeals).toEqual([kept]);
+    expect(loadLS(K_FOOD_MEALS)).toEqual([kept]);
+    let added;
+    act(() => {
+      added = result.current.logSavedMeal("m", "2026-11-03", "dinner");
+    });
+    expect(added).toEqual([]);
+  });
+
+  it("drops null items from a saved meal and logs the rest", () => {
+    saveLS(K_FOOD_MEALS, [{ id: "m", items: [null, MEAL_ITEM, 5] }]);
+    const { result } = setup();
+    expect(result.current.savedMeals).toEqual([
+      { id: "m", items: [MEAL_ITEM] },
+    ]);
+    expect(loadLS(K_FOOD_MEALS)).toEqual([{ id: "m", items: [MEAL_ITEM] }]);
+    let added;
+    act(() => {
+      added = result.current.logSavedMeal("m", "2026-11-03", "dinner");
+    });
+    expect(added.map((e) => e.name)).toEqual(["Egg"]);
+  });
+
+  it.each([
+    ["no food", { name: "Egg" }],
+    ["a null food", { food: null, name: "Egg" }],
+  ])("drops a recent row with %s", (_label, row) => {
+    const kept = { food: FOOD, name: "Egg", lastAt: 1 };
+    saveLS(K_FOOD_RECENT, [row, kept]);
+    const { result } = setup();
+    expect(result.current.recent).toEqual([kept]);
+    expect(loadLS(K_FOOD_RECENT)).toEqual([kept]);
   });
 });
 
@@ -176,6 +264,31 @@ describe("FoodProvider targets", () => {
     expect(result.current.targets).toEqual([]);
     expect(loadLS(K_FOOD_TARGETS)).toEqual([]);
   });
+
+  it("upsertTarget keeps the other rows, sorted by from", () => {
+    const early = { from: "2026-10-01", kcal: 2000 };
+    const late = { from: "2026-12-01", kcal: 2200 };
+    const middle = { from: "2026-11-01", kcal: 2100 };
+    saveLS(K_FOOD_TARGETS, [early, late]);
+    const { result } = setup();
+    act(() => {
+      result.current.upsertTarget(middle);
+    });
+    expect(result.current.targets).toEqual([early, middle, late]);
+    expect(loadLS(K_FOOD_TARGETS)).toEqual([early, middle, late]);
+  });
+
+  it("deleteTarget keeps the other rows", () => {
+    const early = { from: "2026-10-01", kcal: 2000 };
+    const late = { from: "2026-12-01", kcal: 2200 };
+    saveLS(K_FOOD_TARGETS, [early, late]);
+    const { result } = setup();
+    act(() => {
+      result.current.deleteTarget(early.from);
+    });
+    expect(result.current.targets).toEqual([late]);
+    expect(loadLS(K_FOOD_TARGETS)).toEqual([late]);
+  });
 });
 
 describe("FoodProvider saved meals", () => {
@@ -218,6 +331,83 @@ describe("FoodProvider saved meals", () => {
     expect(loadLS(K_FOOD_MEALS)).toEqual([meal]);
   });
 
+  it("saveMealFromSlot appends after the meals already saved", () => {
+    const existing = { id: "m", name: "Old", items: [MEAL_ITEM], createdAt: 1 };
+    saveLS(K_FOOD_ENTRIES, [storedEntry("a")]);
+    saveLS(K_FOOD_MEALS, [existing]);
+    const { result } = setup();
+    let meal;
+    act(() => {
+      meal = result.current.saveMealFromSlot("New", "2026-11-02", "breakfast");
+    });
+    expect(result.current.savedMeals).toEqual([existing, meal]);
+    expect(loadLS(K_FOOD_MEALS)).toEqual([existing, meal]);
+  });
+
+  it("saveMealFromSlot sees an entry added earlier in the same batch", () => {
+    const { result } = setup();
+    let meal;
+    act(() => {
+      result.current.addEntry(draft());
+      meal = result.current.saveMealFromSlot("Eggs", "2026-11-02", "breakfast");
+    });
+    expect(meal.items).toHaveLength(1);
+    expect(loadLS(K_FOOD_MEALS)).toEqual([meal]);
+  });
+
+  it("logSavedMeal sees a meal saved earlier in the same batch", () => {
+    saveLS(K_FOOD_ENTRIES, [storedEntry("a")]);
+    const { result } = setup();
+    let added;
+    act(() => {
+      const meal = result.current.saveMealFromSlot(
+        "Eggs",
+        "2026-11-02",
+        "breakfast",
+      );
+      added = result.current.logSavedMeal(meal.id, "2026-11-03", "dinner");
+    });
+    expect(added).toHaveLength(1);
+    expect(result.current.entries).toHaveLength(2);
+    expect(loadLS(K_FOOD_ENTRIES)).toHaveLength(2);
+  });
+
+  it("a saveMealFromSlot held across an await sees entries added after that render", async () => {
+    saveLS(K_FOOD_ENTRIES, [storedEntry("a", { name: "First" })]);
+    const { result } = setup();
+    const held = result.current.saveMealFromSlot;
+    await act(async () => {
+      await Promise.resolve();
+    });
+    act(() => {
+      result.current.addEntry(draft({ name: "Second" }));
+    });
+    let meal;
+    act(() => {
+      meal = held("Eggs", "2026-11-02", "breakfast");
+    });
+    expect(meal.items.map((i) => i.name)).toEqual(["First", "Second"]);
+  });
+
+  it("a logSavedMeal held across an await sees a meal saved after that render", async () => {
+    saveLS(K_FOOD_ENTRIES, [storedEntry("a")]);
+    const { result } = setup();
+    const held = result.current.logSavedMeal;
+    await act(async () => {
+      await Promise.resolve();
+    });
+    let meal;
+    act(() => {
+      meal = result.current.saveMealFromSlot("Eggs", "2026-11-02", "breakfast");
+    });
+    let added;
+    act(() => {
+      added = held(meal.id, "2026-11-03", "dinner");
+    });
+    expect(added).toHaveLength(1);
+    expect(result.current.entries).toHaveLength(2);
+  });
+
   it("saveMealFromSlot sees an entry committed by an earlier act", () => {
     const { result } = setup();
     act(() => {
@@ -231,7 +421,7 @@ describe("FoodProvider saved meals", () => {
   });
 
   it("saveMealFromSlot on an empty slot returns null and stores nothing", () => {
-    const existing = { id: "m", name: "Old", items: [], createdAt: 1 };
+    const existing = { id: "m", name: "Old", items: [MEAL_ITEM], createdAt: 1 };
     saveLS(K_FOOD_ENTRIES, [storedEntry("a")]);
     saveLS(K_FOOD_MEALS, [existing]);
     const { result } = setup();
@@ -306,6 +496,18 @@ describe("FoodProvider custom foods", () => {
     expect(row).toMatchObject({ name: "Bar", per100: PER100 });
     expect(result.current.customFoods).toEqual([row]);
     expect(loadLS(K_FOOD_CUSTOM)).toEqual([row]);
+  });
+
+  it("upsertCustomFood appends a new food after the existing ones", () => {
+    const first = { id: "x", name: "Bar", per100: PER100, createdAt: 111 };
+    saveLS(K_FOOD_CUSTOM, [first]);
+    const { result } = setup();
+    let row;
+    act(() => {
+      row = result.current.upsertCustomFood({ name: "New", per100: PER100 });
+    });
+    expect(result.current.customFoods).toEqual([first, row]);
+    expect(loadLS(K_FOOD_CUSTOM)).toEqual([first, row]);
   });
 
   it("upsertCustomFood replaces the same id in place, keeps createdAt, and leaves entries alone", () => {

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { loadLS, saveLS, uuid } from "../../lib/storage";
 import {
   K_FOOD_ENTRIES,
@@ -14,29 +14,61 @@ import {
 
 const FoodContext = createContext(null);
 
+const isRow = (value) =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
 // loadLS returns any parsed JSON value, so a stored non-array needs this guard.
+// The filter drops rows the actions and targetForDate cannot read.
 const loadList = (key) => {
   const stored = loadLS(key, []);
-  return Array.isArray(stored) ? stored : [];
+  return Array.isArray(stored) ? stored.filter(isRow) : [];
 };
 
-/**
- * Owns the food app's stored lists. Each list is loaded lazily and written back
- * on change, the same pattern as AppProvider. Rows, ids and timestamps are built
- * outside the setter updaters, because StrictMode runs updaters twice.
- */
-export function FoodProvider({ children }) {
-  const [entries, setEntries] = useState(() => loadList(K_FOOD_ENTRIES));
-  const [targets, setTargets] = useState(() => loadList(K_FOOD_TARGETS));
-  const [customFoods, setCustomFoods] = useState(() => loadList(K_FOOD_CUSTOM));
-  const [savedMeals, setSavedMeals] = useState(() => loadList(K_FOOD_MEALS));
-  const [recent, setRecent] = useState(() => loadList(K_FOOD_RECENT));
+// Same rule as normalizeSavedMeal in the plan's Task 8a: invalid items go, and a
+// meal left with zero items goes.
+const loadSavedMeals = () =>
+  loadList(K_FOOD_MEALS).flatMap((meal) => {
+    const items = Array.isArray(meal.items) ? meal.items.filter(isRow) : [];
+    return items.length > 0 ? [{ ...meal, items }] : [];
+  });
 
-  useEffect(() => saveLS(K_FOOD_ENTRIES, entries), [entries]);
-  useEffect(() => saveLS(K_FOOD_TARGETS, targets), [targets]);
-  useEffect(() => saveLS(K_FOOD_CUSTOM, customFoods), [customFoods]);
-  useEffect(() => saveLS(K_FOOD_MEALS, savedMeals), [savedMeals]);
-  useEffect(() => saveLS(K_FOOD_RECENT, recent), [recent]);
+const loadRecent = () =>
+  loadList(K_FOOD_RECENT).filter((row) => isRow(row.food));
+
+/**
+ * One stored list: loaded lazily and written back on change, the same pattern as
+ * AppProvider. `update` applies its change to `latest` at once, so an action can
+ * read the current list and return synchronously, even in the same batch as an
+ * earlier action or from a function held since an earlier render.
+ */
+function useStoredList(key, load) {
+  const [list, setList] = useState(load);
+  const latest = useRef(list);
+  useEffect(() => saveLS(key, list), [key, list]);
+  const update = (change) => {
+    latest.current = change(latest.current);
+    setList(latest.current);
+  };
+  return [list, update, latest];
+}
+
+/** Owns the food app's stored lists. */
+export function FoodProvider({ children }) {
+  const [entries, updateEntries, latestEntries] = useStoredList(
+    K_FOOD_ENTRIES,
+    () => loadList(K_FOOD_ENTRIES),
+  );
+  const [targets, updateTargets] = useStoredList(K_FOOD_TARGETS, () =>
+    loadList(K_FOOD_TARGETS),
+  );
+  const [customFoods, updateCustomFoods] = useStoredList(K_FOOD_CUSTOM, () =>
+    loadList(K_FOOD_CUSTOM),
+  );
+  const [savedMeals, updateSavedMeals, latestSavedMeals] = useStoredList(
+    K_FOOD_MEALS,
+    loadSavedMeals,
+  );
+  const [recent, updateRecent] = useStoredList(K_FOOD_RECENT, loadRecent);
 
   const addEntry = ({
     date,
@@ -58,21 +90,20 @@ export function FoodProvider({ children }) {
       portionLabel,
       createdAt: Date.now(),
     };
-    setEntries((prev) => [...prev, row]);
+    updateEntries((prev) => [...prev, row]);
     return row;
   };
 
   const updateEntry = (id, patch) =>
-    setEntries((prev) =>
+    updateEntries((prev) =>
       prev.map((e) => (e.id === id ? { ...e, ...patch } : e)),
     );
 
   const deleteEntry = (id) =>
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+    updateEntries((prev) => prev.filter((e) => e.id !== id));
 
-  // Reads the last rendered entries, because it must return synchronously.
   const saveMealFromSlot = (name, date, slot) => {
-    const items = entries
+    const items = latestEntries.current
       .filter((e) => e.date === date && e.slot === slot)
       .map((e) => {
         const item = {
@@ -86,13 +117,12 @@ export function FoodProvider({ children }) {
       });
     if (items.length === 0) return null;
     const meal = { id: uuid(), name, items, createdAt: Date.now() };
-    setSavedMeals((prev) => [...prev, meal]);
+    updateSavedMeals((prev) => [...prev, meal]);
     return meal;
   };
 
-  // Reads the last rendered savedMeals, because it must return synchronously.
   const logSavedMeal = (mealId, date, slot) => {
-    const meal = savedMeals.find((m) => m.id === mealId);
+    const meal = latestSavedMeals.current.find((m) => m.id === mealId);
     if (!meal) return [];
     const newEntries = meal.items.map((item) => ({
       id: uuid(),
@@ -105,7 +135,7 @@ export function FoodProvider({ children }) {
       portionLabel: item.portionLabel,
       createdAt: Date.now(),
     }));
-    setEntries((prev) => [...prev, ...newEntries]);
+    updateEntries((prev) => [...prev, ...newEntries]);
     return newEntries;
   };
 
@@ -115,7 +145,7 @@ export function FoodProvider({ children }) {
       id: food.id ?? uuid(),
       createdAt: food.createdAt ?? Date.now(),
     };
-    setCustomFoods((prev) =>
+    updateCustomFoods((prev) =>
       prev.some((f) => f.id === row.id)
         ? prev.map((f) => (f.id === row.id ? row : f))
         : [...prev, row],
@@ -124,16 +154,16 @@ export function FoodProvider({ children }) {
   };
 
   const deleteCustomFood = (id) =>
-    setCustomFoods((prev) => prev.filter((f) => f.id !== id));
+    updateCustomFoods((prev) => prev.filter((f) => f.id !== id));
 
   const upsertTarget = (row) =>
-    setTargets((prev) => upsertTargetRow(prev, row));
+    updateTargets((prev) => upsertTargetRow(prev, row));
 
   const deleteTarget = (from) =>
-    setTargets((prev) => deleteTargetRow(prev, from));
+    updateTargets((prev) => deleteTargetRow(prev, from));
 
   // Task 11b replaces this with the real implementation.
-  const touchRecent = (_item) => setRecent((prev) => prev);
+  const touchRecent = (_item) => updateRecent((prev) => prev);
 
   const value = {
     entries,
