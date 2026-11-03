@@ -91,6 +91,15 @@ const NON_STRINGS = [
   ["an array", ["x"]],
 ];
 
+/** Values that are not a plain object. */
+const NON_OBJECTS = [
+  ["null", null],
+  ["undefined", undefined],
+  ["a string", "row"],
+  ["a number", 7],
+  ["an array", []],
+];
+
 const NON_ARRAYS = [
   ["a string", "nope"],
   ["a number", 7],
@@ -219,9 +228,20 @@ describe("normalizeEntry", () => {
     expect(normalizeEntry(entry())).not.toHaveProperty("portionLabel");
   });
 
-  it.each([null, undefined, "row", 7, []])("returns null for %j", (bad) => {
+  it.each(NON_OBJECTS)("returns null for %s", (_label, bad) => {
     expect(normalizeEntry(bad)).toBeNull();
   });
+
+  it.each(NON_STRINGS)(
+    "removes a food barcode that is %s and keeps the row",
+    (_label, barcode) => {
+      const food = { kind: "db", id: "egg", barcode };
+      const result = normalizeEntry(entry({ food }));
+      expect(result).toEqual(entry());
+      expect(result.food).not.toHaveProperty("barcode");
+      expect(food.barcode).toEqual(barcode);
+    },
+  );
 });
 
 describe("normalizeTarget", () => {
@@ -239,20 +259,8 @@ describe("normalizeTarget", () => {
     );
   });
 
-  it.each(NON_STRINGS)(
-    "removes a barcode that is %s and keeps the row",
-    (_label, barcode) => {
-      const input = target({ barcode });
-      const result = normalizeTarget(input);
-      expect(result).not.toHaveProperty("barcode");
-      expect(result).toEqual(target());
-      expect(input.barcode).toEqual(barcode);
-    },
-  );
-
-  it("keeps a string barcode and adds no barcode key when the row has none", () => {
-    expect(normalizeTarget(target({ barcode: "123" })).barcode).toBe("123");
-    expect(normalizeTarget(target())).not.toHaveProperty("barcode");
+  it("does not check a barcode on a target", () => {
+    expect(normalizeTarget(target({ barcode: 42 })).barcode).toBe(42);
   });
 });
 
@@ -367,21 +375,20 @@ describe("normalizeSavedMeal", () => {
     expect(result.items[0]).not.toHaveProperty("portionLabel");
   });
 
+  it("does not check a barcode on the meal itself", () => {
+    expect(normalizeSavedMeal(meal({ barcode: 42 })).barcode).toBe(42);
+  });
+
   it.each(NON_STRINGS)(
-    "removes a meal barcode that is %s and keeps the row",
+    "removes an item food barcode that is %s and keeps the item",
     (_label, barcode) => {
-      const input = meal({ barcode });
-      const result = normalizeSavedMeal(input);
-      expect(result).not.toHaveProperty("barcode");
-      expect(result).toEqual(meal());
-      expect(input.barcode).toEqual(barcode);
+      const food = { kind: "db", id: "egg", barcode };
+      const result = normalizeSavedMeal(meal({ items: [item({ food })] }));
+      expect(result.items).toEqual([item()]);
+      expect(result.items[0].food).not.toHaveProperty("barcode");
+      expect(food.barcode).toEqual(barcode);
     },
   );
-
-  it("keeps a string meal barcode and adds no barcode key when the row has none", () => {
-    expect(normalizeSavedMeal(meal({ barcode: "123" })).barcode).toBe("123");
-    expect(normalizeSavedMeal(meal())).not.toHaveProperty("barcode");
-  });
 
   it("returns null when no item survives or items is not a list", () => {
     expect(
@@ -430,6 +437,17 @@ describe("normalizeRecent", () => {
   it.each(BAD_FOOD_REFS)("returns null for a food %s", (_label, food) => {
     expect(normalizeRecent(recent("a", { food }))).toBeNull();
   });
+
+  it.each(NON_STRINGS)(
+    "removes a food barcode that is %s and keeps the row",
+    (_label, barcode) => {
+      const food = { kind: "db", id: "a", barcode };
+      const result = normalizeRecent(recent("a", { food }));
+      expect(result).toEqual(recent("a"));
+      expect(result.food).not.toHaveProperty("barcode");
+      expect(food.barcode).toEqual(barcode);
+    },
+  );
 
   it("returns null for a bad lastAt or per100", () => {
     expect(normalizeRecent(recent("a", { lastAt: "1000" }))).toBeNull();
@@ -498,12 +516,9 @@ describe("normalizeRecent", () => {
 });
 
 describe("normalizeFoodData", () => {
-  it.each([null, undefined, "food", 7, []])(
-    "gives five empty lists for %j",
-    (bad) => {
-      expect(normalizeFoodData(bad)).toEqual(emptyData());
-    },
-  );
+  it.each(NON_OBJECTS)("gives five empty lists for %s", (_label, bad) => {
+    expect(normalizeFoodData(bad)).toEqual(emptyData());
+  });
 
   it("gives [] for missing and non-array lists", () => {
     expect(
@@ -696,5 +711,122 @@ describe("mergeFoodData", () => {
     expect(merged).toHaveLength(RECENT_MAX);
     expect(merged[0].lastAt).toBe(RECENT_MAX * 2 - 1);
     expect(merged[RECENT_MAX - 1].lastAt).toBe(RECENT_MAX);
+  });
+
+  it.each([
+    ["entries", (id) => entry({ id })],
+    ["customFoods", (id) => custom({ id })],
+    ["savedMeals", (id) => meal({ id })],
+  ])(
+    "keeps every current row of %s in order, then adds unmatched incoming rows",
+    (list, row) => {
+      const noKeyRows = [null, "text", 7, ["x"], { name: "no id" }, { id: 7 }];
+      const current = [
+        row("b"),
+        ...noKeyRows,
+        { ...row("a"), grams: 0, food: undefined },
+        row("b"),
+      ];
+      const merged = mergeFoodData(
+        { ...emptyData(), [list]: current },
+        {
+          ...emptyData(),
+          [list]: [row("a"), row("c"), row("b"), row("d")],
+        },
+      );
+      expect(merged[list]).toEqual([...current, row("c"), row("d")]);
+    },
+  );
+
+  it("keeps every current target, sorts by from and puts rows with no string from last", () => {
+    const noFrom = [null, "text", { kcal: 1 }, { from: 7 }];
+    const merged = mergeFoodData(
+      {
+        ...emptyData(),
+        targets: [
+          noFrom[0],
+          target({ from: "2026-05-01", kcal: 1 }),
+          noFrom[1],
+          target({ from: "2026-03-01", kcal: 2 }),
+          noFrom[2],
+          target({ from: "2026-05-01", kcal: 3 }),
+          noFrom[3],
+          { from: "2026-04-01", kcal: 0 },
+        ],
+      },
+      {
+        ...emptyData(),
+        targets: [
+          target({ from: "2026-03-01", kcal: 9 }),
+          target({ from: "2026-01-01", kcal: 4 }),
+        ],
+      },
+    );
+    expect(merged.targets).toEqual([
+      target({ from: "2026-01-01", kcal: 4 }),
+      target({ from: "2026-03-01", kcal: 2 }),
+      { from: "2026-04-01", kcal: 0 },
+      target({ from: "2026-05-01", kcal: 1 }),
+      target({ from: "2026-05-01", kcal: 3 }),
+      ...noFrom,
+    ]);
+  });
+
+  it("does not throw on a recent row with no food and puts it after the keyed rows", () => {
+    const noKey = [null, { junk: true }, "text", { food: null }];
+    const merged = mergeFoodData(
+      {
+        ...emptyData(),
+        recent: [
+          noKey[0],
+          recent("a", { lastAt: 100 }),
+          noKey[1],
+          noKey[2],
+          noKey[3],
+        ],
+      },
+      { ...emptyData(), recent: [recent("b", { lastAt: 50 })] },
+    );
+    expect(merged.recent).toEqual([
+      recent("a", { lastAt: 100 }),
+      recent("b", { lastAt: 50 }),
+      ...noKey,
+    ]);
+  });
+
+  it("counts a recent row with no key toward the cap", () => {
+    const keyed = Array.from({ length: RECENT_MAX - 1 }, (_, i) =>
+      recent(`f${i}`, { lastAt: i + 1 }),
+    );
+    const merged = mergeFoodData(
+      {
+        ...emptyData(),
+        recent: [{ junk: 1 }, { junk: 2 }, ...keyed],
+      },
+      emptyData(),
+    ).recent;
+    expect(merged).toHaveLength(RECENT_MAX);
+    expect(merged[RECENT_MAX - 2].lastAt).toBe(1);
+    expect(merged[RECENT_MAX - 1]).toEqual({ junk: 1 });
+  });
+
+  it("does not throw on a keyed recent row whose lastAt is not a number and sorts it after numeric ones", () => {
+    const bad = recent("bad", { lastAt: unprintable() });
+    const merged = mergeFoodData(
+      { ...emptyData(), recent: [bad, recent("a", { lastAt: 100 })] },
+      { ...emptyData(), recent: [recent("b", { lastAt: 200 })] },
+    );
+    expect(merged.recent.map((r) => r.food.id)).toEqual(["b", "a", "bad"]);
+  });
+
+  it("does not change the lists it is given", () => {
+    const current = {
+      ...emptyData(),
+      targets: [target({ from: "2026-05-01" }), target({ from: "2026-01-01" })],
+      recent: [recent("a", { lastAt: 1 }), recent("b", { lastAt: 2 })],
+    };
+    const before = structuredClone(current);
+    mergeFoodData(current, emptyData());
+    expect(current).toEqual(before);
   });
 });

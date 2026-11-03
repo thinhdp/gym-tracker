@@ -220,19 +220,67 @@ describe("importFoodData", () => {
     expect(storedLists()).toEqual(seededLists());
   });
 
-  it("merge mode normalises the current lists before merging", () => {
-    saveLS(K_FOOD_ENTRIES, [null, entry("old"), entry("bad", { grams: 0 })]);
+  it("merge keeps stored rows that would fail normalising and counts a non-array list as []", () => {
+    const badEntry = entry("bad", { grams: 0 });
+    saveLS(K_FOOD_ENTRIES, [null, entry("old"), badEntry]);
     saveLS(K_FOOD_TARGETS, { not: "a list" });
     saveLS(K_FOOD_RECENT, [{ junk: true }, recent("old")]);
     expect(importFoodData({ food: incoming() }, "merge")).toBe(true);
-    expect(loadLS(K_FOOD_ENTRIES, []).map((r) => r.id)).toEqual(["old", "new"]);
-    expect(loadLS(K_FOOD_TARGETS, []).map((r) => r.from)).toEqual([
-      "2026-02-01",
+    expect(loadLS(K_FOOD_ENTRIES, [])).toEqual([
+      null,
+      entry("old"),
+      badEntry,
+      entry("new"),
     ]);
-    expect(loadLS(K_FOOD_RECENT, []).map((r) => r.food.id)).toEqual([
-      "new",
-      "old",
+    expect(loadLS(K_FOOD_TARGETS, [])).toEqual([target("2026-02-01")]);
+    expect(loadLS(K_FOOD_RECENT, [])).toEqual([
+      recent("new", { lastAt: 2000 }),
+      recent("old"),
+      { junk: true },
     ]);
+  });
+
+  it("merge keeps a stored entry with no food and a stored meal with one bad item byte for byte", () => {
+    const noFood = entry("nofood");
+    delete noFood.food;
+    const badItemMeal = meal("badmeal", {
+      items: [...meal("x").items, { name: "Bad", grams: 0 }],
+    });
+    saveLS(K_FOOD_ENTRIES, [noFood]);
+    saveLS(K_FOOD_MEALS, [badItemMeal]);
+    expect(importFoodData({ food: incoming() }, "merge")).toBe(true);
+    const [storedEntry] = loadLS(K_FOOD_ENTRIES, []);
+    const [storedMeal] = loadLS(K_FOOD_MEALS, []);
+    expect(JSON.stringify(storedEntry)).toBe(JSON.stringify(noFood));
+    expect(JSON.stringify(storedMeal)).toBe(JSON.stringify(badItemMeal));
+  });
+
+  it("merge keeps a null row in stored entries and targets", () => {
+    saveLS(K_FOOD_ENTRIES, [null]);
+    saveLS(K_FOOD_TARGETS, [null]);
+    expect(importFoodData({ food: incoming() }, "merge")).toBe(true);
+    expect(loadLS(K_FOOD_ENTRIES, [])).toEqual([null, entry("new")]);
+    expect(loadLS(K_FOOD_TARGETS, [])).toEqual([target("2026-02-01"), null]);
+  });
+
+  it("merge keeps a stored recent row with no food", () => {
+    const noFood = recent("x");
+    delete noFood.food;
+    saveLS(K_FOOD_RECENT, [noFood]);
+    expect(importFoodData({ food: incoming() }, "merge")).toBe(true);
+    expect(loadLS(K_FOOD_RECENT, [])).toEqual([
+      recent("new", { lastAt: 2000 }),
+      noFood,
+    ]);
+  });
+
+  it("replace still drops invalid incoming rows and ignores the stored rows", () => {
+    saveLS(K_FOOD_ENTRIES, [null, entry("old")]);
+    importFoodData(
+      { food: { entries: [entry("bad", { grams: 0 }), entry("new")] } },
+      "replace",
+    );
+    expect(loadLS(K_FOOD_ENTRIES, [])).toEqual([entry("new")]);
   });
 
   it("drops invalid incoming rows in replace mode", () => {

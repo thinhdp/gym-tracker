@@ -25,15 +25,13 @@ export const exportFoodData = () => ({
 /**
  * Applies `raw.food` to the stored food lists. Returns false and writes nothing
  * when `raw.food` is not a plain object. `mode` "replace" overwrites each list;
- * any other mode merges.
+ * any other mode merges into the stored rows, which are not normalised.
  */
 export const importFoodData = (raw, mode) => {
   if (!isObject(raw?.food)) return false;
   const incoming = normalizeFoodData(raw.food);
   const next =
-    mode === "replace"
-      ? incoming
-      : mergeFoodData(normalizeFoodData(exportFoodData()), incoming);
+    mode === "replace" ? incoming : mergeFoodData(exportFoodData(), incoming);
   saveLS(K_FOOD_ENTRIES, next.entries);
   saveLS(K_FOOD_TARGETS, next.targets);
   saveLS(K_FOOD_CUSTOM, next.customFoods);

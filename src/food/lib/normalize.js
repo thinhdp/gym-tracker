@@ -67,6 +67,9 @@ const toCreatedAt = (createdAt) => {
   return Date.now();
 };
 
+/** Copy of a valid FoodRef without a non-string `barcode`. */
+const cleanFoodRef = (food) => withoutNonString(food, "barcode");
+
 export const normalizeEntry = (e) => {
   if (!isObject(e) || !hasId(e.id)) return null;
   if (
@@ -81,15 +84,14 @@ export const normalizeEntry = (e) => {
   if (!validFoodRef(e.food)) return null;
   return {
     ...withoutNonString(e, "portionLabel"),
+    food: cleanFoodRef(e.food),
     name: toName(e.name),
     createdAt: toCreatedAt(e.createdAt),
   };
 };
 
 export const normalizeTarget = (t) =>
-  isObject(t) && validateTarget(t).length === 0
-    ? withoutNonString(t, "barcode")
-    : null;
+  isObject(t) && validateTarget(t).length === 0 ? t : null;
 
 export const normalizeCustomFood = (c) => {
   if (!isObject(c) || !hasId(c.id)) return null;
@@ -111,11 +113,12 @@ export const normalizeSavedMeal = (m) => {
   if (!isObject(m) || !hasId(m.id) || !Array.isArray(m.items)) return null;
   const items = m.items.filter(validMealItem).map((item) => ({
     ...withoutNonString(item, "portionLabel"),
+    food: cleanFoodRef(item.food),
     name: toName(item.name),
   }));
   if (items.length === 0) return null;
   return {
-    ...withoutNonString(m, "barcode"),
+    ...m,
     name: toName(m.name),
     items,
     createdAt: toCreatedAt(m.createdAt),
@@ -128,6 +131,7 @@ export const normalizeRecent = (r) => {
   if (!validGrams(r.lastGrams)) return null;
   return {
     ...withValidPortions(withoutNonString(r, "lastPortionLabel")),
+    food: cleanFoodRef(r.food),
     name: toName(r.name),
   };
 };
@@ -142,28 +146,45 @@ const firstByKey = (rows, keyOf) => {
   return [...byKey.values()];
 };
 
-const byId = (row) => row.id;
-const byFrom = (row) => row.from;
+/** The string in `row[field]`, or undefined for a row that cannot be keyed. */
+const stringField = (row, field) =>
+  isObject(row) && typeof row[field] === "string" ? row[field] : undefined;
+
+const byId = (row) => stringField(row, "id");
+const byFrom = (row) => stringField(row, "from");
+const byFood = (row) =>
+  isObject(row) && validFoodRef(row.food) ? recentKey(row.food) : undefined;
+
+/** New list ascending by `from`; rows with no string `from` go last in their order. */
+const sortTargets = (rows) => [
+  ...rows
+    .filter((row) => byFrom(row) !== undefined)
+    .sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0)),
+  ...rows.filter((row) => byFrom(row) === undefined),
+];
 
 /** Unique by `from`, first row wins, ascending by `from`. */
-const uniqueTargets = (rows) =>
-  firstByKey(rows, byFrom).sort((a, b) =>
-    a.from < b.from ? -1 : a.from > b.from ? 1 : 0,
-  );
+const uniqueTargets = (rows) => sortTargets(firstByKey(rows, byFrom));
+
+/** A stored `lastAt` may be anything; one that is not a finite number counts as oldest. */
+const lastAtOf = (row) =>
+  Number.isFinite(row.lastAt) ? row.lastAt : -Infinity;
 
 /**
  * Unique by food, newer `lastAt` wins and the earlier row wins a tie; newest
- * first, capped at RECENT_MAX.
+ * first, capped at RECENT_MAX. Every row must have a key.
  */
 const uniqueRecent = (rows) => {
   const byKey = new Map();
   for (const row of rows) {
-    const key = recentKey(row.food);
+    const key = byFood(row);
     const seen = byKey.get(key);
-    if (!seen || row.lastAt > seen.lastAt) byKey.set(key, row);
+    if (!seen || lastAtOf(row) > lastAtOf(seen)) byKey.set(key, row);
   }
   return [...byKey.values()]
-    .sort((a, b) => b.lastAt - a.lastAt)
+    .sort((a, b) =>
+      lastAtOf(a) === lastAtOf(b) ? 0 : lastAtOf(b) - lastAtOf(a),
+    )
     .slice(0, RECENT_MAX);
 };
 
@@ -188,14 +209,46 @@ export const normalizeFoodData = (raw) => {
   };
 };
 
-/** Union of two normalised data sets. Existing rows win; recent keeps the newer `lastAt`. */
+/** Every current row as is, then the incoming rows whose key matches no current row. */
+const unionKeepingCurrent = (current, incoming, keyOf) => {
+  const taken = new Set(current.map(keyOf));
+  return [
+    ...current,
+    ...incoming.filter((row) => {
+      const key = keyOf(row);
+      return key === undefined || !taken.has(key);
+    }),
+  ];
+};
+
+/** Keyed rows through uniqueRecent, then rows with no key in their order; capped. */
+const mergeRecent = (current, incoming) => {
+  const rows = [...current, ...incoming];
+  return [
+    ...uniqueRecent(rows.filter((row) => byFood(row) !== undefined)),
+    ...rows.filter((row) => byFood(row) === undefined),
+  ].slice(0, RECENT_MAX);
+};
+
+/**
+ * Union of the stored lists and a normalised data set. `current` is not
+ * normalised: every stored row stays unchanged, and a malformed one has no key.
+ * Recent keeps the newer `lastAt` for a food and is capped.
+ */
 export const mergeFoodData = (current, incoming) => ({
-  entries: firstByKey([...current.entries, ...incoming.entries], byId),
-  targets: uniqueTargets([...current.targets, ...incoming.targets]),
-  customFoods: firstByKey(
-    [...current.customFoods, ...incoming.customFoods],
+  entries: unionKeepingCurrent(current.entries, incoming.entries, byId),
+  targets: sortTargets(
+    unionKeepingCurrent(current.targets, incoming.targets, byFrom),
+  ),
+  customFoods: unionKeepingCurrent(
+    current.customFoods,
+    incoming.customFoods,
     byId,
   ),
-  savedMeals: firstByKey([...current.savedMeals, ...incoming.savedMeals], byId),
-  recent: uniqueRecent([...current.recent, ...incoming.recent]),
+  savedMeals: unionKeepingCurrent(
+    current.savedMeals,
+    incoming.savedMeals,
+    byId,
+  ),
+  recent: mergeRecent(current.recent, incoming.recent),
 });
