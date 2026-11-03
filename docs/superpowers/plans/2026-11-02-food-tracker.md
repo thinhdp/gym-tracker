@@ -847,14 +847,15 @@ Before the first production deploy that includes Part F, set `VITE_FOOD_API_BASE
 
 ## Part A handoff
 
-**Shipped:** Task 1, commits `2f64093` (shell) and `44d9301` (theme test). Issues #85 and #88 close with this PR. All 16 focused tests pass, and `npm run check` passes (537 tests, build). A Playwright run on the dev server passed Step 5.
+**Shipped:** Task 1, commits `2f64093` (shell) and `44d9301` (theme test), plus the review follow-ups the owner asked to fold in: `aeaeba8` and `463749b` (#113, #114), `64f0b3d` (#115). Issues #85, #88, #113, #114 and #115 close with this PR. All 20 focused tests pass. A Playwright run on the dev server passed Step 5.
 
-**Cost:** 520,529 subagent tokens across 8 agents, plus the controller session (not measured); 1 fix round; 17 minutes for the workflow run.
+**Cost:** 520,529 subagent tokens across 8 agents in the workflow, plus about 80,000 for the follow-ups and the controller session (not measured); 2 fix rounds; 17 minutes for the workflow run.
 
 **Rulings** (made by the Opus orchestrator; none went to the advisor or the user):
 
 - Added `keys.test.js` and `FoodApp.test.jsx`, which Task 1's Files list omits but Global Constraints requires.
-- An invalid `mgym.food.tab` value shows Today. The plan did not state this; `AppContent` does the same for the gym tab.
+- An invalid `mgym.food.tab` value shows Today and is rewritten to `today` on load. The plan did not state this; `AppContent` also falls back for the gym tab.
+- `/food` sets the page title to Food Tracker with an effect in `FoodApp`, for spec section 3.1's home screen icon. The owner did not name the text. Home screen naming on a real phone is not tested.
 - Chose the four nav icon paths. The plan names none.
 - Added the "live session still wins on /" test from spec section 9.
 - The test in Step 1 for a stored session did not guard the line order. Its session names a workout that does not exist, so `LiveSession` ends it and the Food nav appears anyway. The test now also asserts the session stays stored, and a second test seeds a real workout.
@@ -864,7 +865,7 @@ Before the first production deploy that includes Part F, set `VITE_FOOD_API_BASE
 
 **Not verified:** the `vercel.json` rewrite cannot run locally. Check `/food`, a hard reload and the browser console on the preview deployment.
 
-**Follow-ups:** #113 (tab guard and test gaps), #114 (page title at `/food`), #115 (`mgym.routines.v1` row). `ARCHITECTURE.md` does not mention the `/food` branch yet; Task 15 covers that in Part K.
+**Follow-ups:** none open. `ARCHITECTURE.md` does not mention the `/food` branch yet; Task 15 covers that in Part K.
 
 **Unchecked steps moved:** none.
 
