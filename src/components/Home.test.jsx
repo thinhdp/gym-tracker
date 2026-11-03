@@ -30,4 +30,11 @@ describe("Home", () => {
     renderHome();
     expect(screen.queryByText(/day streak/i)).not.toBeInTheDocument();
   });
+
+  it("shows the food set-up link with empty storage", () => {
+    renderHome();
+    expect(
+      screen.getByRole("link", { name: /Set up food tracking/i }),
+    ).toHaveAttribute("href", "/food");
+  });
 });
