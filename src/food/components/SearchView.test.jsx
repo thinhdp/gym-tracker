@@ -5,6 +5,7 @@ import { ConfirmProvider } from "../../components/ConfirmDialog";
 import { FoodProvider } from "../context/FoodContext";
 import { K_FOOD_CUSTOM, K_FOOD_ENTRIES } from "../lib/keys";
 import { FoodApiError, isFixtureMode, searchFoods } from "../lib/foodApi";
+import { normalizeEntry } from "../lib/normalize";
 import SearchView from "./SearchView";
 
 vi.mock("../lib/foodApi", async (importActual) => ({
@@ -415,6 +416,17 @@ describe("SearchView", () => {
       expect(entry.portionLabel).toBe("1 bowl");
       expect(onLogged).toHaveBeenCalledTimes(1);
     });
+
+    it("logs a custom food so the stored entry passes normalizeEntry", async () => {
+      const { user } = setup();
+      await user.type(box(), "chi");
+      await user.click(rowButton(/Chicken Salad/));
+      await user.click(screen.getByRole("button", { name: "Add" }));
+
+      const normalized = normalizeEntry(loadLS(K_FOOD_ENTRIES)[0]);
+      expect(normalized).not.toBeNull();
+      expect(normalized.food).toStrictEqual({ kind: "custom", id: "custom-1" });
+    });
   });
 
   describe("logging", () => {
@@ -449,6 +461,19 @@ describe("SearchView", () => {
       expect(entries[0].portionLabel).toBe("1 breast");
       expect(onLogged).toHaveBeenCalledTimes(1);
       expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it('logs a database food with food.kind "db" so the stored entry passes normalizeEntry', async () => {
+      searchFoods.mockResolvedValueOnce([food("a", "chicken")]);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      await user.click(rowButton(/chicken/));
+      await user.click(screen.getByRole("button", { name: "Add" }));
+
+      const normalized = normalizeEntry(loadLS(K_FOOD_ENTRIES)[0]);
+      expect(normalized).not.toBeNull();
+      expect(normalized.food).toStrictEqual({ kind: "db", id: "a" });
     });
 
     it("preselects the slot by time of day when no slot is preset", async () => {

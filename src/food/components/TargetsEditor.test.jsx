@@ -118,6 +118,13 @@ describe("TargetsEditor", () => {
   });
 
   it("prefills from the target in force today, not a future one, and keeps from at today", () => {
+    const older = {
+      from: "1990-01-01",
+      kcal: 1400,
+      protein: 90,
+      carb: 140,
+      fat: 45,
+    };
     const past = {
       from: "2000-01-01",
       kcal: 1500,
@@ -132,7 +139,7 @@ describe("TargetsEditor", () => {
       carb: 300,
       fat: 100,
     };
-    saveLS(K_FOOD_TARGETS, [past, future]);
+    saveLS(K_FOOD_TARGETS, [older, past, future]);
     setup();
     expect(screen.getByLabelText("Calories")).toHaveValue(1500);
     expect(screen.getByLabelText("Protein (g)")).toHaveValue(100);
@@ -148,5 +155,6 @@ describe("TargetsEditor", () => {
     await user.click(screen.getByRole("button", { name: "Delete" }));
     expect(loadLS(K_FOOD_TARGETS)).toEqual([]);
     expect(screen.queryByRole("button", { name: /^Edit / })).toBeNull();
+    expect(screen.queryByRole("list")).toBeNull();
   });
 });
