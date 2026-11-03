@@ -72,3 +72,58 @@ Handoffs for `2026-11-02-food-tracker.md` from Part D on (CLAUDE.md, Execution p
 **Unchecked steps moved:** none.
 
 **Next:** Part E can run now. Part F needs C and D merged, so it can run once this PR merges.
+
+## Part E rulings
+
+Spec 5.9 and Task 8a leave these points open. They were decided while Task 8a ran, and they bind later parts.
+
+**Incoming rows (`normalizeFoodData`, used on `raw.food` only):**
+
+1. An entry date must be a real calendar date, as for targets. `isRealDate` is exported from `targets.js`.
+2. A row with a missing, empty or non-string `id` is dropped. No id is created for it.
+3. `raw.food` counts as absent unless it is a plain object. Missing, null, a string, a number and an array all return `false` and write nothing. A plain object with a missing list means that list is `[]`, so replace mode overwrites it.
+4. Targets: the first row wins for a `from`, and the list is sorted ascending by `from`.
+5. Recent rows need a valid FoodRef, a finite `lastAt`, numeric `per100` and `lastGrams` above 0. The newer `lastAt` wins for a food; the list is sorted newest first and capped at `RECENT_MAX`.
+6. Duplicates inside one list are removed. The first row wins for entries, custom foods and saved meals.
+7. Entries and saved meal items need a valid FoodRef: `food` is an object, `kind` is `db` or `custom`, and `id` is a non-empty string. An entry without one is dropped. A meal item without one is dropped, and a meal left with no items is dropped.
+8. An optional field of the wrong type is removed and the row stays: `portionLabel`, `lastPortionLabel`, `barcode`, `food.barcode`. A non-array `portions` is removed, and inside an array only rows with a string `label` and grams above 0 stay.
+9. A number or boolean `name` becomes text, and an object, array or null `name` becomes `""`; the row stays. The exception is a custom food, whose `name` must be a non-empty string.
+
+**Stored rows (merge mode):** for entries, targets, custom foods and saved meals, a merge keeps every stored row unchanged, including malformed rows and duplicates, and adds incoming rows whose key matches no stored row. Targets are re-sorted by `from`. A stored list that is not an array counts as `[]`. Recent follows its own rule below. Replace mode writes the normalised incoming lists.
+
+Recent: a stored row is replaced when the incoming row for that food has a newer `lastAt`. Two stored rows for one food collapse to one (newer `lastAt` wins, the first row wins a tie). A `lastAt` that is not a finite number counts as oldest. A stored row with no valid FoodRef has no key: it goes after the keyed rows, counts toward the cap, and the cap removes it first. The cap can also remove the oldest stored row, or an old incoming row.
+
+**Reversed ruling:** the first version of Task 8a normalised the stored lists before a merge, so that the merge never met a malformed row. Review showed that this deletes logged history and saved meals with no message, even when the backup does not mention them. Spec 5.9 says "union" and "existing rows win", so that ruling was wrong and was reversed.
+
+**Notes for later parts.** A restore in replace mode drops any row that fails the checks above, so every writer must produce valid rows:
+
+- **#126 (provider load):** a merge keeps malformed stored rows, and `FoodProvider` does not filter them, so Part C's notes on `targetForDate` and `sumMacros` still apply. Part E unblocks #126: `normalizeFoodData` now exists. It drops rows, and the provider's write-back would delete them for good, so #126 still needs the owner's decision on a notice.
+- **Part F (`PortionSheet`):** the API row has `source`, not `kind`. Map it to `kind: "db"` when building `food`. `addEntry` stores `food` as given, with no check. The test asserts that the entry logged through `addEntry` passes `normalizeEntry`; this test also covers the Part C provider, which merged before `normalize.js` existed. Task 5's text does not state this. Without it, a restore in replace mode drops every entry logged from Search.
+- **Part K (`RecentRow`):** pass `recent.food` as `food`, not the recent row itself. The test asserts that the logged entry passes `normalizeEntry`.
+
+## Part E handoff
+
+**Shipped:** Tasks 8a and 8b. Commits `226c3ea`, `2087549`, `b3fcd31`, `3a44e0c`, `d5f7f5d` (Task 8a), `bc9455a`, `64f6ab1` (Task 8b), plus docs commits. `src/food/lib/normalize.js` and `backupFood.js` are new, and `DataManagementMenu` exports and imports the `food` field. `isRealDate` is now exported from `targets.js`, which Task 8a's Files list does not name. `docs/DATA-MODEL.md`, `ARCHITECTURE.md` and spec 5.9 are updated.
+
+**Cost:** about $21.50 for the session so far, read from `get_session` before the last gate and the PR. The per-model split was not measured: `session-cost.mjs` is not on this machine. 1,306,179 subagent tokens across 21 agents, in 4 workflow runs and one final review. About 62 minutes of workflow time. Fix rounds: 3 for Task 8a and 1 for Task 8b. Decision rounds: 4, against the limit of one per part (2 from the controller, 2 inside the workflow runs).
+
+**What cost the extra rounds:** the first ruling let a merge normalise stored rows, and the plan task did not state the effect on stored rows. It took two fix passes and a second controller advisor call to find that this deleted stored rows, against spec 5.9.
+
+**Differences from the plan:**
+
+- Task 8a's Interfaces line lists `uuid`. It is not used, because a row with no id is dropped.
+- `normalizeEntry` also requires a valid `food`, which the Interfaces line does not list.
+- Task 8b's reviews ran on `opus55-reviewer-deep`, not the plain reviewer the plan names, because CLAUDE.md sends backup-envelope work there.
+- The backup note is in the `docs/DATA-MODEL.md` "Backup / export payload" section, not the "Food tracker" section Task 8b names, because the payload is documented there.
+
+**Not verified:** a real browser, and rows written by the real food UI, which is not merged. The menu tests import and export through the real `importFoodData` and `exportFoodData` in jsdom. The first deep review ran an export-then-import round trip through the menu with a temporary test; no committed test does this.
+
+**Follow-ups:** #129 (Import (replace) has no confirm, which conflicts with the `useConfirm()` hard invariant; this needs the owner's decision). #126 is now unblocked. Left as they are, by decision: writes across the five keys are not atomic, and a failed food write shows the existing "Import failed" message after gym data has already changed (spec section 8 keeps `saveLS` behaviour).
+
+**Issues:** #93 closes with this PR. #94 stays open until Part K, because Task 15 finishes the docs.
+
+**Plan size:** the plan file is 56 KB, above the 30 KB limit in CLAUDE.md. It was not cut, because that restructure is outside this part. The owner should decide whether to cut it before Part F.
+
+**Unchecked steps moved:** none.
+
+**Next:** Part F. The notes for later parts are under Part E rulings above.

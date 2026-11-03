@@ -424,7 +424,8 @@ applies it as follows:
 - **Merge** adds incoming rows and rewrites no stored row, except a recent row
   replaced by an incoming row with a newer `lastAt`. Targets are re-sorted by `from`.
   Recent is re-sorted newest first and capped at 50, so the cap can remove the oldest
-  stored row.
+  stored row or an old incoming row, and two stored recent rows for one food collapse
+  to one. A stored list that is not an array counts as `[]`.
 - **Replace** normalises the incoming lists and overwrites each one. A list missing
   from `food` counts as `[]`, so `food: {}` empties all five lists.
 - A backup with no `food` field, or a `food` value that is not a plain object, leaves

@@ -46,9 +46,10 @@ Two things render **outside** this tabbed layout:
 renders `FoodApp` in place of the gym UI, and this check comes before the
 live-session check. Every other path renders the gym UI described above. This is a
 path check, not a router: the `Gym` link in `FoodApp` is a plain `<a href="/">`, so
-leaving the food mode is a full page load. `FoodApp` currently renders a placeholder
-heading per tab and its own four-tab `FoodBottomNav`; the active tab persists in
-`mgym.food.tab`.
+leaving the food mode is a full page load. `FoodApp` wraps its content in `FoodProvider`
+(`src/food/context/FoodContext.jsx`), which owns the five stored food lists, and renders
+a placeholder heading per tab and its own four-tab `FoodBottomNav`; the active tab
+persists in `mgym.food.tab`.
 
 ## Tech stack and the role of each tool
 
@@ -90,9 +91,14 @@ gym-tracker/
     │   ├── FoodApp.jsx           # Food mode shell: tab heading + FoodBottomNav
     │   ├── components/
     │   │   └── FoodBottomNav.jsx    # Fixed 4-tab bottom navigation
+    │   ├── context/
+    │   │   └── FoodContext.jsx      # FoodProvider / useFood: the five stored food lists
     │   └── lib/                  # Framework-free helpers
     │       ├── keys.js              # Food localStorage keys
     │       ├── backupFood.js        # exportFoodData / importFoodData for the backup
+    │       ├── foodApi.js           # Food search and barcode client
+    │       ├── foodApiFixture.js    # Fixture data when no API base is set
+    │       ├── searchCache.js       # Search cache: expiry and cap
     │       ├── normalize.js         # normalizeFoodData / mergeFoodData for import
     │       ├── localDate.js         # Local-date helpers
     │       ├── macros.js            # Macro scaling + totals
@@ -178,7 +184,7 @@ main.jsx
             └── AppContent          (consumes useApp())
                 │
                 ├── food path? → FoodApp                 (replaces the gym UI; checked first)
-                │       └── FoodBottomNav
+                │       └── FoodProvider → FoodBottomNav
                 │
                 ├── session active? → LiveSession        (full-screen; bottom nav hidden)
                 │       ├── WeightRepInputs / NumberInputAutoClear   (per-set inputs)
