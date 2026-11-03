@@ -163,6 +163,7 @@ describe("PortionSheet", () => {
       per100: { kcal: 165, protein: 31, carb: 0, fat: 3.6 },
       food: { kind: "db", id: "food-1" },
       portionLabel: "1 oz",
+      portions: CHICKEN.portions,
       slot: "dinner",
     });
     expect(payload.per100).not.toBe(CHICKEN.per100);
@@ -196,6 +197,13 @@ describe("PortionSheet", () => {
       id: "custom-1",
     });
     expect(onAdd.mock.calls[0][0].portionLabel).toBe("1 bar");
+  });
+
+  it("adds [] as portions for a food without any", async () => {
+    const noPortions = { ...CHICKEN, portions: undefined };
+    const { user, onAdd } = setup({ food: noPortions, defaultGrams: 100 });
+    await user.click(addButton());
+    expect(onAdd.mock.calls[0][0].portions).toEqual([]);
   });
 
   it("offers the six slots with the default one selected", () => {

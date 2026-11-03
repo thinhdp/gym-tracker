@@ -8,6 +8,7 @@ import {
   K_FOOD_RECENT,
 } from "../lib/keys";
 import { normalizeFoodData } from "../lib/normalize";
+import { recentKey, touchRecent as touchRecentRow } from "../lib/recent";
 import {
   upsertTarget as upsertTargetRow,
   deleteTarget as deleteTargetRow,
@@ -60,6 +61,21 @@ function useStoredList(key, initial) {
   return [list, update, latest];
 }
 
+const customRecentKey = (id) => recentKey({ kind: "custom", id });
+
+/**
+ * A recent row after its custom food was edited. Position, lastAt and lastGrams
+ * stay; a last portion label stays only while the food still has that portion.
+ */
+const refreshRecentRow = (row, food) => {
+  const portions = food.portions ?? [];
+  const next = { ...row, name: food.name, per100: food.per100, portions };
+  if (!portions.some((portion) => portion.label === row.lastPortionLabel)) {
+    delete next.lastPortionLabel;
+  }
+  return next;
+};
+
 /** Owns the food app's stored lists. */
 export function FoodProvider({ children }) {
   // Lazy, so storage is read at mount only. droppedRows does not change after load.
@@ -69,7 +85,7 @@ export function FoodProvider({ children }) {
     lists.entries,
   );
   const [targets, updateTargets] = useStoredList(K_FOOD_TARGETS, lists.targets);
-  const [customFoods, updateCustomFoods] = useStoredList(
+  const [customFoods, updateCustomFoods, latestCustomFoods] = useStoredList(
     K_FOOD_CUSTOM,
     lists.customFoods,
   );
@@ -79,6 +95,9 @@ export function FoodProvider({ children }) {
   );
   const [recent, updateRecent] = useStoredList(K_FOOD_RECENT, lists.recent);
 
+  const touchRecent = (item) =>
+    updateRecent((prev) => touchRecentRow(prev, item));
+
   const addEntry = ({
     date,
     slot,
@@ -87,6 +106,7 @@ export function FoodProvider({ children }) {
     per100,
     food,
     portionLabel,
+    portions,
   }) => {
     const row = {
       id: uuid(),
@@ -100,6 +120,16 @@ export function FoodProvider({ children }) {
       createdAt: Date.now(),
     };
     updateEntries((prev) => [...prev, row]);
+    const recentRow = {
+      food,
+      name,
+      per100,
+      portions: portions ?? [],
+      lastGrams: grams,
+      lastAt: row.createdAt,
+    };
+    if (portionLabel !== undefined) recentRow.lastPortionLabel = portionLabel;
+    touchRecent(recentRow);
     return row;
   };
 
@@ -162,25 +192,34 @@ export function FoodProvider({ children }) {
       id: food.id ?? uuid(),
       createdAt: food.createdAt ?? Date.now(),
     };
+    const isEdit = latestCustomFoods.current.some((f) => f.id === row.id);
     updateCustomFoods((prev) =>
       prev.some((f) => f.id === row.id)
         ? prev.map((f) => (f.id === row.id ? row : f))
         : [...prev, row],
     );
+    if (isEdit) {
+      const key = customRecentKey(row.id);
+      updateRecent((prev) =>
+        prev.map((r) =>
+          recentKey(r.food) === key ? refreshRecentRow(r, row) : r,
+        ),
+      );
+    }
     return row;
   };
 
-  const deleteCustomFood = (id) =>
+  const deleteCustomFood = (id) => {
     updateCustomFoods((prev) => prev.filter((f) => f.id !== id));
+    const key = customRecentKey(id);
+    updateRecent((prev) => prev.filter((r) => recentKey(r.food) !== key));
+  };
 
   const upsertTarget = (row) =>
     updateTargets((prev) => upsertTargetRow(prev, row));
 
   const deleteTarget = (from) =>
     updateTargets((prev) => deleteTargetRow(prev, from));
-
-  // Task 11b replaces this with the real implementation.
-  const touchRecent = (_item) => updateRecent((prev) => prev);
 
   const value = {
     entries,

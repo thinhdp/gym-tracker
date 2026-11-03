@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -10,6 +10,7 @@ import {
   normaliseQuery,
   searchFoods,
 } from "../lib/foodApi";
+import { recentToFood } from "../lib/recent";
 import { slotForTime } from "../lib/slots";
 import BarcodeScanner from "./BarcodeScanner";
 import CustomFoodForm from "./CustomFoodForm";
@@ -20,18 +21,38 @@ import SearchResultRow from "./SearchResultRow";
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 300;
 
+const OFFLINE_NOTE = "Search needs a connection";
+
 function errorLine(error) {
-  if (error instanceof FoodApiError) {
-    if (error.kind === "offline") return "Search needs a connection";
-    if (error.kind === "rate_limited")
-      return "Too many searches, wait a minute";
+  if (error instanceof FoodApiError && error.kind === "rate_limited") {
+    return "Too many searches, wait a minute";
   }
   return "Search unavailable, try again";
 }
 
+const isOfflineError = (error) =>
+  error instanceof FoodApiError && error.kind === "offline";
+
+/** A titled list of foods; renders nothing without any. */
+function FoodList({ title, foods, onSelect }) {
+  if (foods.length === 0) return null;
+  return (
+    <section className="space-y-2">
+      <h3 className="text-sm font-medium">{title}</h3>
+      {foods.map((food) => (
+        <SearchResultRow
+          key={`${food.source}:${food.id}`}
+          food={food}
+          onSelect={onSelect}
+        />
+      ))}
+    </section>
+  );
+}
+
 /** Food search: debounced API lookup plus matching custom foods. */
 export default function SearchView({ date, presetSlot, onLogged }) {
-  const { customFoods, addEntry } = useFood();
+  const { customFoods, recent, addEntry } = useFood();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [errorText, setErrorText] = useState(null);
@@ -41,6 +62,11 @@ export default function SearchView({ date, presetSlot, onLogged }) {
   const [scanning, setScanning] = useState(false);
   const [mealsSlot, setMealsSlot] = useState(null);
   const [lookingUp, setLookingUp] = useState(false);
+  const [offline, setOffline] = useState(() => navigator.onLine === false);
+  const [showCustom, setShowCustom] = useState(false);
+  // What the window listeners and a settling request read: never a closure's copy.
+  const offlineNow = useRef(offline);
+  const latestQuery = useRef("");
   const pending = useRef({ timer: null, controller: null });
   // Bumped whenever a barcode lookup in flight stops being the latest one.
   const lookupToken = useRef(0);
@@ -57,21 +83,65 @@ export default function SearchView({ date, presetSlot, onLogged }) {
     };
   }, []);
 
-  const runSearch = async (q, controller) => {
-    try {
-      const found = await searchFoods(q, { signal: controller.signal });
-      if (controller.signal.aborted) return;
-      setResults(found);
-    } catch (error) {
-      if (controller.signal.aborted || error?.name === "AbortError") return;
-      setResults([]);
-      setErrorText(errorLine(error));
-    }
-  };
+  const dropLookup = useCallback(() => {
+    lookupToken.current += 1;
+    setLookingUp(false);
+  }, []);
+
+  const goOffline = useCallback(() => {
+    offlineNow.current = true;
+    setOffline(true);
+    clearTimeout(pending.current.timer);
+    pending.current.controller?.abort();
+    dropLookup();
+    setResults([]);
+    setErrorText(null);
+  }, [dropLookup]);
+
+  const runSearch = useCallback(
+    async (q, controller) => {
+      try {
+        const found = await searchFoods(q, { signal: controller.signal });
+        if (controller.signal.aborted) return;
+        setResults(found);
+      } catch (error) {
+        if (controller.signal.aborted || error?.name === "AbortError") return;
+        if (isOfflineError(error)) {
+          goOffline();
+          return;
+        }
+        setResults([]);
+        setErrorText(errorLine(error));
+      }
+    },
+    [goOffline],
+  );
+
+  const clearOffline = useCallback(() => {
+    if (!offlineNow.current) return;
+    offlineNow.current = false;
+    setOffline(false);
+    setErrorText(null);
+    const q = normaliseQuery(latestQuery.current);
+    if (q.length < MIN_QUERY_LENGTH) return;
+    const controller = new AbortController();
+    pending.current.controller = controller;
+    runSearch(q, controller);
+  }, [runSearch]);
+
+  useEffect(() => {
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", clearOffline);
+    return () => {
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", clearOffline);
+    };
+  }, [goOffline, clearOffline]);
 
   const changeQuery = (event) => {
     const text = event.target.value;
     dropLookup();
+    latestQuery.current = text;
     setQuery(text);
     setErrorText(null);
     clearTimeout(pending.current.timer);
@@ -111,11 +181,6 @@ export default function SearchView({ date, presetSlot, onLogged }) {
     setCreateInitial(undefined);
   };
 
-  const dropLookup = () => {
-    lookupToken.current += 1;
-    setLookingUp(false);
-  };
-
   const selectResult = (food) => {
     dropLookup();
     setSelected(food);
@@ -124,6 +189,11 @@ export default function SearchView({ date, presetSlot, onLogged }) {
   const openMeals = () => {
     dropLookup();
     setMealsSlot(presetSlot ?? slotForTime());
+  };
+
+  const toggleCustomList = () => {
+    dropLookup();
+    if (!offline) setShowCustom((shown) => !shown);
   };
 
   const openScanner = () => {
@@ -152,6 +222,10 @@ export default function SearchView({ date, presetSlot, onLogged }) {
         openCreate({ barcode: code });
         return;
       }
+      if (isOfflineError(error)) {
+        goOffline();
+        return;
+      }
       setErrorText(errorLine(error));
       return;
     }
@@ -166,12 +240,15 @@ export default function SearchView({ date, presetSlot, onLogged }) {
   };
 
   const q = normaliseQuery(query);
+  const allCustomRows = customFoods.map((food) => ({
+    ...food,
+    source: "custom",
+  }));
   const customRows =
     q.length < MIN_QUERY_LENGTH
       ? []
-      : customFoods
-          .filter((food) => normaliseQuery(food.name).includes(q))
-          .map((food) => ({ ...food, source: "custom" }));
+      : allCustomRows.filter((food) => normaliseQuery(food.name).includes(q));
+  const customListShown = offline || showCustom;
 
   return (
     <div className="space-y-3">
@@ -183,10 +260,13 @@ export default function SearchView({ date, presetSlot, onLogged }) {
           placeholder="Search foods"
           value={query}
           onChange={changeQuery}
+          disabled={offline}
         />
-        <Button type="button" aria-label="Scan barcode" onClick={openScanner}>
-          Scan
-        </Button>
+        {!offline && (
+          <Button type="button" aria-label="Scan barcode" onClick={openScanner}>
+            Scan
+          </Button>
+        )}
       </div>
 
       {isFixtureMode() && <Badge>demo data</Badge>}
@@ -197,23 +277,62 @@ export default function SearchView({ date, presetSlot, onLogged }) {
         </p>
       )}
 
-      {errorText && (
+      {offline && (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {OFFLINE_NOTE}
+          </p>
+          <Button type="button" size="sm" onClick={clearOffline}>
+            Try again
+          </Button>
+        </div>
+      )}
+
+      {errorText && !offline && (
         <p className="text-sm text-red-600 dark:text-red-400">{errorText}</p>
       )}
 
-      <div className="space-y-2">
-        {[...customRows, ...results].map((food) => (
-          <SearchResultRow
-            key={`${food.source}:${food.id}`}
-            food={food}
-            onSelect={selectResult}
-          />
-        ))}
-      </div>
+      {!offline && (
+        <div className="space-y-2">
+          {[...customRows, ...results].map((food) => (
+            <SearchResultRow
+              key={`${food.source}:${food.id}`}
+              food={food}
+              onSelect={selectResult}
+            />
+          ))}
+        </div>
+      )}
+
+      {offline && (
+        <FoodList
+          title="Recent"
+          foods={recent.map((row) => ({
+            ...recentToFood(row),
+            defaultGrams: row.lastGrams,
+          }))}
+          onSelect={selectResult}
+        />
+      )}
+
+      {customListShown && (
+        <FoodList
+          title="Custom foods"
+          foods={allCustomRows}
+          onSelect={selectResult}
+        />
+      )}
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" onClick={openMeals}>
           Saved meals
+        </Button>
+        <Button
+          type="button"
+          aria-pressed={customListShown}
+          onClick={toggleCustomList}
+        >
+          Custom foods
         </Button>
         <Button
           type="button"
@@ -253,6 +372,7 @@ export default function SearchView({ date, presetSlot, onLogged }) {
           food={selected}
           date={date}
           defaultSlot={presetSlot ?? slotForTime()}
+          defaultGrams={selected.defaultGrams}
           onAdd={addFromSheet}
           onClose={() => setSelected(null)}
         />

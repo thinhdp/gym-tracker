@@ -68,6 +68,7 @@ export default function PortionSheet({
       per100: { kcal, protein, carb, fat },
       food: ref,
       portionLabel: chip?.label,
+      portions,
       slot,
     });
   };
