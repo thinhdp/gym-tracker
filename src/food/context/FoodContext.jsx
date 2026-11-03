@@ -14,26 +14,11 @@ import {
 
 const FoodContext = createContext(null);
 
-const isRow = (value) =>
-  value !== null && typeof value === "object" && !Array.isArray(value);
-
 // loadLS returns any parsed JSON value, so a stored non-array needs this guard.
-// The filter drops rows the actions and targetForDate cannot read.
 const loadList = (key) => {
   const stored = loadLS(key, []);
-  return Array.isArray(stored) ? stored.filter(isRow) : [];
+  return Array.isArray(stored) ? stored : [];
 };
-
-// Same rule as normalizeSavedMeal in the plan's Task 8a: invalid items go, and a
-// meal left with zero items goes.
-const loadSavedMeals = () =>
-  loadList(K_FOOD_MEALS).flatMap((meal) => {
-    const items = Array.isArray(meal.items) ? meal.items.filter(isRow) : [];
-    return items.length > 0 ? [{ ...meal, items }] : [];
-  });
-
-const loadRecent = () =>
-  loadList(K_FOOD_RECENT).filter((row) => isRow(row.food));
 
 /**
  * One stored list: loaded lazily and written back on change, the same pattern as
@@ -41,8 +26,8 @@ const loadRecent = () =>
  * read the current list and return synchronously, even in the same batch as an
  * earlier action or from a function held since an earlier render.
  */
-function useStoredList(key, load) {
-  const [list, setList] = useState(load);
+function useStoredList(key) {
+  const [list, setList] = useState(() => loadList(key));
   const latest = useRef(list);
   useEffect(() => saveLS(key, list), [key, list]);
   const update = (change) => {
@@ -54,21 +39,12 @@ function useStoredList(key, load) {
 
 /** Owns the food app's stored lists. */
 export function FoodProvider({ children }) {
-  const [entries, updateEntries, latestEntries] = useStoredList(
-    K_FOOD_ENTRIES,
-    () => loadList(K_FOOD_ENTRIES),
-  );
-  const [targets, updateTargets] = useStoredList(K_FOOD_TARGETS, () =>
-    loadList(K_FOOD_TARGETS),
-  );
-  const [customFoods, updateCustomFoods] = useStoredList(K_FOOD_CUSTOM, () =>
-    loadList(K_FOOD_CUSTOM),
-  );
-  const [savedMeals, updateSavedMeals, latestSavedMeals] = useStoredList(
-    K_FOOD_MEALS,
-    loadSavedMeals,
-  );
-  const [recent, updateRecent] = useStoredList(K_FOOD_RECENT, loadRecent);
+  const [entries, updateEntries, latestEntries] = useStoredList(K_FOOD_ENTRIES);
+  const [targets, updateTargets] = useStoredList(K_FOOD_TARGETS);
+  const [customFoods, updateCustomFoods] = useStoredList(K_FOOD_CUSTOM);
+  const [savedMeals, updateSavedMeals, latestSavedMeals] =
+    useStoredList(K_FOOD_MEALS);
+  const [recent, updateRecent] = useStoredList(K_FOOD_RECENT);
 
   const addEntry = ({
     date,

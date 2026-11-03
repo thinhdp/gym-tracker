@@ -7,7 +7,6 @@ import {
   K_FOOD_RECENT,
   K_FOOD_TARGETS,
 } from "../lib/keys";
-import { targetForDate } from "../lib/targets";
 import { FoodProvider, useFood } from "./FoodContext";
 
 const PER100 = { kcal: 155, protein: 13, carb: 1.1, fat: 11 };
@@ -85,86 +84,6 @@ describe("FoodProvider loading", () => {
     const { result } = setup();
     expect(result.current.entries).toEqual([]);
     expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
-  });
-});
-
-describe("FoodProvider malformed rows", () => {
-  it.each(LIST_KEYS)(
-    "drops rows that are not objects from %s and rewrites storage",
-    (name, key, rows) => {
-      saveLS(key, [null, rows[0], 5, "text", [], rows[1]]);
-      const { result } = setup();
-      expect(result.current[name]).toEqual(rows);
-      expect(loadLS(key)).toEqual(rows);
-    },
-  );
-
-  it("every action and targetForDate work after a stored null row", () => {
-    const a = storedEntry("a");
-    const row = { from: "2026-11-01", kcal: 2000 };
-    const meal = { id: "m", name: "Eggs", items: [MEAL_ITEM], createdAt: 1 };
-    saveLS(K_FOOD_ENTRIES, [null, a]);
-    saveLS(K_FOOD_TARGETS, [null, row]);
-    saveLS(K_FOOD_CUSTOM, [null, { id: "x" }]);
-    saveLS(K_FOOD_MEALS, [null, meal]);
-    const { result } = setup();
-    expect(targetForDate(result.current.targets, "2026-11-02")).toEqual(row);
-    act(() => {
-      result.current.updateEntry("a", { grams: 120 });
-      result.current.saveMealFromSlot("Eggs", a.date, a.slot);
-      result.current.logSavedMeal("m", a.date, a.slot);
-      result.current.deleteEntry("a");
-      result.current.upsertTarget({ from: "2026-11-03", kcal: 1800 });
-      result.current.deleteTarget("2026-11-03");
-      result.current.upsertCustomFood({ id: "y" });
-      result.current.deleteCustomFood("y");
-    });
-    expect(result.current.entries).toHaveLength(1);
-    expect(result.current.targets).toEqual([row]);
-    expect(result.current.customFoods).toEqual([{ id: "x" }]);
-  });
-
-  it.each([
-    ["no items", { id: "m" }],
-    ["items that are not an array", { id: "m", items: "text" }],
-    ["only null items", { id: "m", items: [null] }],
-    ["zero items", { id: "m", items: [] }],
-  ])("drops a saved meal with %s", (_label, meal) => {
-    const kept = { id: "k", items: [MEAL_ITEM] };
-    saveLS(K_FOOD_MEALS, [meal, kept]);
-    const { result } = setup();
-    expect(result.current.savedMeals).toEqual([kept]);
-    expect(loadLS(K_FOOD_MEALS)).toEqual([kept]);
-    let added;
-    act(() => {
-      added = result.current.logSavedMeal("m", "2026-11-03", "dinner");
-    });
-    expect(added).toEqual([]);
-  });
-
-  it("drops null items from a saved meal and logs the rest", () => {
-    saveLS(K_FOOD_MEALS, [{ id: "m", items: [null, MEAL_ITEM, 5] }]);
-    const { result } = setup();
-    expect(result.current.savedMeals).toEqual([
-      { id: "m", items: [MEAL_ITEM] },
-    ]);
-    expect(loadLS(K_FOOD_MEALS)).toEqual([{ id: "m", items: [MEAL_ITEM] }]);
-    let added;
-    act(() => {
-      added = result.current.logSavedMeal("m", "2026-11-03", "dinner");
-    });
-    expect(added.map((e) => e.name)).toEqual(["Egg"]);
-  });
-
-  it.each([
-    ["no food", { name: "Egg" }],
-    ["a null food", { food: null, name: "Egg" }],
-  ])("drops a recent row with %s", (_label, row) => {
-    const kept = { food: FOOD, name: "Egg", lastAt: 1 };
-    saveLS(K_FOOD_RECENT, [row, kept]);
-    const { result } = setup();
-    expect(result.current.recent).toEqual([kept]);
-    expect(loadLS(K_FOOD_RECENT)).toEqual([kept]);
   });
 });
 
