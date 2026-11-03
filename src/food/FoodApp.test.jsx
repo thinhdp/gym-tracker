@@ -30,6 +30,13 @@ describe("FoodApp", () => {
     render(<FoodApp />);
     await user.click(screen.getByRole("button", { name: "Trends" }));
     expect(heading()).toHaveTextContent("Trends");
+    expect(screen.getByRole("button", { name: "Trends" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("button", { name: "Today" })).not.toHaveAttribute(
+      "aria-current",
+    );
     expect(loadLS(K_FOOD_TAB)).toBe("trends");
   });
 
@@ -37,6 +44,10 @@ describe("FoodApp", () => {
     saveLS(K_FOOD_TAB, "settings");
     render(<FoodApp />);
     expect(heading()).toHaveTextContent("Settings");
+    expect(screen.getByRole("button", { name: "Settings" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it.each([["bogus"], ["constructor"], [["trends"]]])(
