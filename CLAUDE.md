@@ -120,7 +120,14 @@ conventions for new components and tabs.
 2. **Brainstorm.** `superpowers:brainstorming` before any design. Explore intent and
    options with the user first.
 3. **Spec** in `docs/superpowers/specs/`, user-approved. A new stored key or shape
-   updates `docs/DATA-MODEL.md` in the same PR.
+   updates `docs/DATA-MODEL.md` in the same PR. **Write and shared-state checklist**
+   (added 2026-11-03 from the macro-calculator food API retro, where four owner
+   rulings landed mid-execution): for every write the spec adds to localStorage, the
+   backup envelope or a shared context, state what happens to data that already
+   exists (insert only, overwrite, which fields, migration of old shapes); for every
+   shared key, context value or derived number the change touches, state what the
+   other views see. A spec that leaves one of these open has a user gate, and the
+   parts table says so.
 4. **Plan** in `docs/superpowers/plans/` via `superpowers:writing-plans`, cut into
    execution parts of 4–7 points, each labeled certain (Opus orchestrator) or
    uncertain (Fable), in waves with the critical path marked (Execution part sizing
@@ -137,7 +144,8 @@ conventions for new components and tabs.
 7. **Verify** with one `npm run check` (lint + format check + tests + build), once
    before the PR and once more after a rebase. Then PR via
    `superpowers:finishing-a-development-branch`. The user merges. Close the issue
-   with the merge SHA and write the next part's handoff into the plan.
+   with the merge SHA and write the next part's handoff into the plan's handoff file
+   (Execution part sizing below).
 
 When a session runs on Opus 5.5 (a part the plan labels certain, or Fable is
 unavailable), `.claude/workflows/fable-fallback.js` runs the same evidence → plan →
@@ -150,7 +158,16 @@ intent, user-visible trade-offs, low confidence), it consults the Fable advisor;
 the advisor is missing, out of usage, declines, or says it is the user's call, the
 run stops for the user. Start Opus sessions with `claude --advisor fable` (or
 `/advisor fable`, then `/advisor off` at the end). Subagents never call the advisor
-(rule in every `.claude/agents` body).
+(rule in every `.claude/agents` body). **One decision round per part:** the advisor
+has no prompt cache, so every call re-sends the whole transcript at full price (one
+macro-calculator part ran three rounds for 40% of its session cost). The orchestrator
+collects open items and asks the advisor once per part, with every item and its
+options in one call; a second call is allowed only for an item that blocks the next
+step. **Plan tasks run the workflow in plan-task mode:** a task whose text names its
+files, steps and test command is passed as
+`{ task, planTask: { size, has_test_signal, high_risk } }`, which skips the Evidence
+and Plan stages; the string form, which re-derives a spec, is for bug reports and
+tasks without a plan.
 
 ## Execution part sizing
 
@@ -159,7 +176,11 @@ follow dependency gates; the rules below decide how many parts those gates are c
 into. **User gates stay front-loaded:** every part containing a user-review gate
 comes before every part that has none. **One part per session:** an execution
 session runs exactly the part it was asked to run, then stops and writes a handoff
-for the next part into the plan's SDD workspace. Never continue into the next part
+for the next part into the plan's handoff file,
+`docs/superpowers/plans/<plan>-handoffs.md` (the plan file itself holds one pointer
+line; a plan that sessions are still executing stays under 30 KB, because every
+session reads it whole, so a bigger plan is cut before execution starts). Never
+continue into the next part
 without the user starting it. **No orphaned steps:** when a part merges with a step
 undone, its handoff moves that step into a named later part (task list with a size,
 and the parts table row), never "still open" in a Next line.
@@ -177,13 +198,22 @@ and the parts table row), never "still open" in a Next line.
 **4 to 7 points**. Above 7: re-cut it. Below 4: merge it into a neighbor, except a
 part that holds a user gate, a part that unblocks two or more parallel chains, or an
 uncertain part kept apart from certain work. Every part handoff records what the part
-cost (session tokens, fix rounds, wall time).
+cost: the session total and per-model split (run
+`node /home/ubuntu/macro-calculator/scripts/session-cost.mjs <path to the session .jsonl>`
+on the transcript under `~/.claude/projects/`, which sums the orchestrator and its
+subagents, or read the session's last result record with `list_events` kinds
+`result`), the subagent token count, fix rounds, decision rounds and wall time.
+Subagent tokens alone are not a cost line.
 
 **Certainty and the orchestrator.** Every task is **certain** only if all six hold:
 (1) the spec states the exact behavior; (2) the files are named; (3) the ground truth
 it needs (spec section, `docs/DATA-MODEL.md` key, `ARCHITECTURE.md` section) is
 already written down; (4) a named test proves it; (5) it uses a mechanism the code
-already has; (6) no user-visible choice is left open. If any item fails, the task is
+already has, and the plan names the file and line where the planner read that
+mechanism and confirmed it does what the spec claims (a name that resolves is not
+enough: a macro-calculator task was certain because a search method existed, but it
+did not do what the spec said, which cost an extra part and three decision rounds);
+(6) no user-visible choice is left open. If any item fails, the task is
 **uncertain**, and the plan names the item. A part takes the label of its tasks, and
 the label picks the session's orchestrator: **certain parts run on Opus 5.5** (the
 `fable-fallback` workflow, session effort medium); **uncertain parts run on Fable**.
@@ -201,7 +231,10 @@ the label picks the session's orchestrator: **certain parts run on Opus 5.5** (t
 every part whose needs are all in wave 1, and so on. The **critical path** is the
 longest chain of parts; cut parts to make it short. If two parts in one wave edit the
 same file, move the edit into one of them or put them in different waves. Gate parts
-stay S or M.
+stay S or M. **Smoke task first:** a plan that depends on an existing mechanism (the
+backup import, a sync or fetch path, a stored shape's migration) gets a wave-1 task
+of size S that runs that mechanism for real and records the result in the plan; the
+parts that build on it wait for that result.
 
 **The parts table** in every plan has these columns:
 
@@ -236,7 +269,12 @@ the guard and confirm tests fail.
   PR. A reviewer runs only the focused test file(s) a mutation check or a specific
   doubt needs.
 - **Review reports** go to the report file the brief names under
-  `.superpowers/sdd/<round>/`; writing it is required.
+  `.superpowers/sdd/<round>/`; writing it is required. Every review brief, including
+  the ones the workflow writes, names that file.
+- **The final commit of a part gets a reviewer.** A fix-round or test-only commit that
+  no reviewer read is a gap, not a saving (six of nine macro-calculator parts shipped
+  one). The workflow re-reviews after its fix pass; when the controller adds a commit
+  after that, it dispatches a diff-only `opus55-reviewer` pass on it before the gate.
 
 ## Git and exec gotchas
 
