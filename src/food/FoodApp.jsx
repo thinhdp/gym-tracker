@@ -7,7 +7,7 @@ import SearchView from "./components/SearchView";
 import SettingsView from "./components/SettingsView";
 import TodayView from "./components/TodayView";
 import TrendsView from "./components/TrendsView";
-import { FoodProvider } from "./context/FoodContext";
+import { FoodProvider, useFood } from "./context/FoodContext";
 
 // Heading per tab. A tab's view renders below it; tabs without one show only this.
 const HEADINGS = {
@@ -16,6 +16,24 @@ const HEADINGS = {
   trends: "Trends",
   settings: "Settings",
 };
+
+/** One line on every tab when this page load removed damaged rows. Nothing is stored. */
+function DroppedRowsNote() {
+  const { droppedRows } = useFood();
+  if (droppedRows <= 0) return null;
+  const rows =
+    droppedRows === 1
+      ? "1 damaged food row"
+      : `${droppedRows} damaged food rows`;
+  return (
+    <p
+      role="status"
+      className="mb-4 text-xs text-amber-700 dark:text-amber-400"
+    >
+      {`Removed ${rows} from this device. A backup can restore them.`}
+    </p>
+  );
+}
 
 export default function FoodApp() {
   const [tab, setTab] = useState(() => {
@@ -60,6 +78,7 @@ export default function FoodApp() {
             Gym
           </a>
         </header>
+        <DroppedRowsNote />
         {tab === "today" && (
           <TodayView date={date} onChangeDate={setDate} onAddTo={addTo} />
         )}

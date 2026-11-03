@@ -85,13 +85,14 @@ describe("SettingsView custom foods", () => {
     ).toBeVisible();
   });
 
-  it("a stored row with no per100 shows its name and leaves the view working", () => {
+  it("a stored row with no per100 is removed at load and leaves the view working", () => {
     saveLS(K_FOOD_CUSTOM, [{ id: "a", name: "Broken" }, SOUP]);
     setup();
     const rows = within(section()).getAllByRole("listitem");
-    expect(within(rows[0]).getByText("Broken")).toBeVisible();
-    expect(within(rows[0]).queryByText(/kcal/)).toBeNull();
-    expect(within(rows[1]).getByText("50 kcal / 100 g")).toBeVisible();
+    expect(rows).toHaveLength(1);
+    expect(screen.queryByText("Broken")).toBeNull();
+    expect(within(rows[0]).getByText("Soup")).toBeVisible();
+    expect(within(rows[0]).getByText("50 kcal / 100 g")).toBeVisible();
     expect(screen.getByRole("region", { name: "Targets" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Back to Gym" })).toBeVisible();
   });
@@ -102,12 +103,15 @@ describe("SettingsView custom foods", () => {
     expect(within(section()).getByText("0 kcal / 100 g")).toBeVisible();
   });
 
-  it("a stored row with an empty per100 renders no undefined text", () => {
-    saveLS(K_FOOD_CUSTOM, [{ id: "a", name: "Empty", per100: {} }]);
+  it("a stored row with an empty per100 is removed at load and leaves the view working", () => {
+    saveLS(K_FOOD_CUSTOM, [{ id: "a", name: "Empty", per100: {} }, SOUP]);
     setup();
     const row = within(section()).getByRole("listitem");
-    expect(within(row).getByText("Empty")).toBeVisible();
-    expect(row.textContent).not.toMatch(/undefined/);
+    expect(screen.queryByText("Empty")).toBeNull();
+    expect(within(row).getByText("Soup")).toBeVisible();
+    expect(within(row).getByText("50 kcal / 100 g")).toBeVisible();
+    expect(screen.getByRole("region", { name: "Targets" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Back to Gym" })).toBeVisible();
   });
 
   it("edit opens the form on that food and updates the row", async () => {

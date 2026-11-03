@@ -13,21 +13,6 @@ const PER100 = { kcal: 155, protein: 13, carb: 1.1, fat: 11 };
 const FOOD = { kind: "db", id: "egg" };
 const MEAL_ITEM = { name: "Egg", grams: 50, per100: PER100, food: FOOD };
 
-const LIST_KEYS = [
-  ["entries", K_FOOD_ENTRIES, [{ id: "a" }, { id: "b" }]],
-  ["targets", K_FOOD_TARGETS, [{ from: "2026-11-01" }, { from: "2026-11-02" }]],
-  ["customFoods", K_FOOD_CUSTOM, [{ id: "a" }, { id: "b" }]],
-  [
-    "savedMeals",
-    K_FOOD_MEALS,
-    [
-      { id: "a", items: [MEAL_ITEM] },
-      { id: "b", items: [MEAL_ITEM] },
-    ],
-  ],
-  ["recent", K_FOOD_RECENT, [{ food: FOOD }, { food: FOOD }]],
-];
-
 const draft = (overrides = {}) => ({
   date: "2026-11-02",
   slot: "breakfast",
@@ -45,6 +30,72 @@ const storedEntry = (id, overrides = {}) => ({
   createdAt: 1000,
   ...overrides,
 });
+
+const targetRow = (from, kcal = 2000) => ({
+  from,
+  kcal,
+  protein: 150,
+  carb: 200,
+  fat: 60,
+});
+
+const customRow = (id) => ({
+  id,
+  name: `Food ${id}`,
+  barcode: "8934563138165",
+  per100: PER100,
+  portions: [{ label: "1 bar", grams: 45 }],
+  createdAt: 1000,
+});
+
+const mealRow = (id) => ({
+  id,
+  name: `Meal ${id}`,
+  items: [MEAL_ITEM],
+  createdAt: 1000,
+});
+
+const recentRow = (id, lastAt) => ({
+  food: { kind: "db", id },
+  name: `Food ${id}`,
+  per100: PER100,
+  lastGrams: 50,
+  lastAt,
+});
+
+// name, key, valid rows, a row that fails the shape rules
+const LIST_KEYS = [
+  [
+    "entries",
+    K_FOOD_ENTRIES,
+    [storedEntry("a"), storedEntry("b")],
+    { id: "bad" },
+  ],
+  [
+    "targets",
+    K_FOOD_TARGETS,
+    [targetRow("2026-11-01"), targetRow("2026-11-02")],
+    { from: "2026-11-03" },
+  ],
+  [
+    "customFoods",
+    K_FOOD_CUSTOM,
+    [customRow("a"), customRow("b")],
+    { id: "bad" },
+  ],
+  [
+    "savedMeals",
+    K_FOOD_MEALS,
+    [mealRow("a"), mealRow("b")],
+    { id: "bad", items: [] },
+  ],
+  [
+    "recent",
+    K_FOOD_RECENT,
+    [recentRow("egg", 2), recentRow("rice", 1)],
+    { food: FOOD },
+  ],
+];
 
 const setup = () => renderHook(() => useFood(), { wrapper: FoodProvider });
 
@@ -84,6 +135,102 @@ describe("FoodProvider loading", () => {
     const { result } = setup();
     expect(result.current.entries).toEqual([]);
     expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
+  });
+});
+
+describe("FoodProvider load normalising", () => {
+  it.each(LIST_KEYS)(
+    "removes a null row and a malformed row from %s, in state and in storage",
+    (name, key, rows, malformed) => {
+      saveLS(key, [null, rows[0], malformed, rows[1]]);
+      const { result } = setup();
+      expect(result.current[name]).toEqual(rows);
+      expect(loadLS(key)).toEqual(rows);
+      expect(result.current.droppedRows).toBe(2);
+    },
+  );
+
+  it.each(LIST_KEYS)(
+    "keeps valid %s rows byte for byte and counts 0",
+    (name, key, rows) => {
+      saveLS(key, rows);
+      const before = localStorage.getItem(key);
+      const { result } = setup();
+      expect(result.current.droppedRows).toBe(0);
+      expect(localStorage.getItem(key)).toBe(before);
+    },
+  );
+
+  it("counts 0 with empty storage", () => {
+    expect(setup().result.current.droppedRows).toBe(0);
+  });
+
+  it("sums the removed rows over the five lists", () => {
+    LIST_KEYS.forEach(([, key, rows, malformed]) =>
+      saveLS(key, [null, rows[0], malformed]),
+    );
+    expect(setup().result.current.droppedRows).toBe(10);
+  });
+
+  it("counts a duplicate as removed and keeps the first row", () => {
+    const first = storedEntry("a", { grams: 10 });
+    saveLS(K_FOOD_ENTRIES, [first, storedEntry("a", { grams: 20 })]);
+    const { result } = setup();
+    expect(result.current.entries).toEqual([first]);
+    expect(result.current.droppedRows).toBe(1);
+  });
+
+  it("counts a stored non-array as 0, beside a list that lost a row", () => {
+    saveLS(K_FOOD_ENTRIES, { 0: "x", length: 5 });
+    saveLS(K_FOOD_CUSTOM, "a string of text");
+    saveLS(K_FOOD_TARGETS, [null]);
+    const { result } = setup();
+    expect(result.current.droppedRows).toBe(1);
+    expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
+    expect(loadLS(K_FOOD_CUSTOM)).toEqual([]);
+  });
+
+  it("counts a saved meal that loses some items but stays as 0", () => {
+    saveLS(K_FOOD_MEALS, [
+      { ...mealRow("a"), items: [null, MEAL_ITEM, { name: "No grams" }] },
+    ]);
+    const { result } = setup();
+    expect(result.current.savedMeals).toEqual([mealRow("a")]);
+    expect(loadLS(K_FOOD_MEALS)).toEqual([mealRow("a")]);
+    expect(result.current.droppedRows).toBe(0);
+  });
+
+  it("counts a repaired row as 0 and saves it repaired", () => {
+    const noCreatedAt = storedEntry("a");
+    delete noCreatedAt.createdAt;
+    const noBarcode = customRow("c");
+    delete noBarcode.barcode;
+    saveLS(K_FOOD_ENTRIES, [noCreatedAt]);
+    saveLS(K_FOOD_CUSTOM, [{ ...noBarcode, barcode: 123 }]);
+    const { result } = setup();
+    expect(result.current.droppedRows).toBe(0);
+    const [entry] = loadLS(K_FOOD_ENTRIES);
+    expect(entry).toEqual({ ...noCreatedAt, createdAt: entry.createdAt });
+    expect(Number.isFinite(entry.createdAt)).toBe(true);
+    expect(loadLS(K_FOOD_CUSTOM)).toEqual([noBarcode]);
+  });
+
+  it("counts 0 on a second mount, because the write-back removed the rows", () => {
+    saveLS(K_FOOD_ENTRIES, [null, storedEntry("a")]);
+    const first = setup();
+    expect(first.result.current.droppedRows).toBe(1);
+    first.unmount();
+    expect(setup().result.current.droppedRows).toBe(0);
+  });
+
+  it("keeps the load-time count after a later change to a list", () => {
+    saveLS(K_FOOD_ENTRIES, [null, storedEntry("a")]);
+    const { result } = setup();
+    act(() => {
+      result.current.deleteEntry("a");
+    });
+    expect(result.current.entries).toEqual([]);
+    expect(result.current.droppedRows).toBe(1);
   });
 });
 
@@ -185,9 +332,9 @@ describe("FoodProvider targets", () => {
   });
 
   it("upsertTarget keeps the other rows, sorted by from", () => {
-    const early = { from: "2026-10-01", kcal: 2000 };
-    const late = { from: "2026-12-01", kcal: 2200 };
-    const middle = { from: "2026-11-01", kcal: 2100 };
+    const early = targetRow("2026-10-01", 2000);
+    const late = targetRow("2026-12-01", 2200);
+    const middle = targetRow("2026-11-01", 2100);
     saveLS(K_FOOD_TARGETS, [early, late]);
     const { result } = setup();
     act(() => {
@@ -198,8 +345,8 @@ describe("FoodProvider targets", () => {
   });
 
   it("deleteTarget keeps the other rows", () => {
-    const early = { from: "2026-10-01", kcal: 2000 };
-    const late = { from: "2026-12-01", kcal: 2200 };
+    const early = targetRow("2026-10-01", 2000);
+    const late = targetRow("2026-12-01", 2200);
     saveLS(K_FOOD_TARGETS, [early, late]);
     const { result } = setup();
     act(() => {
@@ -502,7 +649,7 @@ describe("FoodProvider custom foods", () => {
 describe("FoodProvider recent", () => {
   // Task 11b replaces this test when touchRecent gets its real implementation.
   it("touchRecent is a stub that leaves recent unchanged", () => {
-    const seeded = [{ food: FOOD, name: "Egg", lastAt: 1 }];
+    const seeded = [recentRow("egg", 1)];
     saveLS(K_FOOD_RECENT, seeded);
     const { result } = setup();
     act(() => {
