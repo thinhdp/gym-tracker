@@ -1,5 +1,8 @@
 # Food Tracker Implementation Plan
 
+**Status:** shipped (Part K is the last part; handoffs in `2026-11-02-food-tracker-handoffs.md`, phone check in #105)
+**Date:** 2026-11-02
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a full-screen food-tracking mode at `/food` to gym-tracker: search-based logging against the macro-calculator public food endpoints, six meal slots, dated targets, weekly trends beside bodyweight, barcode scanning, and one Home card on the gym side.

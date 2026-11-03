@@ -1,7 +1,7 @@
 # Food Tracker — design spec
 
+**Status:** shipped (Part K is the last part; differences from this spec are in the Part K handoff and open issues, phone check in #105)
 **Date:** 2026-11-02
-**Status:** draft for review
 **Repos touched:** `thinhdp/gym-tracker` (this spec), `thinhdp/macro-calculator`
 (companion spec: `docs/superpowers/specs/2026-11-02-public-foods-api-design.md`
 in that repo)
@@ -82,6 +82,7 @@ src/food/
 │   ├── foodApi.js              # the only file that knows the API shape
 │   ├── foodApiFixture.js       # fixture fetch used in tests and when VITE_FOOD_API_BASE=fixture
 │   ├── barcode.js              # detector selection (BarcodeDetector | zxing), format list
+│   ├── backupFood.js           # exportFoodData, importFoodData for the mgym.v1 backup
 │   └── normalize.js            # normalizeFoodData() for backup import and load
 └── components/
     ├── FoodBottomNav.jsx       # Today | Search | Trends | Settings
@@ -98,6 +99,7 @@ src/food/
     ├── CustomFoodForm.jsx      # name, barcode?, per-100 g values, optional portion
     ├── SavedMealsPanel.jsx     # list, log a meal into a slot
     ├── SaveMealSheet.jsx       # name a new meal from a slot's entries
+    ├── Toast.jsx               # short message with an action, used for Undo
     ├── TrendsView.jsx          # weekly bars + bodyweight line (Recharts), range toggle
     ├── SettingsView.jsx        # targets editor, custom foods, saved meals, back to gym
     └── TargetsEditor.jsx       # current targets + applies-from + history list
@@ -394,6 +396,9 @@ gym `BottomNav`. The active tab persists in `mgym.food.tab`.
 - Offline (no network, or the request failed with `offline`): the text box is
   disabled with "Search needs a connection"; the scan button is hidden; a
   Recent list, Saved meals and Custom foods are shown instead, all loggable.
+  A window `online` event ends this state, and so does a "Try again" button, which
+  shows while the browser reports a connection. Either one keeps the typed text and
+  searches for it again. Going offline closes an open scanner and drops its lookup.
 - `rate_limited` → "Too many searches, wait a minute". `unavailable` →
   "Search unavailable, try again". Both leave the shortcuts usable.
 - Bottom shortcuts: Saved meals, Custom foods, Create custom food.

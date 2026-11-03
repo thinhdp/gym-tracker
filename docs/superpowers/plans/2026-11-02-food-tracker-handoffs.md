@@ -1,6 +1,6 @@
 # Food Tracker Plan Handoffs
 
-**Status:** in progress
+**Status:** shipped (Part K is the last part)
 **Date:** 2026-11-03
 
 Handoffs for `2026-11-02-food-tracker.md` from Part D on (CLAUDE.md, Execution part sizing). Parts A and B are still appended to the plan file.
@@ -347,3 +347,38 @@ Recent: a stored row is replaced when the incoming row for that food has a newer
 **Unchecked steps moved:** Task 14b step 5 (phone check) cannot run in any session; it stays with #105 as an owner action, recorded here rather than in a later part.
 
 **Next:** Part K, the last part.
+
+## Part K handoff
+
+**Shipped:** Tasks 11b and 15. Commits: `2bfe864` (Task 11b), `3ea703e` (review pins), `07ece44` (scanner closes offline, Recent stays in step with custom food edits, pins), `54fc9d6` (Task 15: empty states and docs), `b7cc3ff` (review pins and formatting), plus this docs commit. New files: `RecentRow.jsx`, `Toast.jsx` and their tests. #94, #97, #98 and #107 close with this PR. #108 stays open for its screenshots: the README feature list shipped, and Task 15 asks for no screenshots. `npm run check` passed before the PR with 1273 tests.
+
+**Cost:** $15.44 for the session when the follow-up issues were opened, read from `get_session`, before this handoff and the PR. The per-model split was not measured: `session-cost.mjs` is not on this machine. 874,392 subagent tokens: 369,471 for Task 11b (Opus 5.5 implementer, `opus55-reviewer-deep`), 286,942 for Task 15 (Sonnet 5.5 implementer, `opus55-reviewer`), 217,979 for the whole-branch `opus55-reviewer-deep` pass. Fix rounds: 1 on Task 11b, 1 on Task 15. Decision rounds: 1 advisor call before the first dispatch. About 75 minutes of wall time.
+
+**Verified in a browser:** Playwright on the dev server in fixture mode at 390 px wide, headless Chromium. Fresh-device empty states on Today and Trends; the no-match line; logging from Search; a chip tap adds an entry and Undo removes it, with the recent row staying; the chip's options button opens the sheet; offline disables the box, hides Scan, and logs from the Recent list; the box returns when the connection does; a reload keeps the rows with no damaged-row note. No console errors, no horizontal page scroll.
+
+**Backup round trip:** the final reviewer wrote rows through the real `FoodProvider`, exported them, then ran replace, merge, and merge over itself, reloading each time. `droppedRows` stayed 0 and the five lists came back equal.
+
+**Not verified:** a phone, a real camera, dark mode, and the real food API. #105 stays open for the owner.
+
+**Rulings** (the Opus orchestrator, with one advisor call):
+
+- `addEntry` takes an optional `portions` that goes to Recent only and is not stored on the entry. `PortionSheet` sends it.
+- `logSavedMeal` does not touch Recent, as the plan states. Spec 5.6 reads differently: #153.
+- Editing a custom food refreshes its recent row (name, `per100`, portions, barcode) and keeps position, `lastAt` and `lastGrams`. It keeps `lastPortionLabel` only when a portion has that label and those grams. Deleting the food removes the row. Logged entries keep their copies. This follows spec 5.4; the plan did not state it.
+- Undo deletes the entry only; the chip stays moved to the front.
+- A failed request reads as offline even when the browser reports a connection, and a disabled box has no next keystroke, so a "Try again" button was added beside the note. The spec did not name it; spec 6.2 now does. It hides while `navigator.onLine` is false, and an `online` event also ends the state. Both keep the query and search again.
+- Going offline closes an open scanner and drops its lookup.
+- The online Custom foods shortcut (spec 6.2) toggles the same list that always shows offline.
+- Empty-state wording not in the plan: `Foods you log show here for one-tap logging`, `No custom foods yet`, `No recent foods yet`, `No food logged yet`. Trends hides its chart and table when `weeklyIntake` returns no rows.
+- Added `Toast.test.jsx`, which Task 11b's Files list omits but Global Constraints requires.
+- Commits use the Opus 5.5 trailer, because this session ran on Opus 5.5.
+
+**Spec coverage (sections 3 to 9):** the final reviewer's table maps each item to code and a commit. The items not fully met all have open issues: #148 (`EntryEditSheet` portion picker and its missing test), #149 (Home card with a target and no entries), #150 (long press), #151 (`FoodRef.barcode` rule), #152 (undo gaps), #153 (saved meals in Recent), #155 (offline source badge), #158 (`alert` on import), #138 (the 5/7 labels), #105 (phone and dark mode checks). The owner decides which of these to build and which to drop from the spec. Three small differences are already documented and need no issue: `backup.js` location, the `invalid` error kind, and the `q:` cache key prefix.
+
+**Parked review findings** (real, low impact, all in issues): #154 (a merge can undo a custom food edit or delete on Recent), #155 (CORS block reads as offline, Custom foods button does nothing offline, duplicate custom rows, equal-gram label switch), #156 (Trends blank with only future entries), #157 (two open tabs overwrite each other, predates this part), #159 (test gaps). #142 has a new comment: a bad API row now loses two stored rows on reload. Not in an issue, low impact: an empty stored name gives a nameless chip (only an import or damaged data can create one); Recent loses `prepState`, so two foods with the same name look alike; focus is lost after Try again; the toast's live region mounts with its text, which some screen readers may not announce (not tested).
+
+**Owner actions:** run `npm install` in the main checkout after the merge (the zxing packages from Part J). Set `VITE_FOOD_API_BASE` in the Vercel project before a production deploy; until then the site runs on fixture data with the demo badge. Run the phone check in #105.
+
+**Unchecked steps moved:** none. Task 14b step 5 stays with #105. The plan file is over the 30 KB limit, which no longer matters because no parts remain.
+
+**Next:** none. Part K is the last part of this plan.
