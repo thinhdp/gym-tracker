@@ -252,6 +252,101 @@ payload. See `src/food/lib/searchCache.js` and `src/food/lib/foodApi.js`.
   week, written by the removed `WeeklyNotes`. No longer surfaced in the UI but
   still round-tripped through backup/export (see below).
 
+### Food tracker (`mgym.food.*`)
+
+The food tracker's stored shapes. `FoodProvider` owns the lists through
+`loadLS`/`saveLS`. Constants live in `src/food/lib/keys.js`.
+
+#### FoodRef
+
+Where an entry's nutrition came from. Stored inside entries, saved-meal items
+and recent foods.
+
+| Field     | Type               | Notes                                                      |
+| --------- | ------------------ | ---------------------------------------------------------- |
+| `kind`    | `"db" \| "custom"` | `db` = macro-calculator food, `custom` = local custom food |
+| `id`      | `string`           | API food id, or `CustomFood.id`                            |
+| `barcode` | `string?`          | present when the item was reached by scan                  |
+
+#### FoodEntry
+
+One logged item.
+
+| Field          | Type                           | Notes                                      |
+| -------------- | ------------------------------ | ------------------------------------------ |
+| `id`           | `string`                       | `uuid()`                                   |
+| `date`         | `string`                       | local `YYYY-MM-DD`                         |
+| `slot`         | `string`                       | one of the six slot ids in `slots.js`      |
+| `name`         | `string`                       | display name at time of logging            |
+| `grams`        | `number`                       | > 0                                        |
+| `per100`       | `{ kcal, protein, carb, fat }` | copied at time of logging; never rewritten |
+| `food`         | `FoodRef`                      |                                            |
+| `portionLabel` | `string?`                      | e.g. `"1 large egg"`; informational        |
+| `createdAt`    | `number`                       | epoch ms                                   |
+
+Macros for an entry are always derived: `grams × per100 / 100`. They are never
+stored. `macros.js` exports `entryMacros(entry)`, `sumMacros(entries)`, and
+rounding helpers (kcal to integer, grams to 1 dp).
+
+#### TargetPeriod
+
+| Field     | Type     | Notes                                  |
+| --------- | -------- | -------------------------------------- |
+| `from`    | `string` | local `YYYY-MM-DD`; unique in the list |
+| `kcal`    | `number` | > 0                                    |
+| `protein` | `number` | g, ≥ 0                                 |
+| `carb`    | `number` | g, ≥ 0                                 |
+| `fat`     | `number` | g, ≥ 0                                 |
+
+`targetForDate(targets, date)` returns the row with the greatest `from` that is
+≤ `date`, or `null`. Saving targets with a `from` that already exists replaces
+that row. Rows can be deleted from the history list; deleting the only row
+leaves the app with no target (plain totals, no bars).
+
+#### CustomFood
+
+| Field       | Type                           | Notes                                                                 |
+| ----------- | ------------------------------ | --------------------------------------------------------------------- |
+| `id`        | `string`                       | `uuid()`                                                              |
+| `name`      | `string`                       | required                                                              |
+| `barcode`   | `string?`                      | set when created from a failed scan                                   |
+| `per100`    | `{ kcal, protein, carb, fat }` | required; kcal may be left blank and is then computed as 4P + 4C + 9F |
+| `portions`  | `{ label, grams }[]`           | optional, usually one ("1 serving = 45 g")                            |
+| `createdAt` | `number`                       |                                                                       |
+
+Editing a custom food changes future entries only. Existing entries keep their
+`per100` copy.
+
+#### SavedMeal
+
+| Field       | Type                                             | Notes                                      |
+| ----------- | ------------------------------------------------ | ------------------------------------------ |
+| `id`        | `string`                                         |                                            |
+| `name`      | `string`                                         |                                            |
+| `items`     | `{ name, grams, per100, food, portionLabel? }[]` | same fields as an entry minus id/date/slot |
+| `createdAt` | `number`                                         |                                            |
+
+Logging a saved meal copies each item into a new `FoodEntry` for the chosen
+date and slot. "Save as meal" on a slot builds a `SavedMeal` from that slot's
+entries.
+
+#### RecentFood
+
+The last 50 distinct foods logged, newest first, keyed by `kind + id`.
+
+| Field              | Type                             | Notes                              |
+| ------------------ | -------------------------------- | ---------------------------------- |
+| `food`             | `FoodRef`                        |                                    |
+| `name`             | `string`                         |                                    |
+| `per100`           | `{ kcal, protein, carb, fat }`   |                                    |
+| `portions`         | `{ label, grams, isDefault? }[]` | from the API result or custom food |
+| `lastGrams`        | `number`                         | what you logged last time          |
+| `lastPortionLabel` | `string?`                        |                                    |
+| `lastAt`           | `number`                         | epoch ms                           |
+
+`touchRecent(list, item)` moves or inserts the item at the front and trims to 50. This list is what makes offline logging work: tapping a chip logs
+`lastGrams` of that food in one step; opening it lets you change the portion.
+
 ## Derived / computed (not stored)
 
 The Strength tab (`StrengthAnalysis`) computes these on the fly from `workouts`;

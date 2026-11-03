@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { loadLS, saveLS } from "../lib/storage";
-import { K_FOOD_TAB } from "./lib/keys";
+import { K_FOOD_ENTRIES, K_FOOD_TAB } from "./lib/keys";
 import FoodApp from "./FoodApp";
 
 function heading() {
@@ -68,6 +68,13 @@ describe("FoodApp", () => {
     document.title = "Gym Tracker";
     render(<FoodApp />);
     expect(document.title).toBe("Food Tracker");
+  });
+
+  it("mounts FoodProvider, which replaces corrupt entries with an empty list", () => {
+    saveLS(K_FOOD_ENTRIES, { not: "an array" });
+    render(<FoodApp />);
+    expect(heading()).toHaveTextContent("Today");
+    expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
   });
 
   it("links back to the gym app", () => {
