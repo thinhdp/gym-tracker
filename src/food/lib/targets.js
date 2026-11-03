@@ -1,5 +1,17 @@
 const FROM_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** True when a YYYY-MM-DD string is a real calendar date (local, not UTC). */
+const isRealDate = (ymd) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const date = new Date(2000, 0, 1);
+  date.setFullYear(y, m - 1, d);
+  return (
+    date.getFullYear() === y &&
+    date.getMonth() === m - 1 &&
+    date.getDate() === d
+  );
+};
+
 /** The row with the greatest `from <= ymd`, or null. Input may be unsorted. */
 export const targetForDate = (targets, ymd) => {
   let match = null;
@@ -35,7 +47,7 @@ export const validateTarget = (row) => {
   if (!Number.isFinite(fat) || fat < 0) {
     messages.push("fat must be 0 or more");
   }
-  if (typeof from !== "string" || !FROM_RE.test(from)) {
+  if (typeof from !== "string" || !FROM_RE.test(from) || !isRealDate(from)) {
     messages.push("from must be YYYY-MM-DD");
   }
   return messages;

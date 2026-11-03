@@ -160,6 +160,43 @@ describe("validateTarget", () => {
     ]);
   });
 
+  it.each(["2026-11-01 ", "2026-11-011", "2026-11-01\n"])(
+    "rejects %j, a valid date with extra text after it",
+    (from) => {
+      expect(validateTarget({ ...valid, from })).toEqual([
+        "from must be YYYY-MM-DD",
+      ]);
+    },
+  );
+
+  it.each([" 2026-11-01", "12026-11-01"])(
+    "rejects %j, a valid date with extra text before it",
+    (from) => {
+      expect(validateTarget({ ...valid, from })).toEqual([
+        "from must be YYYY-MM-DD",
+      ]);
+    },
+  );
+
+  it.each([
+    "2026-13-01",
+    "2026-00-10",
+    "2026-11-45",
+    "2026-11-00",
+    "2026-02-31",
+  ])("rejects %s, which is not a real calendar date", (from) => {
+    expect(validateTarget({ ...valid, from })).toEqual([
+      "from must be YYYY-MM-DD",
+    ]);
+  });
+
+  it("accepts a real leap day and rejects a non-leap 29 February", () => {
+    expect(validateTarget({ ...valid, from: "2024-02-29" })).toEqual([]);
+    expect(validateTarget({ ...valid, from: "2026-02-29" })).toEqual([
+      "from must be YYYY-MM-DD",
+    ]);
+  });
+
   it("returns all five messages for null without throwing", () => {
     expect(validateTarget(null)).toEqual([
       "kcal must be above 0",
