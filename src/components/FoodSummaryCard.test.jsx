@@ -21,7 +21,12 @@ const entry = (date, kcal, protein = 0) => ({
   per100: { kcal, protein, carb: 0, fat: 0 },
 });
 
-afterEach(() => vi.useRealTimers());
+const ORIGINAL_TZ = process.env.TZ;
+afterEach(() => {
+  vi.useRealTimers();
+  if (ORIGINAL_TZ === undefined) delete process.env.TZ;
+  else process.env.TZ = ORIGINAL_TZ;
+});
 
 describe("FoodSummaryCard", () => {
   it("shows today's kcal against target and links to /food", () => {
@@ -90,11 +95,15 @@ describe("FoodSummaryCard", () => {
     expect(bar.style.width).toBe(width);
   });
 
-  it("counts an entry logged late in the local day for that day", () => {
+  it("counts an entry logged just after local midnight for that local day", () => {
+    // UTC+7: 00:30 local is still the previous day in UTC, so a UTC-derived
+    // today would pick the wrong date regardless of the machine's zone.
+    process.env.TZ = "Asia/Ho_Chi_Minh";
     vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 5, 15, 23, 59, 30));
+    vi.setSystemTime(new Date(2026, 5, 15, 0, 30, 0));
     saveLS(K_FOOD_TARGETS, [TARGET]);
     saveLS(K_FOOD_ENTRIES, [
+      entry("2026-06-14", 900),
       entry("2026-06-15", 400),
       entry("2026-06-16", 700),
     ]);
