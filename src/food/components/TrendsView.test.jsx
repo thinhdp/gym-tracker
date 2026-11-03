@@ -115,3 +115,74 @@ describe("TrendsView", () => {
     expect(screen.queryAllByRole("row")).toHaveLength(1);
   });
 });
+
+describe("TrendsView chart internals", () => {
+  const dots = (c) => [...c.querySelectorAll(".recharts-line-dots circle")];
+  const cy = (d) => Number(d.getAttribute("cy"));
+  const ticks = () =>
+    [...document.querySelectorAll(".recharts-xAxis-tick-labels text")].map(
+      (t) => t.textContent,
+    );
+
+  it("plots bodyweight on its own axis and breaks the line at a null week", () => {
+    const w0 = mondayOfWeek(0);
+    const { container } = setup([entry("a", w0, kcal(1500))], {
+      logs: { [w0]: 80, [addDays(w0, -21)]: 70, [addDays(w0, -7)]: 75 },
+    });
+    const points = dots(container);
+    expect(points).toHaveLength(3);
+    // 70 and 80 sit near the opposite ends of the weight axis. On the
+    // 0-2000 intake axis they would be a few pixels apart.
+    const ys = points.map(cy);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(100);
+    // Week 2 has no weight: the curve is two separate segments.
+    const d = container.querySelector(".recharts-line-curve").getAttribute("d");
+    expect(d.match(/M/g)).toHaveLength(2);
+  });
+
+  it("labels every week tick with a short date and the logged-day count", () => {
+    const w0 = mondayOfWeek(0);
+    setup([entry("a", w0, kcal(1500)), entry("b", addDays(w0, 1), kcal(1500))]);
+    const labels = ticks();
+    expect(labels).toHaveLength(4);
+    labels.forEach((t) => expect(t).not.toMatch(/\d{4}-\d{2}-\d{2}/));
+    expect(labels.map((t) => t.match(/\((\d)\/7\)$/)?.[1])).toEqual([
+      "0",
+      "0",
+      "0",
+      "2",
+    ]);
+  });
+
+  it("maps Carbs and Fat to their own values", async () => {
+    const user = userEvent.setup();
+    const w0 = mondayOfWeek(0);
+    const w1 = mondayOfWeek(1);
+    const { container } = setup([
+      entry("a", w1, { kcal: 100, protein: 1, carb: 40, fat: 10 }),
+      entry("b", w0, { kcal: 100, protein: 1, carb: 20, fat: 30 }),
+    ]);
+    await user.click(screen.getByRole("button", { name: "Carbs" }));
+    let [h1, h0] = barHeights(container);
+    expect(h1 / h0).toBeCloseTo(2, 1);
+    await user.click(screen.getByRole("button", { name: "Fat" }));
+    [h1, h0] = barHeights(container);
+    expect(h0 / h1).toBeCloseTo(3, 1);
+  });
+
+  it("puts each macro in its own table column", () => {
+    setup([
+      entry("a", mondayOfWeek(0), {
+        kcal: 1500,
+        protein: 11,
+        carb: 22,
+        fat: 33,
+      }),
+    ]);
+    const cells = within(bodyRows()[3]).getAllByRole("cell");
+    expect(cells[1]).toHaveTextContent("1500");
+    expect(cells[2]).toHaveTextContent("11");
+    expect(cells[3]).toHaveTextContent("22");
+    expect(cells[4]).toHaveTextContent("33");
+  });
+});

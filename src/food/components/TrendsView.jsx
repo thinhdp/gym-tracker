@@ -111,8 +111,7 @@ export default function TrendsView() {
             tick={axisTick}
             tickLine={false}
             axisLine={{ stroke: "currentColor", opacity: 0.2 }}
-            minTickGap={16}
-            interval="preserveStartEnd"
+            interval={0}
           />
           <YAxis
             yAxisId="intake"
