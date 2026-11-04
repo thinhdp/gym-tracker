@@ -883,6 +883,141 @@ describe("SearchView", () => {
     });
   });
 
+  describe("loading line", () => {
+    const CODE = "8934563138165";
+    const LINE = "Searching…";
+    const NO_MATCH = "No match. Create a custom food?";
+    const fire = (name) =>
+      act(async () => {
+        window.dispatchEvent(new Event(name));
+      });
+
+    it("shows during the debounce and during the request", async () => {
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      expect(screen.getByText(LINE)).toBeInTheDocument();
+      await tick(300);
+      expect(searchFoods).toHaveBeenCalledTimes(1);
+      expect(screen.getByText(LINE)).toBeInTheDocument();
+    });
+
+    it("clears after results resolve", async () => {
+      const search = deferred();
+      searchFoods.mockReturnValueOnce(search.promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      await settle(() => search.resolve([food("f1", "Chicken breast")]));
+      expect(screen.queryByText(LINE)).toBeNull();
+      expect(screen.getByText("Chicken breast")).toBeInTheDocument();
+    });
+
+    it("clears after the request fails and the error line shows", async () => {
+      const search = deferred();
+      searchFoods.mockReturnValueOnce(search.promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      await settle(() => search.reject(new FoodApiError("unavailable")));
+      expect(screen.getByText("Search unavailable, try again")).toBeVisible();
+      expect(screen.queryByText(LINE)).toBeNull();
+    });
+
+    it("clears on an offline event", async () => {
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(screen.getByText(LINE)).toBeInTheDocument();
+      await fire("offline");
+      expect(screen.queryByText(LINE)).toBeNull();
+    });
+
+    it("shows during the re-run after coming back online", async () => {
+      const rerun = deferred();
+      searchFoods.mockResolvedValueOnce([]);
+      searchFoods.mockReturnValueOnce(rerun.promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(screen.getByText(NO_MATCH)).toBeInTheDocument();
+      expect(screen.queryByText(LINE)).toBeNull();
+
+      await fire("offline");
+      await fire("online");
+      expect(searchFoods).toHaveBeenCalledTimes(2);
+      expect(screen.getByText(LINE)).toBeInTheDocument();
+      expect(screen.queryByText(NO_MATCH)).toBeNull();
+
+      await settle(() => rerun.resolve([]));
+      expect(screen.queryByText(LINE)).toBeNull();
+      expect(screen.getByText(NO_MATCH)).toBeInTheDocument();
+    });
+
+    it("clears when the query drops under two characters", async () => {
+      const { user } = setup();
+      await user.type(box(), "ch");
+      expect(screen.getByText(LINE)).toBeInTheDocument();
+      await user.type(box(), "{Backspace}");
+      expect(screen.queryByText(LINE)).toBeNull();
+    });
+
+    it("never shows together with the no-match line", async () => {
+      const search = deferred();
+      searchFoods.mockReturnValueOnce(search.promise);
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "zz");
+      await tick(300);
+      await settle(() => search.resolve([]));
+      expect(screen.getByText(NO_MATCH)).toBeInTheDocument();
+      expect(screen.queryByText(LINE)).toBeNull();
+
+      await user.type(box(), "z");
+      expect(screen.queryByText(NO_MATCH)).toBeNull();
+      expect(screen.getByText(LINE)).toBeInTheDocument();
+    });
+
+    it("clears after a failed search and a barcode lookup that finds nothing", async () => {
+      searchFoods.mockRejectedValueOnce(new FoodApiError("unavailable"));
+      const lookup = deferred();
+      lookupBarcode.mockReturnValueOnce(lookup.promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(screen.getByText("Search unavailable, try again")).toBeVisible();
+
+      await user.click(screen.getByRole("button", { name: "Scan barcode" }));
+      const scanner = within(
+        screen.getByRole("dialog", { name: "Scan barcode" }),
+      );
+      await user.type(await scanner.findByLabelText("Barcode"), CODE);
+      await user.click(scanner.getByRole("button", { name: "Use" }));
+      await settle(() => lookup.reject(new FoodApiError("not_found")));
+
+      expect(screen.queryByText(LINE)).toBeNull();
+      expect(searchFoods).toHaveBeenCalledTimes(1);
+    });
+
+    it("leaves one status line, the barcode one, when a lookup and a search overlap", async () => {
+      searchFoods.mockReturnValueOnce(deferred().promise);
+      lookupBarcode.mockReturnValueOnce(deferred().promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await user.click(screen.getByRole("button", { name: "Scan barcode" }));
+      const scanner = within(
+        screen.getByRole("dialog", { name: "Scan barcode" }),
+      );
+      await user.type(await scanner.findByLabelText("Barcode"), CODE);
+      await user.click(scanner.getByRole("button", { name: "Use" }));
+
+      const statuses = screen.getAllByRole("status");
+      expect(statuses).toHaveLength(1);
+      expect(statuses[0]).toHaveTextContent("Looking up barcode…");
+    });
+  });
+
   describe("no match line", () => {
     const LINE = "No match. Create a custom food?";
     const line = () => screen.queryByText(LINE);

@@ -381,7 +381,10 @@ gym `BottomNav`. The active tab persists in `mgym.food.tab`.
 ### 6.2 Search
 
 - Text box, autofocus. Results request after 2 characters, 300 ms debounce,
-  previous in-flight request aborted. Cache is checked first.
+  previous in-flight request aborted. Cache is checked first. A "Searching…"
+  status line shows during the debounce and the request and clears when results,
+  an error, or the offline state arrive; it never shows together with the
+  no-match line.
 - Result rows: name (with prepState when present), kcal per 100 g, source
   badge. Custom foods matching the text appear at the top with a Custom badge.
 - Tapping a result opens `PortionSheet`: portion chips (from `portions`, default
