@@ -26,9 +26,12 @@ describe("Home", () => {
     ).toBeInTheDocument();
   });
 
-  it("hides the streak pill at a zero streak", () => {
+  it("links to the food app with an icon link named Food", () => {
     renderHome();
-    expect(screen.queryByText(/day streak/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Food" })).toHaveAttribute(
+      "href",
+      "/food",
+    );
   });
 
   it("places the food card after the next-session card and before the Quick stats", () => {

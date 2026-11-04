@@ -76,7 +76,8 @@ export default function FoodApp() {
         <header className="mb-4 flex items-center justify-between">
           <h1 className="text-xl font-semibold">{HEADINGS[tab]}</h1>
           <a href="/" className="text-sm text-blue-600 dark:text-blue-400">
-            Gym
+            <span aria-hidden>🏋️</span>
+            <span className="sr-only">Gym</span>
           </a>
         </header>
         <DroppedRowsNote />
