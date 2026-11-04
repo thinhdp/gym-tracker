@@ -266,6 +266,12 @@ export default function SearchView({ date, presetSlot, onLogged }) {
     customRows.length === 0 &&
     !errorText &&
     !offline;
+  const searching =
+    q.length >= MIN_QUERY_LENGTH &&
+    searchedQuery !== q &&
+    !errorText &&
+    !offline &&
+    !lookingUp;
 
   return (
     <div className="space-y-3">
@@ -291,6 +297,12 @@ export default function SearchView({ date, presetSlot, onLogged }) {
       {lookingUp && (
         <p role="status" className="text-sm text-neutral-500">
           Looking up barcode…
+        </p>
+      )}
+
+      {searching && (
+        <p role="status" className="text-sm text-neutral-500">
+          Searching…
         </p>
       )}
 
