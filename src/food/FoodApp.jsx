@@ -75,8 +75,12 @@ export default function FoodApp() {
       <div className="mx-auto min-h-full max-w-3xl px-4 pb-24 pt-5">
         <header className="mb-4 flex items-center justify-between">
           <h1 className="text-xl font-semibold">{HEADINGS[tab]}</h1>
-          <a href="/" className="text-sm text-blue-600 dark:text-blue-400">
-            Gym
+          <a
+            href="/"
+            className="inline-flex items-center gap-1 rounded-full border bg-white px-3 py-1 text-sm dark:border-neutral-800 dark:bg-neutral-900"
+          >
+            <span aria-hidden>🏋️</span>
+            <span className="sr-only">Gym</span>
           </a>
         </header>
         <DroppedRowsNote />

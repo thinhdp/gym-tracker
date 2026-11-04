@@ -5,7 +5,6 @@ import { ymdFromDate } from "../lib/date";
 import {
   weekStats,
   weekVolumeByDay,
-  currentStreak,
   workoutVolume,
   latestBodyweight,
 } from "../lib/homeStats";
@@ -44,7 +43,6 @@ export default function Home() {
 
   const stats = useMemo(() => weekStats(workouts, now), [workouts, now]);
   const byDay = useMemo(() => weekVolumeByDay(workouts, now), [workouts, now]);
-  const streak = useMemo(() => currentStreak(workouts, now), [workouts, now]);
   const bodyweight = useMemo(
     () => latestBodyweight(loadLS(K_WEIGHT_LOGS, {})),
     [],
@@ -70,7 +68,7 @@ export default function Home() {
 
   return (
     <div className="space-y-4">
-      {/* Greeting + streak */}
+      {/* Greeting + food-mode link */}
       <div className="flex items-start justify-between">
         <div>
           <div className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -80,13 +78,13 @@ export default function Home() {
             {greeting()}
           </h1>
         </div>
-        {streak > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-full border bg-white px-3 py-1 text-sm dark:border-neutral-800 dark:bg-neutral-900">
-            <span aria-hidden>🔥</span>
-            <span className="font-semibold">{streak}</span>
-            <span className="sr-only">day streak</span>
-          </span>
-        )}
+        <a
+          href="/food"
+          className="inline-flex items-center gap-1 rounded-full border bg-white px-3 py-1 text-sm dark:border-neutral-800 dark:bg-neutral-900"
+        >
+          <span aria-hidden>🥩</span>
+          <span className="sr-only">Food</span>
+        </a>
       </div>
 
       {/* Today's workout if one is logged, else the PP21 next session */}
