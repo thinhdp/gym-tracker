@@ -4,8 +4,17 @@ import { slotLabel } from "../lib/slots";
 import EntryRow from "./EntryRow";
 
 /** One meal slot of the day: its total, its rows, add and options buttons. */
-export default function MealSlot({ slot, entries, onAdd, onEdit, onMenu }) {
+export default function MealSlot({
+  slot,
+  entries,
+  expanded,
+  onToggle,
+  onAdd,
+  onEdit,
+  onMenu,
+}) {
   const label = slotLabel(slot);
+  const total = sumMacros(entries);
   return (
     <section
       aria-label={label}
@@ -14,9 +23,15 @@ export default function MealSlot({ slot, entries, onAdd, onEdit, onMenu }) {
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-medium">{label}</h3>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">
-            {`${sumMacros(entries).kcal} kcal`}
-          </span>
+          <button
+            type="button"
+            aria-expanded={expanded}
+            aria-label={`${label} totals`}
+            onClick={() => onToggle()}
+            className="rounded-lg px-1.5 py-1 text-sm text-neutral-500 dark:text-neutral-400"
+          >
+            {`${total.kcal} kcal`}
+          </button>
           <Button
             type="button"
             size="sm"
@@ -36,8 +51,20 @@ export default function MealSlot({ slot, entries, onAdd, onEdit, onMenu }) {
           </Button>
         </div>
       </div>
+      {expanded && (
+        <div className="flex justify-end gap-3 px-2 text-xs text-neutral-500 dark:text-neutral-400">
+          <span>{`P ${total.protein} g`}</span>
+          <span>{`C ${total.carb} g`}</span>
+          <span>{`F ${total.fat} g`}</span>
+        </div>
+      )}
       {entries.map((entry) => (
-        <EntryRow key={entry.id} entry={entry} onClick={() => onEdit(entry)} />
+        <EntryRow
+          key={entry.id}
+          entry={entry}
+          expanded={expanded}
+          onClick={() => onEdit(entry)}
+        />
       ))}
     </section>
   );

@@ -61,6 +61,7 @@ export default function TodayView({
   const [mealsSlot, setMealsSlot] = useState(null);
   const [saveSlot, setSaveSlot] = useState(null);
   const [recentSheet, setRecentSheet] = useState(null);
+  const [expanded, setExpanded] = useState(false);
 
   const dayEntries = entries.filter((entry) => entry.date === date);
   const target = targetForDate(targets, date);
@@ -125,6 +126,8 @@ export default function TodayView({
           entries={dayEntries
             .filter((entry) => entry.slot === id)
             .sort((a, b) => a.createdAt - b.createdAt)}
+          expanded={expanded}
+          onToggle={() => setExpanded((v) => !v)}
           onAdd={onAddTo}
           onEdit={setEditing}
           onMenu={setMenuSlot}

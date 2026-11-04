@@ -1,7 +1,8 @@
 import { entryMacros } from "../lib/macros";
 
 /** One logged food inside a meal slot. */
-export default function EntryRow({ entry, onClick }) {
+export default function EntryRow({ entry, expanded, onClick }) {
+  const macros = entryMacros(entry);
   return (
     <button
       type="button"
@@ -14,7 +15,16 @@ export default function EntryRow({ entry, onClick }) {
           {entry.portionLabel ?? `${entry.grams} g`}
         </span>
       </span>
-      <span className="shrink-0">{`${entryMacros(entry).kcal} kcal`}</span>
+      {expanded ? (
+        <span className="flex shrink-0 flex-col items-end">
+          <span>{`${macros.kcal} kcal`}</span>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">
+            {`P ${macros.protein} · C ${macros.carb} · F ${macros.fat}`}
+          </span>
+        </span>
+      ) : (
+        <span className="shrink-0">{`${macros.kcal} kcal`}</span>
+      )}
     </button>
   );
 }
