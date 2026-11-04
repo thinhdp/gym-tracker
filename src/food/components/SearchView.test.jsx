@@ -934,6 +934,27 @@ describe("SearchView", () => {
       expect(screen.queryByText(LINE)).toBeNull();
     });
 
+    it("shows during the re-run after coming back online", async () => {
+      const rerun = deferred();
+      searchFoods.mockResolvedValueOnce([]);
+      searchFoods.mockReturnValueOnce(rerun.promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(screen.getByText(NO_MATCH)).toBeInTheDocument();
+      expect(screen.queryByText(LINE)).toBeNull();
+
+      await fire("offline");
+      await fire("online");
+      expect(searchFoods).toHaveBeenCalledTimes(2);
+      expect(screen.getByText(LINE)).toBeInTheDocument();
+      expect(screen.queryByText(NO_MATCH)).toBeNull();
+
+      await settle(() => rerun.resolve([]));
+      expect(screen.queryByText(LINE)).toBeNull();
+      expect(screen.getByText(NO_MATCH)).toBeInTheDocument();
+    });
+
     it("clears when the query drops under two characters", async () => {
       const { user } = setup();
       await user.type(box(), "ch");
