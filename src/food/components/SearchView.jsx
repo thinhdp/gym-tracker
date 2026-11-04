@@ -70,6 +70,8 @@ export default function SearchView({ date, presetSlot, onLogged }) {
   const [showCustom, setShowCustom] = useState(false);
   // The normalised query whose search finished, not aborted and without an error.
   const [searchedQuery, setSearchedQuery] = useState(null);
+  // True from scheduling a search until it ends, aborted ones excepted.
+  const [searching, setSearching] = useState(false);
   // What the window listeners and a settling request read: never a closure's copy.
   const offlineNow = useRef(offline);
   const latestQuery = useRef("");
@@ -103,6 +105,7 @@ export default function SearchView({ date, presetSlot, onLogged }) {
     setScanning(false);
     setResults([]);
     setSearchedQuery(null);
+    setSearching(false);
     setErrorText(null);
   }, [dropLookup]);
 
@@ -113,8 +116,10 @@ export default function SearchView({ date, presetSlot, onLogged }) {
         if (controller.signal.aborted) return;
         setResults(found);
         setSearchedQuery(q);
+        setSearching(false);
       } catch (error) {
         if (controller.signal.aborted || error?.name === "AbortError") return;
+        setSearching(false);
         if (isOfflineError(error)) {
           goOffline();
           return;
@@ -135,6 +140,7 @@ export default function SearchView({ date, presetSlot, onLogged }) {
     if (q.length < MIN_QUERY_LENGTH) return;
     const controller = new AbortController();
     pending.current.controller = controller;
+    setSearching(true);
     runSearch(q, controller);
   }, [runSearch]);
 
@@ -160,10 +166,12 @@ export default function SearchView({ date, presetSlot, onLogged }) {
     const q = normaliseQuery(text);
     if (q.length < MIN_QUERY_LENGTH) {
       setResults([]);
+      setSearching(false);
       return;
     }
     const controller = new AbortController();
     pending.current.controller = controller;
+    setSearching(true);
     pending.current.timer = setTimeout(
       () => runSearch(q, controller),
       DEBOUNCE_MS,
@@ -266,12 +274,6 @@ export default function SearchView({ date, presetSlot, onLogged }) {
     customRows.length === 0 &&
     !errorText &&
     !offline;
-  const searching =
-    q.length >= MIN_QUERY_LENGTH &&
-    searchedQuery !== q &&
-    !errorText &&
-    !offline &&
-    !lookingUp;
 
   return (
     <div className="space-y-3">
@@ -300,7 +302,7 @@ export default function SearchView({ date, presetSlot, onLogged }) {
         </p>
       )}
 
-      {searching && (
+      {searching && !lookingUp && (
         <p role="status" className="text-sm text-neutral-500">
           Searching…
         </p>

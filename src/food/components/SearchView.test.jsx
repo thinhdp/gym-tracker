@@ -958,6 +958,27 @@ describe("SearchView", () => {
       expect(screen.getByText(LINE)).toBeInTheDocument();
     });
 
+    it("clears after a failed search and a barcode lookup that finds nothing", async () => {
+      searchFoods.mockRejectedValueOnce(new FoodApiError("unavailable"));
+      const lookup = deferred();
+      lookupBarcode.mockReturnValueOnce(lookup.promise);
+      const { user } = setup();
+      await user.type(box(), "ch");
+      await tick(300);
+      expect(screen.getByText("Search unavailable, try again")).toBeVisible();
+
+      await user.click(screen.getByRole("button", { name: "Scan barcode" }));
+      const scanner = within(
+        screen.getByRole("dialog", { name: "Scan barcode" }),
+      );
+      await user.type(await scanner.findByLabelText("Barcode"), CODE);
+      await user.click(scanner.getByRole("button", { name: "Use" }));
+      await settle(() => lookup.reject(new FoodApiError("not_found")));
+
+      expect(screen.queryByText(LINE)).toBeNull();
+      expect(searchFoods).toHaveBeenCalledTimes(1);
+    });
+
     it("leaves one status line, the barcode one, when a lookup and a search overlap", async () => {
       searchFoods.mockReturnValueOnce(deferred().promise);
       lookupBarcode.mockReturnValueOnce(deferred().promise);
