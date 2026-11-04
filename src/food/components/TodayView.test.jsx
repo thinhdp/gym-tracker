@@ -184,6 +184,26 @@ describe("TodayView", () => {
     expect(slotRegion("Dinner").getByText("0 kcal")).toBeVisible();
   });
 
+  it("tapping one slot's kcal toggles the macro lines on every slot", async () => {
+    saveLS(K_FOOD_ENTRIES, [
+      entry("rice", { slot: "lunch" }),
+      entry("fish", { slot: "dinner" }),
+    ]);
+    const { user } = setup();
+    expect(slotRegion("Dinner").queryByText("P 10 · C 20 · F 5")).toBeNull();
+
+    await user.click(
+      slotRegion("Lunch").getByRole("button", { name: "Lunch totals" }),
+    );
+    expect(slotRegion("Dinner").getByText("P 10 · C 20 · F 5")).toBeVisible();
+    expect(slotRegion("Dinner").getByText("P 10 g")).toBeVisible();
+
+    await user.click(
+      slotRegion("Lunch").getByRole("button", { name: "Lunch totals" }),
+    );
+    expect(slotRegion("Dinner").queryByText("P 10 · C 20 · F 5")).toBeNull();
+  });
+
   it("orders a slot's rows by createdAt and keeps stored order on a tie", () => {
     saveLS(K_FOOD_ENTRIES, [
       entry("late", { createdAt: 3000 }),
