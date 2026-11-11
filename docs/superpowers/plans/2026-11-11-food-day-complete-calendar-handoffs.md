@@ -7,4 +7,4 @@ Plan: `docs/superpowers/plans/2026-11-11-food-day-complete-calendar.md`. One sec
 
 ## Next
 
-Part A (Tasks 1–4), on Opus 5.5 with the `fable-fallback` workflow in plan-task mode, session effort medium. Nothing is started.
+Part A (Tasks 1–7, the whole plan in one session by owner ruling), on Opus 5.5 with the `fable-fallback` workflow in plan-task mode, session effort medium. Nothing is started.

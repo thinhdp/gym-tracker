@@ -249,31 +249,39 @@ Fixed details (spec 4.3): a third `Segmented` with the three filters in the spec
 
 ## Execution parts
 
-| Part | Points                         | Certainty (task: failed item) | Orchestrator               | Needs | Wave | Critical path | Gate |
-| ---- | ------------------------------ | ----------------------------- | -------------------------- | ----- | ---- | ------------- | ---- |
-| A    | 7 (T1 L4, T2 S1, T3 S1, T4 S1) | certain (none failed)         | Opus 5.5, `fable-fallback` | —     | 1    | yes           | none |
-| B    | 7 (T5 L4, T6 M2, T7 S1)        | certain (none failed)         | Opus 5.5, `fable-fallback` | A     | 2    | yes           | none |
+| Part | Points                                               | Certainty (task: failed item) | Orchestrator               | Needs | Wave | Critical path | Gate |
+| ---- | ---------------------------------------------------- | ----------------------------- | -------------------------- | ----- | ---- | ------------- | ---- |
+| A    | 14 (T1 L4, T2 S1, T3 S1, T4 S1, T5 L4, T6 M2, T7 S1) | certain (none failed)         | Opus 5.5, `fable-fallback` | —     | 1    | yes           | none |
+
+**One part by owner ruling (2026-11-11).** The part holds 14 points, above the 4 to 7 limit in CLAUDE.md "Execution part sizing". The owner asked for all seven tasks in one session and one PR, so the feature reaches the app in one merge.
 
 Certainty item 5, read at planning on `main` `7026f73`: `normalizeFoodData` builds each list independently (`normalize.js:195-210`); `mergeFoodData` likewise (`normalize.js:238-254`); `importFoodData` saves each list by key (`backupFood.js:31-42`); `loadLists` counts drops per `LIST_KEYS` name (`FoodContext.jsx:32-45`); `useStoredList` saves on change and applies updates in order (`FoodContext.jsx:53-62`); `buildRow` groups entries by day and divides by the day count (`trends.js:17-43`). Each does what the tasks assume.
 
 There is no user gate: the spec leaves no user-visible choice open.
 
-### Part dependencies and parallel runs
+### Task order inside the part
 
-| Part | Needs merged first | Consumes                                                                                                                  | Shares files with parts it does not need |
-| ---- | ------------------ | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| A    | —                  | —                                                                                                                         | none                                     |
-| B    | A                  | `K_FOOD_COMPLETED`, `normalizeCompletedDays`, `normalizeFoodData().completedDays`, `weeklyIntake` filter, `CalendarSheet` | none                                     |
+| Task | Needs  | Consumes                                                                          |
+| ---- | ------ | --------------------------------------------------------------------------------- |
+| T1   | —      | —                                                                                 |
+| T2   | —      | —                                                                                 |
+| T3   | —      | —                                                                                 |
+| T4   | T3     | `monthGrid`, `dayTotals`                                                          |
+| T5   | T1     | `K_FOOD_COMPLETED`, `normalizeCompletedDays`, `normalizeFoodData().completedDays` |
+| T6   | T4, T5 | `CalendarSheet`, `completedDays`, `toggleDayComplete`                             |
+| T7   | T2, T5 | `weeklyIntake` filter, `completedDays`                                            |
 
 ```
-A (T1, T2, T3, T4) ──► B (T5, T6, T7)
+T1 ──► T5 ──┬──► T6
+T3 ──► T4 ──┘
+T2 ─────────┴──► T7   (T7 also needs T5)
 ```
 
-The parts run one after the other; nothing runs in parallel. Inside Part A, Tasks 1–4 touch separate files (Task 4 needs Task 3). After Part A merges, the app behaves as before for the user, except that a backup file carries an empty `completedDays` list.
+Run the tasks in number order, one at a time, in one worktree. No two tasks edit the same source file. There is one part, so nothing runs in parallel with it.
 
-### Part finish (every part)
+### Part finish
 
 1. `npm run check` once; rebase on `main`; `npm run check` again if the rebase changed anything.
 2. A reviewer has read the part's final commit (`opus55-reviewer-deep` for the whole-branch pass).
 3. PR via `superpowers:finishing-a-development-branch`. The user merges.
-4. Append the part's handoff, with its cost lines, to the handoffs file. Part B's handoff also sets this plan and the spec to `shipped` and closes #168 with the merge SHA.
+4. Append the handoff, with its cost lines, to the handoffs file; set this plan and the spec to `shipped`; close #168 with the merge SHA.
