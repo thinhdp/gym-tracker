@@ -124,7 +124,7 @@ describe("DataManagementMenu", () => {
     expect(replace.parentElement.className).toContain("bottom-full");
   });
 
-  it("export payload includes food with the five lists", () => {
+  it("export payload includes food with the six lists", () => {
     seedFood();
     saveLS(K_FOOD_SEARCH_CACHE, { egg: { at: 1, results: [] } });
     saveLS(K_FOOD_TAB, "search");
@@ -141,6 +141,7 @@ describe("DataManagementMenu", () => {
       customFoods: [customFood],
       savedMeals: [savedMeal],
       recent: [recent],
+      completedDays: [],
     });
   });
 

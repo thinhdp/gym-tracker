@@ -1,6 +1,7 @@
 import { loadLS, saveLS } from "../../lib/storage";
 import { exportFoodData, importFoodData } from "./backupFood";
 import {
+  K_FOOD_COMPLETED,
   K_FOOD_CUSTOM,
   K_FOOD_ENTRIES,
   K_FOOD_MEALS,
@@ -102,7 +103,7 @@ const incoming = () => ({
 });
 
 describe("exportFoodData", () => {
-  it("returns the five stored lists", () => {
+  it("returns the six stored lists", () => {
     seed();
     expect(exportFoodData()).toEqual({
       entries: [entry("old")],
@@ -110,6 +111,7 @@ describe("exportFoodData", () => {
       customFoods: [custom("old")],
       savedMeals: [meal("old")],
       recent: [recent("old")],
+      completedDays: [],
     });
   });
 
@@ -122,8 +124,63 @@ describe("exportFoodData", () => {
       customFoods: [],
       savedMeals: [],
       recent: [],
+      completedDays: [],
     });
   });
+
+  it("returns the stored completedDays as they are", () => {
+    saveLS(K_FOOD_COMPLETED, ["2026-11-01", "2026-11-03"]);
+    expect(exportFoodData().completedDays).toEqual([
+      "2026-11-01",
+      "2026-11-03",
+    ]);
+  });
+
+  it("returns [] for completedDays when the key holds a non-array", () => {
+    saveLS(K_FOOD_COMPLETED, { not: "a list" });
+    expect(exportFoodData().completedDays).toEqual([]);
+  });
+});
+
+describe("importFoodData completedDays", () => {
+  const storedDays = () => loadLS(K_FOOD_COMPLETED, "unset");
+
+  it("replace overwrites the stored list with the incoming one", () => {
+    saveLS(K_FOOD_COMPLETED, ["2026-11-01"]);
+    expect(
+      importFoodData({ food: { completedDays: ["2026-11-02"] } }, "replace"),
+    ).toBe(true);
+    expect(storedDays()).toEqual(["2026-11-02"]);
+  });
+
+  it("replace with a food object that has no completedDays empties the list", () => {
+    saveLS(K_FOOD_COMPLETED, ["2026-11-01"]);
+    expect(importFoodData({ food: incoming() }, "replace")).toBe(true);
+    expect(storedDays()).toEqual([]);
+  });
+
+  it("merge with a food object that has no completedDays keeps the list", () => {
+    saveLS(K_FOOD_COMPLETED, ["2026-11-01"]);
+    expect(importFoodData({ food: incoming() }, "merge")).toBe(true);
+    expect(storedDays()).toEqual(["2026-11-01"]);
+  });
+
+  it("merge unions stored and incoming dates, sorted", () => {
+    saveLS(K_FOOD_COMPLETED, ["2026-11-01"]);
+    expect(
+      importFoodData({ food: { completedDays: ["2026-11-02"] } }, "merge"),
+    ).toBe(true);
+    expect(storedDays()).toEqual(["2026-11-01", "2026-11-02"]);
+  });
+
+  it.each(["merge", "replace"])(
+    "a backup with no food field leaves the list untouched (%s)",
+    (mode) => {
+      saveLS(K_FOOD_COMPLETED, ["2026-11-01"]);
+      expect(importFoodData({ exercises: [] }, mode)).toBe(false);
+      expect(storedDays()).toEqual(["2026-11-01"]);
+    },
+  );
 });
 
 describe("importFoodData", () => {

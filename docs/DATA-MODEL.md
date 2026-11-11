@@ -10,28 +10,29 @@ versioned, and that is the only versioning.
 
 ## localStorage keys
 
-| Key                        | Written by                        | Holds                                                                                    | Default when absent                              |
-| -------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `mgym.exercises.v1`        | `AppContext` (`K_EX`)             | `Exercise[]`                                                                             | the 76-entry seed `src/data/exercises_seed.json` |
-| `mgym.workouts.v1`         | `AppContext` (`K_WO`)             | `Workout[]`                                                                              | `[]`                                             |
-| `mgym.routines.v1`         | `AppContext` (`K_ROUTINES`)       | `Routine[]` (built by `routineFromWorkout`, `src/lib/routines.js`)                       | `[]`                                             |
-| `mgym.unit`                | `AppContext` (`K_UNIT`)           | `"kg"` \| `"lb"` (toggle UI hidden; effectively `"kg"`)                                  | `"kg"`                                           |
-| `mgym.tab`                 | `AppContext` (`K_TAB`)            | active tab: `home`/`workouts`/`progress`/`exercises`/`more` (legacy values remapped)     | `"workouts"`                                     |
-| `mgym.theme`               | `AppContext` (`K_THEME`)          | `"system"` \| `"light"` \| `"dark"`                                                      | `"system"`                                       |
-| `mgym.session.v1`          | `AppContext` (`K_SESSION`)        | live-logging session object, or `null`                                                   | `null`                                           |
-| `mgym.note.v1`             | `Notepad` (`K_NOTE`)              | `string` — global note                                                                   | `""`                                             |
-| `weightLogs`               | `WeightTracker`                   | `{ [YYYY-MM-DD]: number }` — bodyweight                                                  | `{}`                                             |
-| `mgym.profile.v1`          | `MoreMenu`                        | `{ sex?: "male"\|"female", birthYear?: number }` — lifter profile for strength standards | `{}`                                             |
-| `mgym.fvCache.v1`          | `fvApi`                           | cache of FitnessVolt percentile + standards responses (see below)                        | `{}`                                             |
-| `mgym.food.entries.v1`     | `FoodProvider` (`K_FOOD_ENTRIES`) | `FoodEntry[]`                                                                            | `[]`                                             |
-| `mgym.food.targets.v1`     | `FoodProvider` (`K_FOOD_TARGETS`) | `TargetPeriod[]`                                                                         | `[]`                                             |
-| `mgym.food.customFoods.v1` | `FoodProvider` (`K_FOOD_CUSTOM`)  | `CustomFood[]`                                                                           | `[]`                                             |
-| `mgym.food.savedMeals.v1`  | `FoodProvider` (`K_FOOD_MEALS`)   | `SavedMeal[]`                                                                            | `[]`                                             |
-| `mgym.food.recent.v1`      | `FoodProvider` (`K_FOOD_RECENT`)  | `RecentFood[]`                                                                           | `[]`                                             |
-| `mgym.food.searchCache.v1` | `foodApi` (`K_FOOD_SEARCH_CACHE`) | `{ ["q:<normalised query>" \| "bc:<code>"]: { at, results } }`                           | `{}`                                             |
-| `mgym.food.tab`            | `FoodApp` (`K_FOOD_TAB`)          | active food tab: `today`/`search`/`trends`/`settings`                                    | `"today"`                                        |
-| `weekly-note:<weekKey>`    | _legacy_ (no longer used)         | `string` — one note per ISO week (written by the removed `WeeklyNotes`)                  | `""`                                             |
-| `summary-open:<periodKey>` | _legacy_ (no longer used)         | `boolean` — card collapse state (written by the removed `PeriodCard`)                    | card default                                     |
+| Key                          | Written by                          | Holds                                                                                    | Default when absent                              |
+| ---------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `mgym.exercises.v1`          | `AppContext` (`K_EX`)               | `Exercise[]`                                                                             | the 76-entry seed `src/data/exercises_seed.json` |
+| `mgym.workouts.v1`           | `AppContext` (`K_WO`)               | `Workout[]`                                                                              | `[]`                                             |
+| `mgym.routines.v1`           | `AppContext` (`K_ROUTINES`)         | `Routine[]` (built by `routineFromWorkout`, `src/lib/routines.js`)                       | `[]`                                             |
+| `mgym.unit`                  | `AppContext` (`K_UNIT`)             | `"kg"` \| `"lb"` (toggle UI hidden; effectively `"kg"`)                                  | `"kg"`                                           |
+| `mgym.tab`                   | `AppContext` (`K_TAB`)              | active tab: `home`/`workouts`/`progress`/`exercises`/`more` (legacy values remapped)     | `"workouts"`                                     |
+| `mgym.theme`                 | `AppContext` (`K_THEME`)            | `"system"` \| `"light"` \| `"dark"`                                                      | `"system"`                                       |
+| `mgym.session.v1`            | `AppContext` (`K_SESSION`)          | live-logging session object, or `null`                                                   | `null`                                           |
+| `mgym.note.v1`               | `Notepad` (`K_NOTE`)                | `string` — global note                                                                   | `""`                                             |
+| `weightLogs`                 | `WeightTracker`                     | `{ [YYYY-MM-DD]: number }` — bodyweight                                                  | `{}`                                             |
+| `mgym.profile.v1`            | `MoreMenu`                          | `{ sex?: "male"\|"female", birthYear?: number }` — lifter profile for strength standards | `{}`                                             |
+| `mgym.fvCache.v1`            | `fvApi`                             | cache of FitnessVolt percentile + standards responses (see below)                        | `{}`                                             |
+| `mgym.food.entries.v1`       | `FoodProvider` (`K_FOOD_ENTRIES`)   | `FoodEntry[]`                                                                            | `[]`                                             |
+| `mgym.food.targets.v1`       | `FoodProvider` (`K_FOOD_TARGETS`)   | `TargetPeriod[]`                                                                         | `[]`                                             |
+| `mgym.food.customFoods.v1`   | `FoodProvider` (`K_FOOD_CUSTOM`)    | `CustomFood[]`                                                                           | `[]`                                             |
+| `mgym.food.savedMeals.v1`    | `FoodProvider` (`K_FOOD_MEALS`)     | `SavedMeal[]`                                                                            | `[]`                                             |
+| `mgym.food.recent.v1`        | `FoodProvider` (`K_FOOD_RECENT`)    | `RecentFood[]`                                                                           | `[]`                                             |
+| `mgym.food.completedDays.v1` | `FoodProvider` (`K_FOOD_COMPLETED`) | `string[]` — completed days as local `YYYY-MM-DD` dates (see below)                      | `[]`                                             |
+| `mgym.food.searchCache.v1`   | `foodApi` (`K_FOOD_SEARCH_CACHE`)   | `{ ["q:<normalised query>" \| "bc:<code>"]: { at, results } }`                           | `{}`                                             |
+| `mgym.food.tab`              | `FoodApp` (`K_FOOD_TAB`)            | active food tab: `today`/`search`/`trends`/`settings`                                    | `"today"`                                        |
+| `weekly-note:<weekKey>`      | _legacy_ (no longer used)           | `string` — one note per ISO week (written by the removed `WeeklyNotes`)                  | `""`                                             |
+| `summary-open:<periodKey>`   | _legacy_ (no longer used)           | `boolean` — card collapse state (written by the removed `PeriodCard`)                    | card default                                     |
 
 All values are stored with `JSON.stringify`. String values (the notes) are
 stored as JSON strings (e.g. the literal `""`).
@@ -372,6 +373,30 @@ What writes `mgym.food.recent.v1` (`FoodProvider` for all but the last item):
 
 Logged entries keep their own copies through all of these.
 
+#### Completed days (`mgym.food.completedDays.v1`)
+
+Each item is a local date `YYYY-MM-DD` (food spec 5.8). The list holds each date
+at most once and is sorted oldest first. A date in the list is a completed day;
+a date not in the list is not. Design: section 3 of
+`docs/superpowers/specs/2026-11-11-food-day-complete-calendar-design.md`.
+
+Shape rules (`normalizeCompletedDays` in `src/food/lib/normalize.js`, used by
+`normalizeFoodData`): an item is kept only when it is a string, matches
+`YYYY-MM-DD` and is a real date (the same date rule as `FoodEntry.date`).
+Duplicates are removed and the result is sorted. A stored value that is not an
+array loads as `[]`. `FoodProvider` loads the key through these rules, like the
+other lists. Removed items add to the dropped-row count in the one-line note on
+`/food` (food spec 5.9); a removed duplicate counts as one dropped row.
+
+| Write                              | What happens to data that already exists                                                                                                                                |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `toggleDayComplete(date)`          | Adds the date when absent, removes it when present. No other date changes. `entries` is not written.                                                                    |
+| Backup export                      | `food.completedDays` is added to the envelope, read from storage as it is.                                                                                              |
+| Backup import, merge               | The stored list becomes the union of stored and incoming dates. Merge never removes a mark. An invalid stored item is dropped.                                          |
+| Backup import, replace             | The incoming list overwrites the stored list. A backup whose `food` has no `completedDays` (every backup made before this change) counts as `[]` and removes all marks. |
+| Backup with no `food` plain object | Food data is untouched, as today.                                                                                                                                       |
+| Deleting the last entry of a day   | The mark stays; the day is then a fasting day.                                                                                                                          |
+
 ## Derived / computed (not stored)
 
 The Strength tab (`StrengthAnalysis`) computes these on the fly from `workouts`;
@@ -423,7 +448,8 @@ they are **not** persisted. See `src/lib/strength.js`, `src/lib/metrics.js`, and
     "targets": [],
     "customFoods": [],
     "savedMeals": [],
-    "recent": []
+    "recent": [],
+    "completedDays": []
   }
 }
 ```
@@ -434,15 +460,16 @@ they are **not** persisted. See `src/lib/strength.js`, `src/lib/metrics.js`, and
 | `exportedAt`                                           | `string` (ISO 8601) | When generated.                                                          |
 | `exercises` / `workouts` / `routines`                  | arrays              | Validated via `normalizeData()` on import.                               |
 | `unit` / `tab` / `note` / `weightLogs` / `weeklyNotes` | misc                | Restored **directly** to localStorage on import, **without** validation. |
-| `food`                                                 | object              | The five food lists. Validated via `normalizeFoodData()` on import.      |
+| `food`                                                 | object              | The six food lists. Validated via `normalizeFoodData()` on import.       |
 
 On import, exercises/workouts/routines go through `normalizeData()` then **merge** or
 **replace** (rules in
 [ARCHITECTURE.md → Export / import](../ARCHITECTURE.md#export--import-backup));
 the remaining fields are written straight back to their keys.
 
-`food` is the exception to that last line. It holds the five lists `entries`,
-`targets`, `customFoods`, `savedMeals` and `recent`; `mgym.food.searchCache.v1` and
+`food` is the exception to that last line. It holds the six lists `entries`,
+`targets`, `customFoods`, `savedMeals`, `recent` and `completedDays`;
+`mgym.food.searchCache.v1` and
 `mgym.food.tab` are excluded. `importFoodData()` (`src/food/lib/backupFood.js`)
 applies it as follows:
 
@@ -450,9 +477,14 @@ applies it as follows:
   replaced by an incoming row with a newer `lastAt`. Targets are re-sorted by `from`.
   Recent is re-sorted newest first and capped at 50, so the cap can remove the oldest
   stored row or an old incoming row, and two stored recent rows for one food collapse
-  to one. A stored list that is not an array counts as `[]`.
+  to one. A stored list that is not an array counts as `[]`. `completedDays` is the
+  exception to "rewrites no stored row": the merged list is the union of stored and
+  incoming dates passed through the shape rules, so an invalid stored date is
+  dropped, duplicates collapse and the list is re-sorted. Merge never removes a
+  valid mark.
 - **Replace** normalises the incoming lists and overwrites each one. A list missing
-  from `food` counts as `[]`, so `food: {}` empties all five lists.
+  from `food` counts as `[]`, so `food: {}` empties all six lists, and a backup made
+  before `completedDays` existed removes all completed-day marks.
 - A backup with no `food` field, or a `food` value that is not a plain object, leaves
   food data untouched in both modes.
 - An export reads storage as it is, so it includes a malformed row until `/food` has

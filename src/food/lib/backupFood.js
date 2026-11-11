@@ -1,5 +1,6 @@
 import { loadLS, saveLS } from "../../lib/storage";
 import {
+  K_FOOD_COMPLETED,
   K_FOOD_CUSTOM,
   K_FOOD_ENTRIES,
   K_FOOD_MEALS,
@@ -13,13 +14,14 @@ const loadList = (key) => {
   return Array.isArray(value) ? value : [];
 };
 
-/** The five food lists for the backup envelope. */
+/** The six food lists for the backup envelope. */
 export const exportFoodData = () => ({
   entries: loadList(K_FOOD_ENTRIES),
   targets: loadList(K_FOOD_TARGETS),
   customFoods: loadList(K_FOOD_CUSTOM),
   savedMeals: loadList(K_FOOD_MEALS),
   recent: loadList(K_FOOD_RECENT),
+  completedDays: loadList(K_FOOD_COMPLETED),
 });
 
 /**
@@ -37,5 +39,6 @@ export const importFoodData = (raw, mode) => {
   saveLS(K_FOOD_CUSTOM, next.customFoods);
   saveLS(K_FOOD_MEALS, next.savedMeals);
   saveLS(K_FOOD_RECENT, next.recent);
+  saveLS(K_FOOD_COMPLETED, next.completedDays);
   return true;
 };

@@ -191,7 +191,19 @@ const uniqueRecent = (rows) => {
 const normalizeList = (list, normalizeRow) =>
   Array.isArray(list) ? list.map(normalizeRow).filter(Boolean) : [];
 
-/** The five food lists from untrusted input, each valid and free of duplicates. Never throws. */
+/** Valid local dates only, each once, sorted oldest first; a non-array gives []. */
+export const normalizeCompletedDays = (value) =>
+  Array.isArray(value)
+    ? [
+        ...new Set(
+          value.filter(
+            (d) => typeof d === "string" && DATE_RE.test(d) && isRealDate(d),
+          ),
+        ),
+      ].sort()
+    : [];
+
+/** The six food lists from untrusted input, each valid and free of duplicates. Never throws. */
 export const normalizeFoodData = (raw) => {
   const data = isObject(raw) ? raw : {};
   return {
@@ -206,6 +218,7 @@ export const normalizeFoodData = (raw) => {
       byId,
     ),
     recent: uniqueRecent(normalizeList(data.recent, normalizeRecent)),
+    completedDays: normalizeCompletedDays(data.completedDays),
   };
 };
 
@@ -233,7 +246,8 @@ const mergeRecent = (current, incoming) => {
 /**
  * Union of the stored lists and a normalised data set. `current` is not
  * normalised: every stored row stays unchanged, and a malformed one has no key.
- * Recent keeps the newer `lastAt` for a food and is capped.
+ * Recent keeps the newer `lastAt` for a food and is capped. completedDays is
+ * the exception: the union is normalised, so an invalid stored date drops.
  */
 export const mergeFoodData = (current, incoming) => ({
   entries: unionKeepingCurrent(current.entries, incoming.entries, byId),
@@ -251,4 +265,8 @@ export const mergeFoodData = (current, incoming) => ({
     byId,
   ),
   recent: mergeRecent(current.recent, incoming.recent),
+  completedDays: normalizeCompletedDays([
+    ...current.completedDays,
+    ...incoming.completedDays,
+  ]),
 });

@@ -5,3 +5,4 @@ export const K_FOOD_MEALS = "mgym.food.savedMeals.v1";
 export const K_FOOD_RECENT = "mgym.food.recent.v1";
 export const K_FOOD_SEARCH_CACHE = "mgym.food.searchCache.v1";
 export const K_FOOD_TAB = "mgym.food.tab";
+export const K_FOOD_COMPLETED = "mgym.food.completedDays.v1";

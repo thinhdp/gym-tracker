@@ -1,4 +1,5 @@
 import {
+  K_FOOD_COMPLETED,
   K_FOOD_ENTRIES,
   K_FOOD_TARGETS,
   K_FOOD_CUSTOM,
@@ -18,5 +19,6 @@ describe("food localStorage keys", () => {
     expect(K_FOOD_RECENT).toBe("mgym.food.recent.v1");
     expect(K_FOOD_SEARCH_CACHE).toBe("mgym.food.searchCache.v1");
     expect(K_FOOD_TAB).toBe("mgym.food.tab");
+    expect(K_FOOD_COMPLETED).toBe("mgym.food.completedDays.v1");
   });
 });
