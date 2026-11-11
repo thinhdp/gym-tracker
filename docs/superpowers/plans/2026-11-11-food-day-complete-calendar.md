@@ -1,6 +1,6 @@
 # Food: Complete Days, Month Calendar, Trends Filter — Implementation Plan
 
-**Status:** draft
+**Status:** approved
 **Date:** 2026-11-11
 **Issue:** #168
 **Handoffs:** `docs/superpowers/plans/2026-11-11-food-day-complete-calendar-handoffs.md`
