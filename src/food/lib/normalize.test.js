@@ -623,6 +623,7 @@ describe("normalizeCompletedDays", () => {
         "2026-11-05",
         "2026-02-30",
         "5 Nov",
+        "2026-11-5",
         7,
         null,
       ]),
