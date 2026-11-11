@@ -181,5 +181,10 @@ also verify manually in the browser via `npm run dev`:
   the edit; delete it and confirm the chip goes.
 - Food mode, scanner: scan or type a barcode online; an unknown code opens the
   custom food form with the code filled in.
-- Food mode in dark mode: check Today, Search, Trends and Settings, the sheets and
+- Food mode, complete days: on Today tap **Mark day complete** and confirm it turns
+  green and reads **Completed ✓**; tap the header date to open the calendar, check
+  the green cell and the day's kcal, and tap a day to jump to it. On Trends,
+  confirm it opens on **Complete** and that **All days** and **Incomplete** change
+  the Days column.
+- Food mode in dark mode: check Today, Search, Trends and Settings, the sheets (including the calendar and its green cells) and
   the toast for unreadable text or borders.

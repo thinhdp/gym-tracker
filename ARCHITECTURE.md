@@ -105,7 +105,8 @@ gym-tracker/
     │   ├── FoodApp.jsx           # Food mode shell: FoodProvider, tab heading, FoodBottomNav
     │   ├── components/
     │   │   ├── FoodBottomNav.jsx    # Fixed 4-tab bottom navigation
-    │   │   ├── TodayView.jsx        # Today tab: day navigation, MacroBars, RecentRow, six MealSlots, sheets
+    │   │   ├── TodayView.jsx        # Today tab: day navigation, MacroBars, RecentRow, six MealSlots, Complete button, sheets
+    │   │   ├── CalendarSheet.jsx    # Month calendar: daily kcal, completed days; opened from the Today header date
     │   │   ├── MacroBars.jsx        # Day totals: bars against the target, or plain numbers
     │   │   ├── MealSlot.jsx         # One meal slot: total, EntryRows, + and … buttons
     │   │   ├── EntryRow.jsx         # One logged entry
@@ -119,7 +120,7 @@ gym-tracker/
     │   │   ├── SearchResultRow.jsx  # One search or list row
     │   │   ├── BarcodeScanner.jsx   # Camera scan with a manual code field
     │   │   ├── CustomFoodForm.jsx   # Create or edit a custom food
-    │   │   ├── TrendsView.jsx       # Trends tab: weekly intake and bodyweight chart and table
+    │   │   ├── TrendsView.jsx       # Trends tab: weekly intake and bodyweight chart and table, Complete / Incomplete / All days filter
     │   │   ├── SettingsView.jsx     # Settings tab: targets, custom foods, saved meals (edit, rename, delete)
     │   │   └── TargetsEditor.jsx    # Target periods editor
     │   ├── context/
@@ -134,10 +135,11 @@ gym-tracker/
     │       ├── normalize.js         # normalizeFoodData (import and load) / mergeFoodData (import)
     │       ├── localDate.js         # Local-date helpers
     │       ├── macros.js            # Macro scaling + totals
+    │       ├── calendar.js          # monthGrid / dayTotals for CalendarSheet
     │       ├── recent.js            # Recent-foods list helpers
     │       ├── slots.js             # Meal slots
     │       ├── targets.js           # Target periods: lookup, edit, validation
-    │       └── trends.js            # weeklyIntake: weekly averages joined with bodyweight
+    │       └── trends.js            # weeklyIntake: weekly averages joined with bodyweight, filtered by completed days
     ├── lib/                   # Framework-free helpers
     │   ├── storage.js            # localStorage keys + load/save + id/date helpers
     │   ├── backup.js             # Export/import normalize + merge logic
@@ -227,7 +229,8 @@ main.jsx
                 │               │       ├── EntryEditSheet
                 │               │       ├── PortionSheet                   (options on a recent chip)
                 │               │       ├── SavedMealsPanel
-                │               │       └── SaveMealSheet
+                │               │       ├── SaveMealSheet
+                │               │       └── CalendarSheet                  (from the header date)
                 │               ├── [tab="search"]   SearchView
                 │               │       ├── SearchResultRow
                 │               │       ├── BarcodeScanner
