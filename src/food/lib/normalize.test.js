@@ -630,6 +630,12 @@ describe("normalizeCompletedDays", () => {
     ).toEqual(["2026-11-03", "2026-11-05"]);
   });
 
+  it("skips a nested-array item without throwing", () => {
+    expect(normalizeCompletedDays([["2026-11-05"], "2026-11-03"])).toEqual([
+      "2026-11-03",
+    ]);
+  });
+
   it.each([
     ["an object", { a: 1 }],
     ["undefined", undefined],
@@ -650,6 +656,14 @@ describe("mergeFoodData", () => {
     const merged = mergeFoodData(
       { ...emptyData(), completedDays: ["2026-11-01"] },
       { ...emptyData(), completedDays: ["2026-11-02", "2026-11-01"] },
+    );
+    expect(merged.completedDays).toEqual(["2026-11-01", "2026-11-02"]);
+  });
+
+  it("drops an invalid stored completedDays item when merging", () => {
+    const merged = mergeFoodData(
+      { ...emptyData(), completedDays: ["2026-11-01", "junk"] },
+      { ...emptyData(), completedDays: ["2026-11-02"] },
     );
     expect(merged.completedDays).toEqual(["2026-11-01", "2026-11-02"]);
   });

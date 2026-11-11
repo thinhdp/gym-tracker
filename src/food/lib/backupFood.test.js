@@ -136,6 +136,12 @@ describe("exportFoodData", () => {
     ]);
   });
 
+  it("exports completedDays unsorted and with duplicates, as stored", () => {
+    const stored = ["2026-11-05", "2026-11-01", "2026-11-05"];
+    saveLS(K_FOOD_COMPLETED, stored);
+    expect(exportFoodData().completedDays).toEqual(stored);
+  });
+
   it("returns [] for completedDays when the key holds a non-array", () => {
     saveLS(K_FOOD_COMPLETED, { not: "a list" });
     expect(exportFoodData().completedDays).toEqual([]);

@@ -220,6 +220,16 @@ describe("weeklyIntake completed-day filter", () => {
     expect(rows).toHaveLength(4);
   });
 
+  it("weeks null ignores non-string completedDays and starts at the first real day", () => {
+    const rows = weeklyIntake(
+      [],
+      {},
+      { weeks: null, today, completedDays: [null, 5, "2026-11-03"] },
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].from).toBe("2026-11-02");
+  });
+
   it("treats a non-array completedDays as empty", () => {
     const row = run({ completedDays: "2026-11-02", filter: "complete" });
     expect(row.loggedDays).toBe(0);

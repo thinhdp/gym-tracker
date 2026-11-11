@@ -29,6 +29,23 @@ describe("CalendarSheet", () => {
     ).toBeInTheDocument();
   });
 
+  it("opens on the month of the date prop, not today's", () => {
+    setup({ date: "2026-09-15" });
+    expect(
+      screen.getByRole("button", { name: "2026-09-01" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "2026-11-01" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("styles a completed day green", () => {
+    setup();
+    expect(
+      screen.getByRole("button", { name: "2026-11-05, 1850 kcal, completed" }),
+    ).toHaveClass("bg-green-100");
+  });
+
   it("shows 0 kcal on a completed day with no entries", () => {
     setup();
     expect(

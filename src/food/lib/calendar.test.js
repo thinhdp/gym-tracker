@@ -24,6 +24,19 @@ describe("monthGrid", () => {
   });
 });
 
+describe("monthGrid shape", () => {
+  it("gives weeks of 7 items, none all null, for every month of 2025 and 2026", () => {
+    for (const year of [2025, 2026]) {
+      for (let month = 0; month < 12; month++) {
+        for (const week of monthGrid(year, month)) {
+          expect(week).toHaveLength(7);
+          expect(week.every((d) => d === null)).toBe(false);
+        }
+      }
+    }
+  });
+});
+
 describe("dayTotals", () => {
   const e = (date, kcal) => ({
     date,

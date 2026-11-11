@@ -98,6 +98,7 @@ const LIST_KEYS = [
     [recentRow("egg", 2), recentRow("rice", 1)],
     { food: FOOD },
   ],
+  ["completedDays", K_FOOD_COMPLETED, ["2026-11-01", "2026-11-02"], "junk"],
 ];
 
 const setup = () => renderHook(() => useFood(), { wrapper: FoodProvider });
@@ -168,11 +169,11 @@ describe("FoodProvider load normalising", () => {
     expect(setup().result.current.droppedRows).toBe(0);
   });
 
-  it("sums the removed rows over the five lists", () => {
+  it("sums the removed rows over the six lists", () => {
     LIST_KEYS.forEach(([, key, rows, malformed]) =>
       saveLS(key, [null, rows[0], malformed]),
     );
-    expect(setup().result.current.droppedRows).toBe(10);
+    expect(setup().result.current.droppedRows).toBe(12);
   });
 
   it("counts a duplicate as removed and keeps the first row", () => {
