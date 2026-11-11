@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { todayLocal } from "../lib/localDate";
 import CalendarSheet from "./CalendarSheet";
 
 const entry = (date, kcal) => ({
@@ -86,5 +87,32 @@ describe("CalendarSheet", () => {
     expect(props.onPick).toHaveBeenCalledWith("2026-11-07");
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(props.onClose).toHaveBeenCalled();
+  });
+
+  describe("today and shown-date styling", () => {
+    const today = todayLocal();
+    // A different day in today's month, so the sheet opens on today's month.
+    const other = `${today.slice(0, 8)}${today.endsWith("-01") ? "02" : "01"}`;
+
+    it("bolds today's day number and no other day", () => {
+      setup({ date: other, entries: [], completedDays: [] });
+      expect(screen.getByRole("button", { name: today })).toHaveClass(
+        "font-bold",
+      );
+      expect(screen.getByRole("button", { name: other })).not.toHaveClass(
+        "font-bold",
+      );
+    });
+
+    it("outlines the shown date and no other day", () => {
+      setup({ date: other, entries: [], completedDays: [] });
+      expect(screen.getByRole("button", { name: other })).toHaveClass(
+        "outline",
+        "outline-2",
+      );
+      expect(screen.getByRole("button", { name: today })).not.toHaveClass(
+        "outline",
+      );
+    });
   });
 });

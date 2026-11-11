@@ -265,6 +265,14 @@ describe("TrendsView day filter", () => {
     expect(screen.queryByText(NO_COMPLETED)).toBeNull();
   });
 
+  it("does not show the no-completed-days line on Incomplete when every logged day is completed", async () => {
+    const user = userEvent.setup();
+    const w0 = mondayOfWeek(0);
+    setup([entry("a", w0, kcal(1000))], { completed: [w0], keepFilter: true });
+    await user.click(screen.getByRole("button", { name: "Incomplete" }));
+    expect(screen.queryByText(NO_COMPLETED)).toBeNull();
+  });
+
   it("shows only No food logged yet with no entries and no completed days", () => {
     setup([], { keepFilter: true });
     expect(screen.getByText("No food logged yet")).toBeInTheDocument();
