@@ -1,6 +1,6 @@
 # Food: complete days, month calendar, Trends filter — design spec
 
-**Status:** draft
+**Status:** approved (plan: `docs/superpowers/plans/2026-11-11-food-day-complete-calendar.md`)
 **Date:** 2026-11-11
 **Issue:** #168
 **Builds on:** `docs/superpowers/specs/2026-11-02-food-tracker-design.md` (the food
@@ -59,7 +59,7 @@ items add to the dropped-row count in the one-line note on `/food` (food spec
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `toggleDayComplete(date)`          | Adds the date when absent, removes it when present. No other date changes. `entries` is not written.                                                                    |
 | Backup export                      | `food.completedDays` is added to the envelope, read from storage as it is.                                                                                              |
-| Backup import, merge               | The stored list becomes the union of stored and incoming dates. Merge never removes a mark.                                                                             |
+| Backup import, merge               | The stored list becomes the union of stored and incoming dates. Merge never removes a mark. An invalid stored item is dropped.                                          |
 | Backup import, replace             | The incoming list overwrites the stored list. A backup whose `food` has no `completedDays` (every backup made before this change) counts as `[]` and removes all marks. |
 | Backup with no `food` plain object | Food data is untouched, as today.                                                                                                                                       |
 | Deleting the last entry of a day   | The mark stays; the day is then a fasting day.                                                                                                                          |
@@ -87,7 +87,7 @@ same PR as the code.
   Tapping toggles the mark for the shown date. No confirm dialog: the mark holds
   no data and one more tap restores it.
 - The button is not rendered when the shown date is after today.
-- The date in the header becomes a button (accessible name "Open calendar") that
+- The date in the header becomes a button (accessible name "Open calendar" plus the date) that
   opens the calendar sheet. The ‹ › and Today buttons stay as they are.
 
 ### 4.2 Calendar sheet
@@ -131,7 +131,7 @@ button).
 - The Days column and the chart tick labels show counted days out of 7.
 - Range "All" starts at the week of the earliest entry or completed day.
 - The "No food logged yet" line shows only when there are no entries and no
-  completed days.
+  completed days. When it shows, the no-completed-days line does not.
 - Bodyweight and Change columns and the bodyweight line ignore the filter.
 
 ## 5. Code layout
@@ -144,7 +144,7 @@ button).
 | `src/food/context/FoodContext.jsx`            | `completedDays` in the stored lists; `toggleDayComplete(date)`                                    |
 | `src/food/lib/trends.js`                      | `weeklyIntake` takes `completedDays` and `filter` (`"all"`, `"complete"`, `"incomplete"`)         |
 | `src/food/lib/calendar.js` (new)              | `monthGrid(year, month)`: the weeks of a month, Monday first; `dayTotals(entries)`: kcal per date |
-| `src/food/components/CalendarSheet.jsx` (new) | the sheet in 4.2; props `date`, `onPick`, `onClose`                                               |
+| `src/food/components/CalendarSheet.jsx` (new) | the sheet in 4.2; props `date`, `entries`, `completedDays`, `onPick`, `onClose`                   |
 | `src/food/components/TodayView.jsx`           | Complete button, date header button, renders `CalendarSheet`                                      |
 | `src/food/components/TrendsView.jsx`          | filter selector; passes `completedDays` and `filter` to `weeklyIntake`                            |
 | `docs/DATA-MODEL.md`                          | section 3 of this spec                                                                            |
