@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { loadLS, saveLS } from "../../lib/storage";
 import {
+  K_FOOD_COMPLETED,
   K_FOOD_CUSTOM,
   K_FOOD_ENTRIES,
   K_FOOD_MEALS,
@@ -1009,5 +1010,77 @@ describe("FoodProvider recent", () => {
     expect(result.current.recent).toEqual(expected);
     expect(loadLS(K_FOOD_RECENT)).toEqual(expected);
     expect(result.current.entries).toEqual([entry]);
+  });
+});
+
+describe("FoodProvider completed days", () => {
+  it("starts as [] with nothing stored", () => {
+    expect(setup().result.current.completedDays).toEqual([]);
+  });
+
+  it("starts as the stored list", () => {
+    saveLS(K_FOOD_COMPLETED, ["2026-11-03", "2026-11-05"]);
+    expect(setup().result.current.completedDays).toEqual([
+      "2026-11-03",
+      "2026-11-05",
+    ]);
+  });
+
+  it("toggleDayComplete adds a date, sorted, and persists", () => {
+    const { result } = setup();
+    act(() => {
+      result.current.toggleDayComplete("2026-11-05");
+    });
+    act(() => {
+      result.current.toggleDayComplete("2026-11-03");
+    });
+    expect(result.current.completedDays).toEqual(["2026-11-03", "2026-11-05"]);
+    expect(loadLS(K_FOOD_COMPLETED)).toEqual(["2026-11-03", "2026-11-05"]);
+  });
+
+  it("toggleDayComplete removes a date that is present", () => {
+    saveLS(K_FOOD_COMPLETED, ["2026-11-03", "2026-11-05"]);
+    const { result } = setup();
+    act(() => {
+      result.current.toggleDayComplete("2026-11-05");
+    });
+    expect(result.current.completedDays).toEqual(["2026-11-03"]);
+    expect(loadLS(K_FOOD_COMPLETED)).toEqual(["2026-11-03"]);
+  });
+
+  it("two toggles of different dates in one act both land", () => {
+    const { result } = setup();
+    act(() => {
+      result.current.toggleDayComplete("2026-11-05");
+      result.current.toggleDayComplete("2026-11-03");
+    });
+    expect(result.current.completedDays).toEqual(["2026-11-03", "2026-11-05"]);
+    expect(loadLS(K_FOOD_COMPLETED)).toEqual(["2026-11-03", "2026-11-05"]);
+  });
+
+  it("toggleDayComplete does not write entries", () => {
+    saveLS(K_FOOD_ENTRIES, [storedEntry("a")]);
+    const { result } = setup();
+    const before = result.current.entries;
+    act(() => {
+      result.current.toggleDayComplete("2026-11-02");
+    });
+    expect(result.current.entries).toBe(before);
+  });
+
+  it("drops junk and duplicate stored items and counts them", () => {
+    saveLS(K_FOOD_COMPLETED, ["2026-11-05", "junk", "2026-11-05"]);
+    const { result } = setup();
+    expect(result.current.completedDays).toEqual(["2026-11-05"]);
+    expect(loadLS(K_FOOD_COMPLETED)).toEqual(["2026-11-05"]);
+    expect(result.current.droppedRows).toBe(2);
+  });
+
+  it("loads a stored non-array as [] and counts 0", () => {
+    saveLS(K_FOOD_COMPLETED, {});
+    const { result } = setup();
+    expect(result.current.completedDays).toEqual([]);
+    expect(loadLS(K_FOOD_COMPLETED)).toEqual([]);
+    expect(result.current.droppedRows).toBe(0);
   });
 });

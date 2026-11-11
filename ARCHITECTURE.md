@@ -47,7 +47,7 @@ renders `FoodApp` in place of the gym UI, and this check comes before the
 live-session check. Every other path renders the gym UI described above. This is a
 path check, not a router: the `Gym` link in `FoodApp` is a plain `<a href="/">`, so
 leaving the food mode is a full page load. `FoodApp` wraps its content in `FoodProvider`
-(`src/food/context/FoodContext.jsx`), which owns the five stored food lists, and renders
+(`src/food/context/FoodContext.jsx`), which owns the six stored food lists (including `completedDays`), and renders
 a heading per tab, that tab's view (`TodayView`, `SearchView`, `TrendsView` or
 `SettingsView`) and its own four-tab `FoodBottomNav`; the active tab persists in
 `mgym.food.tab`.
@@ -123,7 +123,7 @@ gym-tracker/
     │   │   ├── SettingsView.jsx     # Settings tab: targets, custom foods, saved meals (edit, rename, delete)
     │   │   └── TargetsEditor.jsx    # Target periods editor
     │   ├── context/
-    │   │   └── FoodContext.jsx      # FoodProvider / useFood: the five stored food lists, droppedRows
+    │   │   └── FoodContext.jsx      # FoodProvider / useFood: the six stored food lists (including completedDays), droppedRows
     │   └── lib/                  # Framework-free helpers
     │       ├── keys.js              # Food localStorage keys
     │       ├── backupFood.js        # exportFoodData / importFoodData for the backup
@@ -440,7 +440,7 @@ restored directly to their localStorage keys **without** going through
 `normalizeData` (only exercises/workouts are validated).
 
 `food` goes through `importFoodData` (`src/food/lib/backupFood.js`) after those
-fields. It holds the five lists; `mgym.food.searchCache.v1` and `mgym.food.tab` are
+fields. It holds the six lists, including `completedDays`; `mgym.food.searchCache.v1` and `mgym.food.tab` are
 excluded. A backup with no `food` field, or a `food` value that is not a plain object,
 leaves food data untouched in both modes. Merge adds incoming rows and keeps stored
 rows, except that a recent row is replaced by a newer `lastAt`, and the recent list is
