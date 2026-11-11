@@ -27,7 +27,7 @@ totals and opens any day in one tap.
 | Future dates       | A date after today cannot be marked complete. The button is not shown there.                                       |
 | Calendar location  | A sheet opened by tapping the date in the daily tab header. No new bottom-nav tab.                                 |
 | Calendar content   | One month, Monday first. Each cell: day number and that day's total kcal. Completed days have a green background.  |
-| Trends filter      | A third selector: All days / Complete / Incomplete. Default All days. Not stored; it resets like range and metric. |
+| Trends filter      | A third selector: Complete / Incomplete / All days. Default Complete. Not stored; it resets like range and metric. |
 | Bodyweight         | The Trends bodyweight line and columns do not change with the filter.                                              |
 
 ## 3. Data model
@@ -111,14 +111,19 @@ button).
 
 ### 4.3 Trends
 
-- A third `Segmented` beside range and metric: All days / Complete / Incomplete.
+- A third `Segmented` beside range and metric: Complete / Incomplete / All days.
+  Trends opens on Complete.
+- When the Complete filter is on and no week in the range has a completed day,
+  a line under the selectors reads "No completed days in this range. Mark days
+  complete on the daily tab, or switch to All days." This is what a user with
+  food logged before this change sees first.
 - Which days count in a week's average:
 
 | Filter     | A day counts when                              |
 | ---------- | ---------------------------------------------- |
-| All days   | it has at least one entry, or it is completed  |
 | Complete   | it is completed                                |
 | Incomplete | it has at least one entry and is not completed |
+| All days   | it has at least one entry, or it is completed  |
 
 - The average divides by the number of counted days. A counted day with no
   entries adds zeros. A week with no counted days shows dashes and no bar, as a
@@ -166,7 +171,8 @@ Co-located tests, per `docs/TESTING.md`:
   navigation, tapping a day calls `onPick`.
 - `TodayView.test.jsx`: button toggles and changes text; hidden on a future date;
   header date opens the sheet; picking a day changes the date.
-- `TrendsView.test.jsx`: the filter changes the Days column and averages.
+- `TrendsView.test.jsx`: opens on Complete; the filter changes the Days column
+  and averages; the no-completed-days line shows and hides.
 
 ## 7. Out of scope
 
