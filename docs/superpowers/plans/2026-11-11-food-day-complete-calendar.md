@@ -1,6 +1,6 @@
 # Food: Complete Days, Month Calendar, Trends Filter — Implementation Plan
 
-**Status:** in progress (Part A PR open)
+**Status:** shipped (PR #170, merge `2e49199`)
 **Date:** 2026-11-11
 **Issue:** #168
 **Handoffs:** `docs/superpowers/plans/2026-11-11-food-day-complete-calendar-handoffs.md`

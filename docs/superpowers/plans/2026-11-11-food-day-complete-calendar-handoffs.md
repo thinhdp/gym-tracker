@@ -1,11 +1,11 @@
 # Food: Complete Days, Month Calendar, Trends Filter — Handoffs
 
-**Status:** in progress
+**Status:** shipped (PR #170, merge `2e49199`)
 **Date:** 2026-11-11
 
 Plan: `docs/superpowers/plans/2026-11-11-food-day-complete-calendar.md`. One section per finished part, newest last.
 
-## Part A (Tasks 1–7): PR open, merge pending
+## Part A (Tasks 1–7): merged in PR #170 (`2e49199`)
 
 **Ran:** 2026-11-11 on Opus 5.5 (session effort medium), one `fable-fallback` run in
 plan-task mode per task, in `.claude/worktrees/feat-food-day-complete`. The branch was
@@ -39,5 +39,5 @@ is not available: `session-cost.mjs` is not in this container. Subagent tokens: 
 
 ## Next
 
-After the user merges: set the plan and the spec to `shipped` with the merge SHA, close
-#168 with the merge SHA, and remove the worktree. No later part exists.
+Nothing. The plan shipped in PR #170 (merge `2e49199`); #168 is closed. The five low
+findings above stay open unless the owner asks for issues.
