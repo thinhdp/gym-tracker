@@ -13,14 +13,29 @@ const weekAverageWeight = (weightLogs, monday) =>
     localDateFromYmd(monday, 6),
   );
 
-const buildRow = (entries, weightLogs, monday) => {
+// Which days count: complete = completed; incomplete = has entries and not
+// completed; all = has entries or completed.
+const countsDay = (filter, hasEntries, completed) => {
+  if (filter === "complete") return completed;
+  if (filter === "incomplete") return hasEntries && !completed;
+  return hasEntries || completed;
+};
+
+const buildRow = (entries, weightLogs, monday, completed, filter) => {
   const from = monday;
   const to = addDays(monday, 6);
-  const byDay = new Map();
+  const entriesByDay = new Map();
   for (const entry of entries) {
     if (entry.date < from || entry.date > to) continue;
-    if (!byDay.has(entry.date)) byDay.set(entry.date, []);
-    byDay.get(entry.date).push(entry);
+    if (!entriesByDay.has(entry.date)) entriesByDay.set(entry.date, []);
+    entriesByDay.get(entry.date).push(entry);
+  }
+  const byDay = new Map();
+  for (let d = from; d <= to; d = addDays(d, 1)) {
+    const dayEntries = entriesByDay.get(d) ?? [];
+    if (countsDay(filter, dayEntries.length > 0, completed.has(d))) {
+      byDay.set(d, dayEntries);
+    }
   }
   const loggedDays = byDay.size;
   let avg = null;
@@ -60,34 +75,43 @@ const buildRow = (entries, weightLogs, monday) => {
 
 /**
  * Weekly (Monday to Sunday) intake averages joined with bodyweight averages,
- * oldest to newest. `weeks` is 4, 12 or null (first entry's week to today).
+ * oldest to newest. `weeks` is 4, 12 or null (first entry or completed day's week to today).
+ * `filter` (all | complete | incomplete) picks which days count.
  */
 export const weeklyIntake = (
   entries,
   weightLogs,
-  { weeks = null, today = todayLocal() } = {},
+  {
+    weeks = null,
+    today = todayLocal(),
+    completedDays = [],
+    filter = "all",
+  } = {},
 ) => {
   const list = Array.isArray(entries) ? entries : [];
   const logs =
     weightLogs && typeof weightLogs === "object" && !Array.isArray(weightLogs)
       ? weightLogs
       : {};
+  const completed = new Set(
+    Array.isArray(completedDays)
+      ? completedDays.filter((d) => typeof d === "string")
+      : [],
+  );
   const lastMonday = mondayOf(today);
   let firstMonday;
   if (weeks) {
     firstMonday = addDays(lastMonday, -7 * (weeks - 1));
   } else {
-    if (list.length === 0) return [];
-    const earliest = list.reduce(
-      (min, e) => (e.date < min ? e.date : min),
-      list[0].date,
-    );
+    const dates = [...list.map((e) => e.date), ...completed];
+    if (dates.length === 0) return [];
+    const earliest = dates.reduce((min, d) => (d < min ? d : min), dates[0]);
     firstMonday = mondayOf(earliest);
     if (firstMonday > lastMonday) return [];
   }
   const rows = [];
   for (let m = firstMonday; m <= lastMonday; m = addDays(m, 7)) {
-    rows.push(buildRow(list, logs, m));
+    rows.push(buildRow(list, logs, m, completed, filter));
   }
   return rows;
 };

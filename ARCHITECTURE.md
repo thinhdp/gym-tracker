@@ -47,7 +47,7 @@ renders `FoodApp` in place of the gym UI, and this check comes before the
 live-session check. Every other path renders the gym UI described above. This is a
 path check, not a router: the `Gym` link in `FoodApp` is a plain `<a href="/">`, so
 leaving the food mode is a full page load. `FoodApp` wraps its content in `FoodProvider`
-(`src/food/context/FoodContext.jsx`), which owns the five stored food lists, and renders
+(`src/food/context/FoodContext.jsx`), which owns the six stored food lists (including `completedDays`), and renders
 a heading per tab, that tab's view (`TodayView`, `SearchView`, `TrendsView` or
 `SettingsView`) and its own four-tab `FoodBottomNav`; the active tab persists in
 `mgym.food.tab`.
@@ -105,7 +105,8 @@ gym-tracker/
     │   ├── FoodApp.jsx           # Food mode shell: FoodProvider, tab heading, FoodBottomNav
     │   ├── components/
     │   │   ├── FoodBottomNav.jsx    # Fixed 4-tab bottom navigation
-    │   │   ├── TodayView.jsx        # Today tab: day navigation, MacroBars, RecentRow, six MealSlots, sheets
+    │   │   ├── TodayView.jsx        # Today tab: day navigation, MacroBars, RecentRow, six MealSlots, Complete button, sheets
+    │   │   ├── CalendarSheet.jsx    # Month calendar: daily kcal, completed days; opened from the Today header date
     │   │   ├── MacroBars.jsx        # Day totals: bars against the target, or plain numbers
     │   │   ├── MealSlot.jsx         # One meal slot: total, EntryRows, + and … buttons
     │   │   ├── EntryRow.jsx         # One logged entry
@@ -119,11 +120,11 @@ gym-tracker/
     │   │   ├── SearchResultRow.jsx  # One search or list row
     │   │   ├── BarcodeScanner.jsx   # Camera scan with a manual code field
     │   │   ├── CustomFoodForm.jsx   # Create or edit a custom food
-    │   │   ├── TrendsView.jsx       # Trends tab: weekly intake and bodyweight chart and table
+    │   │   ├── TrendsView.jsx       # Trends tab: weekly intake and bodyweight chart and table, Complete / Incomplete / All days filter
     │   │   ├── SettingsView.jsx     # Settings tab: targets, custom foods, saved meals (edit, rename, delete)
     │   │   └── TargetsEditor.jsx    # Target periods editor
     │   ├── context/
-    │   │   └── FoodContext.jsx      # FoodProvider / useFood: the five stored food lists, droppedRows
+    │   │   └── FoodContext.jsx      # FoodProvider / useFood: the six stored food lists (including completedDays), droppedRows
     │   └── lib/                  # Framework-free helpers
     │       ├── keys.js              # Food localStorage keys
     │       ├── backupFood.js        # exportFoodData / importFoodData for the backup
@@ -134,10 +135,11 @@ gym-tracker/
     │       ├── normalize.js         # normalizeFoodData (import and load) / mergeFoodData (import)
     │       ├── localDate.js         # Local-date helpers
     │       ├── macros.js            # Macro scaling + totals
+    │       ├── calendar.js          # monthGrid / dayTotals for CalendarSheet
     │       ├── recent.js            # Recent-foods list helpers
     │       ├── slots.js             # Meal slots
     │       ├── targets.js           # Target periods: lookup, edit, validation
-    │       └── trends.js            # weeklyIntake: weekly averages joined with bodyweight
+    │       └── trends.js            # weeklyIntake: weekly averages joined with bodyweight, filtered by completed days
     ├── lib/                   # Framework-free helpers
     │   ├── storage.js            # localStorage keys + load/save + id/date helpers
     │   ├── backup.js             # Export/import normalize + merge logic
@@ -227,7 +229,8 @@ main.jsx
                 │               │       ├── EntryEditSheet
                 │               │       ├── PortionSheet                   (options on a recent chip)
                 │               │       ├── SavedMealsPanel
-                │               │       └── SaveMealSheet
+                │               │       ├── SaveMealSheet
+                │               │       └── CalendarSheet                  (from the header date)
                 │               ├── [tab="search"]   SearchView
                 │               │       ├── SearchResultRow
                 │               │       ├── BarcodeScanner
@@ -440,7 +443,7 @@ restored directly to their localStorage keys **without** going through
 `normalizeData` (only exercises/workouts are validated).
 
 `food` goes through `importFoodData` (`src/food/lib/backupFood.js`) after those
-fields. It holds the five lists; `mgym.food.searchCache.v1` and `mgym.food.tab` are
+fields. It holds the six lists, including `completedDays`; `mgym.food.searchCache.v1` and `mgym.food.tab` are
 excluded. A backup with no `food` field, or a `food` value that is not a plain object,
 leaves food data untouched in both modes. Merge adds incoming rows and keeps stored
 rows, except that a recent row is replaced by a newer `lastAt`, and the recent list is

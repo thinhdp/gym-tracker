@@ -1,9 +1,9 @@
 import React from "react";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { K_UNIT, K_WEIGHT_LOGS, saveLS } from "../../lib/storage";
 import { FoodProvider } from "../context/FoodContext";
-import { K_FOOD_ENTRIES } from "../lib/keys";
+import { K_FOOD_COMPLETED, K_FOOD_ENTRIES } from "../lib/keys";
 import { addDays, localDateFromYmd, todayLocal } from "../lib/localDate";
 import { weeklyIntake } from "../lib/trends";
 import TrendsView from "./TrendsView";
@@ -32,15 +32,21 @@ function entry(id, date, per100) {
 
 const kcal = (k, p = 10) => ({ kcal: k, protein: p, carb: 0, fat: 0 });
 
-function setup(entries, { logs, unit } = {}) {
+function setup(entries, { logs, unit, completed, keepFilter = false } = {}) {
   saveLS(K_FOOD_ENTRIES, entries);
+  if (completed) saveLS(K_FOOD_COMPLETED, completed);
   if (logs) saveLS(K_WEIGHT_LOGS, logs);
   if (unit) saveLS(K_UNIT, unit);
-  return render(
+  const result = render(
     <FoodProvider>
       <TrendsView />
     </FoodProvider>,
   );
+  // Trends opens on Complete; the number-asserting tests want every day.
+  if (!keepFilter) {
+    fireEvent.click(screen.getByRole("button", { name: "All days" }));
+  }
+  return result;
 }
 
 const barHeights = (container) =>
@@ -223,5 +229,61 @@ describe("TrendsView chart internals", () => {
     expect(cells[2]).toHaveTextContent("11");
     expect(cells[3]).toHaveTextContent("22");
     expect(cells[4]).toHaveTextContent("33");
+  });
+});
+
+describe("TrendsView day filter", () => {
+  const NO_COMPLETED =
+    "No completed days in this range. Mark days complete on the daily tab, or switch to All days.";
+  const daysCell = () => within(bodyRows()[3]).getAllByRole("cell")[5];
+  const kcalCell = () => within(bodyRows()[3]).getAllByRole("cell")[1];
+
+  it("counts completed days on open, all days or incomplete days on choice", async () => {
+    const user = userEvent.setup();
+    const w0 = mondayOfWeek(0);
+    setup(
+      [entry("a", w0, kcal(1000)), entry("b", addDays(w0, 1), kcal(3000))],
+      {
+        completed: [w0],
+        keepFilter: true,
+      },
+    );
+    expect(daysCell()).toHaveTextContent("1/7");
+    expect(kcalCell()).toHaveTextContent("1000");
+    await user.click(screen.getByRole("button", { name: "All days" }));
+    expect(daysCell()).toHaveTextContent("2/7");
+    await user.click(screen.getByRole("button", { name: "Incomplete" }));
+    expect(daysCell()).toHaveTextContent("1/7");
+    expect(kcalCell()).toHaveTextContent("3000");
+  });
+
+  it("shows the no-completed-days line when entries exist but none are completed", async () => {
+    const user = userEvent.setup();
+    setup([entry("a", mondayOfWeek(0), kcal(1000))], { keepFilter: true });
+    expect(screen.getByText(NO_COMPLETED)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "All days" }));
+    expect(screen.queryByText(NO_COMPLETED)).toBeNull();
+  });
+
+  it("does not show the no-completed-days line on Incomplete when every logged day is completed", async () => {
+    const user = userEvent.setup();
+    const w0 = mondayOfWeek(0);
+    setup([entry("a", w0, kcal(1000))], { completed: [w0], keepFilter: true });
+    await user.click(screen.getByRole("button", { name: "Incomplete" }));
+    expect(screen.queryByText(NO_COMPLETED)).toBeNull();
+  });
+
+  it("shows only No food logged yet with no entries and no completed days", () => {
+    setup([], { keepFilter: true });
+    expect(screen.getByText("No food logged yet")).toBeInTheDocument();
+    expect(screen.queryByText(NO_COMPLETED)).toBeNull();
+  });
+
+  it("shows neither line with no entries and one completed day this week", () => {
+    setup([], { completed: [mondayOfWeek(0)], keepFilter: true });
+    expect(screen.queryByText("No food logged yet")).toBeNull();
+    expect(screen.queryByText(NO_COMPLETED)).toBeNull();
+    expect(daysCell()).toHaveTextContent("1/7");
+    expect(kcalCell()).toHaveTextContent("0");
   });
 });

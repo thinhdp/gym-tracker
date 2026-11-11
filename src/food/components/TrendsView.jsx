@@ -22,6 +22,12 @@ const RANGES = [
 ];
 const WEEKS = { "4w": 4, "12w": 12, all: null };
 
+const FILTERS = [
+  ["complete", "Complete"],
+  ["incomplete", "Incomplete"],
+  ["all", "All days"],
+];
+
 const METRICS = [
   ["kcal", "Calories"],
   ["protein", "Protein"],
@@ -65,15 +71,21 @@ function ChartTooltip({ active, payload }) {
 }
 
 export default function TrendsView() {
-  const { entries } = useFood();
+  const { entries, completedDays } = useFood();
   const [range, setRange] = useState("4w");
   const [metric, setMetric] = useState("kcal");
+  const [filter, setFilter] = useState("complete");
   const weightLogs = useMemo(() => loadLS(K_WEIGHT_LOGS, {}), []);
   const unit = useMemo(() => loadLS(K_UNIT, "kg"), []);
 
   const rows = useMemo(
-    () => weeklyIntake(entries, weightLogs, { weeks: WEEKS[range] }),
-    [entries, weightLogs, range],
+    () =>
+      weeklyIntake(entries, weightLogs, {
+        weeks: WEEKS[range],
+        completedDays,
+        filter,
+      }),
+    [entries, weightLogs, range, completedDays, filter],
   );
 
   const metricLabel = METRICS.find(([k]) => k === metric)[1];
@@ -87,16 +99,28 @@ export default function TrendsView() {
     rows.map((r) => [r.from, `${shortDay(r.from)} (${r.loggedDays}/7)`]),
   );
 
+  const noFood = entries.length === 0 && completedDays.length === 0;
+  const noCompleted =
+    !noFood && filter === "complete" && rows.every((r) => r.loggedDays === 0);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         <Segmented options={RANGES} value={range} onChange={setRange} />
         <Segmented options={METRICS} value={metric} onChange={setMetric} />
+        <Segmented options={FILTERS} value={filter} onChange={setFilter} />
       </div>
 
-      {entries.length === 0 && (
+      {noFood && (
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           No food logged yet
+        </p>
+      )}
+
+      {noCompleted && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          No completed days in this range. Mark days complete on the daily tab,
+          or switch to All days.
         </p>
       )}
 

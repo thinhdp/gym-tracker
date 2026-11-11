@@ -5,12 +5,13 @@ import { ConfirmProvider } from "../../components/ConfirmDialog";
 import { loadLS, saveLS } from "../../lib/storage";
 import { FoodProvider } from "../context/FoodContext";
 import {
+  K_FOOD_COMPLETED,
   K_FOOD_ENTRIES,
   K_FOOD_MEALS,
   K_FOOD_RECENT,
   K_FOOD_TARGETS,
 } from "../lib/keys";
-import { formatDayHeader, todayLocal } from "../lib/localDate";
+import { addDays, formatDayHeader, todayLocal } from "../lib/localDate";
 import { SLOTS, slotForTime, slotLabel } from "../lib/slots";
 import TodayView from "./TodayView";
 
@@ -699,6 +700,97 @@ describe("TodayView", () => {
       expect(screen.queryByRole("dialog")).toBeNull();
       expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
       expect(loadLS(K_FOOD_MEALS)).toEqual([MEAL]);
+    });
+  });
+
+  describe("complete button and calendar", () => {
+    const complete = () =>
+      screen.queryByRole("button", { name: /Mark day complete|Completed/ });
+
+    it("toggles on today between Mark day complete and Completed", async () => {
+      const { user } = setup(todayLocal());
+      const button = screen.getByRole("button", { name: "Mark day complete" });
+      expect(button).toHaveAttribute("aria-pressed", "false");
+      await user.click(button);
+      expect(complete()).toHaveTextContent("Completed ✓");
+      expect(complete()).toHaveAttribute("aria-pressed", "true");
+      await user.click(complete());
+      expect(complete()).toHaveTextContent("Mark day complete");
+      expect(complete()).toHaveAttribute("aria-pressed", "false");
+    });
+
+    it("renders completed when the date is stored as completed", () => {
+      saveLS(K_FOOD_COMPLETED, ["2026-11-02"]);
+      setup("2026-11-02");
+      expect(complete()).toHaveTextContent("Completed ✓");
+      expect(complete()).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("is not rendered after today and is rendered before today", () => {
+      const { unmount } = render(
+        <FoodProvider>
+          <TodayView
+            date={addDays(todayLocal(), 1)}
+            onChangeDate={() => {}}
+            onAddTo={() => {}}
+          />
+        </FoodProvider>,
+      );
+      expect(complete()).toBeNull();
+      unmount();
+      setup(addDays(todayLocal(), -1));
+      expect(complete()).not.toBeNull();
+    });
+
+    it("keeps the completed state when the day's only entry is deleted", async () => {
+      saveLS(K_FOOD_COMPLETED, ["2026-11-02"]);
+      saveLS(K_FOOD_ENTRIES, [entry("rice")]);
+      const { user } = setup("2026-11-02");
+      await user.click(screen.getByRole("button", { name: /rice/ }));
+      const sheet = within(screen.getByRole("dialog", { name: "rice" }));
+      await user.click(sheet.getByRole("button", { name: "Delete" }));
+      await user.click(
+        screen.getAllByRole("button", { name: "Delete" }).at(-1),
+      );
+      expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
+      expect(complete()).toHaveTextContent("Completed ✓");
+      expect(loadLS(K_FOOD_COMPLETED)).toEqual(["2026-11-02"]);
+    });
+
+    it("the header date opens the calendar; picking a day changes date and closes it", async () => {
+      const onChangeDate = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <FoodProvider>
+          <TodayView
+            date="2026-11-02"
+            onChangeDate={onChangeDate}
+            onAddTo={() => {}}
+          />
+        </FoodProvider>,
+      );
+      const open = () =>
+        user.click(
+          screen.getByRole("button", {
+            name: `Open calendar, ${formatDayHeader("2026-11-02")}`,
+          }),
+        );
+      await open();
+      const dialog = within(screen.getByRole("dialog", { name: "Calendar" }));
+      await user.click(dialog.getByRole("button", { name: /^2026-11-05/ }));
+      expect(onChangeDate).toHaveBeenCalledWith("2026-11-05");
+      expect(screen.queryByRole("dialog")).toBeNull();
+
+      onChangeDate.mockClear();
+      await open();
+      await user.click(
+        within(screen.getByRole("dialog", { name: "Calendar" })).getByRole(
+          "button",
+          { name: "Close" },
+        ),
+      );
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(onChangeDate).not.toHaveBeenCalled();
     });
   });
 });

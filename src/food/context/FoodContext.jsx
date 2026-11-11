@@ -6,8 +6,9 @@ import {
   K_FOOD_CUSTOM,
   K_FOOD_MEALS,
   K_FOOD_RECENT,
+  K_FOOD_COMPLETED,
 } from "../lib/keys";
-import { normalizeFoodData } from "../lib/normalize";
+import { normalizeCompletedDays, normalizeFoodData } from "../lib/normalize";
 import { recentKey, touchRecent as touchRecentRow } from "../lib/recent";
 import {
   upsertTarget as upsertTargetRow,
@@ -22,10 +23,11 @@ const LIST_KEYS = {
   customFoods: K_FOOD_CUSTOM,
   savedMeals: K_FOOD_MEALS,
   recent: K_FOOD_RECENT,
+  completedDays: K_FOOD_COMPLETED,
 };
 
 /**
- * The five stored lists through the shared shape rules, and how many rows those
+ * The six stored lists through the shared shape rules, and how many rows those
  * rules removed. loadLS returns any parsed JSON value, so a stored non-array loads
  * as [] and counts as 0.
  */
@@ -105,6 +107,10 @@ export function FoodProvider({ children }) {
     lists.savedMeals,
   );
   const [recent, updateRecent] = useStoredList(K_FOOD_RECENT, lists.recent);
+  const [completedDays, updateCompletedDays] = useStoredList(
+    K_FOOD_COMPLETED,
+    lists.completedDays,
+  );
 
   const touchRecent = (item) =>
     updateRecent((prev) => touchRecentRow(prev, item));
@@ -232,12 +238,20 @@ export function FoodProvider({ children }) {
   const deleteTarget = (from) =>
     updateTargets((prev) => deleteTargetRow(prev, from));
 
+  const toggleDayComplete = (date) =>
+    updateCompletedDays((prev) =>
+      normalizeCompletedDays(
+        prev.includes(date) ? prev.filter((d) => d !== date) : [...prev, date],
+      ),
+    );
+
   const value = {
     entries,
     targets,
     customFoods,
     savedMeals,
     recent,
+    completedDays,
     droppedRows,
     addEntry,
     updateEntry,
@@ -251,6 +265,7 @@ export function FoodProvider({ children }) {
     upsertTarget,
     deleteTarget,
     touchRecent,
+    toggleDayComplete,
   };
 
   return <FoodContext.Provider value={value}>{children}</FoodContext.Provider>;

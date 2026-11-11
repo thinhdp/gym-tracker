@@ -11,6 +11,7 @@ import { sumMacros } from "../lib/macros";
 import { recentKey, recentToFood } from "../lib/recent";
 import { SLOTS, slotForTime, slotLabel } from "../lib/slots";
 import { targetForDate } from "../lib/targets";
+import CalendarSheet from "./CalendarSheet";
 import EntryEditSheet from "./EntryEditSheet";
 import MacroBars from "./MacroBars";
 import MealSlot from "./MealSlot";
@@ -55,16 +56,26 @@ export default function TodayView({
   onAddTo,
   onOpenSettings,
 }) {
-  const { entries, targets, addEntry, updateEntry, deleteEntry } = useFood();
+  const {
+    entries,
+    targets,
+    completedDays,
+    addEntry,
+    updateEntry,
+    deleteEntry,
+    toggleDayComplete,
+  } = useFood();
   const [editing, setEditing] = useState(null);
   const [menuSlot, setMenuSlot] = useState(null);
   const [mealsSlot, setMealsSlot] = useState(null);
   const [saveSlot, setSaveSlot] = useState(null);
   const [recentSheet, setRecentSheet] = useState(null);
   const [expanded, setExpanded] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const dayEntries = entries.filter((entry) => entry.date === date);
   const target = targetForDate(targets, date);
+  const isComplete = completedDays.includes(date);
 
   return (
     <div className="space-y-4">
@@ -78,7 +89,15 @@ export default function TodayView({
           >
             ‹
           </Button>
-          <h2 className="font-medium">{formatDayHeader(date)}</h2>
+          <h2 className="font-medium">
+            <button
+              type="button"
+              aria-label={`Open calendar, ${formatDayHeader(date)}`}
+              onClick={() => setCalendarOpen(true)}
+            >
+              {formatDayHeader(date)}
+            </button>
+          </h2>
           <Button
             type="button"
             size="sm"
@@ -133,6 +152,34 @@ export default function TodayView({
           onMenu={setMenuSlot}
         />
       ))}
+
+      {date <= todayLocal() && (
+        <button
+          type="button"
+          className={`w-full rounded-xl border px-3 py-1.5 text-sm ${
+            isComplete
+              ? "border-green-300 bg-green-100 text-green-900 dark:border-green-800 dark:bg-green-900/50 dark:text-green-100"
+              : "border-neutral-300 bg-white text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+          }`}
+          aria-pressed={isComplete}
+          onClick={() => toggleDayComplete(date)}
+        >
+          {isComplete ? "Completed ✓" : "Mark day complete"}
+        </button>
+      )}
+
+      {calendarOpen && (
+        <CalendarSheet
+          date={date}
+          entries={entries}
+          completedDays={completedDays}
+          onPick={(ymd) => {
+            onChangeDate(ymd);
+            setCalendarOpen(false);
+          }}
+          onClose={() => setCalendarOpen(false)}
+        />
+      )}
 
       {menuSlot && (
         <SlotMenu

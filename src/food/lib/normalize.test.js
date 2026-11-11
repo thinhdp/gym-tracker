@@ -1,5 +1,6 @@
 import {
   mergeFoodData,
+  normalizeCompletedDays,
   normalizeCustomFood,
   normalizeEntry,
   normalizeFoodData,
@@ -134,6 +135,7 @@ const emptyData = () => ({
   customFoods: [],
   savedMeals: [],
   recent: [],
+  completedDays: [],
 });
 
 describe("normalizeEntry", () => {
@@ -516,7 +518,7 @@ describe("normalizeRecent", () => {
 });
 
 describe("normalizeFoodData", () => {
-  it.each(NON_OBJECTS)("gives five empty lists for %s", (_label, bad) => {
+  it.each(NON_OBJECTS)("gives six empty lists for %s", (_label, bad) => {
     expect(normalizeFoodData(bad)).toEqual(emptyData());
   });
 
@@ -540,6 +542,7 @@ describe("normalizeFoodData", () => {
       customFoods: [custom()],
       savedMeals: [meal()],
       recent: [recent("a")],
+      completedDays: [],
     });
   });
 
@@ -611,7 +614,60 @@ describe("normalizeFoodData", () => {
   });
 });
 
+describe("normalizeCompletedDays", () => {
+  it("keeps valid dates only, drops duplicates and sorts oldest first", () => {
+    expect(
+      normalizeCompletedDays([
+        "2026-11-05",
+        "2026-11-03",
+        "2026-11-05",
+        "2026-02-30",
+        "5 Nov",
+        "2026-11-5",
+        7,
+        null,
+      ]),
+    ).toEqual(["2026-11-03", "2026-11-05"]);
+  });
+
+  it("skips a nested-array item without throwing", () => {
+    expect(normalizeCompletedDays([["2026-11-05"], "2026-11-03"])).toEqual([
+      "2026-11-03",
+    ]);
+  });
+
+  it.each([
+    ["an object", { a: 1 }],
+    ["undefined", undefined],
+  ])("gives [] for %s", (_label, value) => {
+    expect(normalizeCompletedDays(value)).toEqual([]);
+  });
+
+  it("is used by normalizeFoodData", () => {
+    expect(
+      normalizeFoodData({ completedDays: ["2026-11-02", "x", "2026-11-01"] })
+        .completedDays,
+    ).toEqual(["2026-11-01", "2026-11-02"]);
+  });
+});
+
 describe("mergeFoodData", () => {
+  it("unions completedDays without duplicates, sorted", () => {
+    const merged = mergeFoodData(
+      { ...emptyData(), completedDays: ["2026-11-01"] },
+      { ...emptyData(), completedDays: ["2026-11-02", "2026-11-01"] },
+    );
+    expect(merged.completedDays).toEqual(["2026-11-01", "2026-11-02"]);
+  });
+
+  it("drops an invalid stored completedDays item when merging", () => {
+    const merged = mergeFoodData(
+      { ...emptyData(), completedDays: ["2026-11-01", "junk"] },
+      { ...emptyData(), completedDays: ["2026-11-02"] },
+    );
+    expect(merged.completedDays).toEqual(["2026-11-01", "2026-11-02"]);
+  });
+
   it("merge keeps existing rows on id collision and unions by from for targets", () => {
     const current = {
       ...emptyData(),
