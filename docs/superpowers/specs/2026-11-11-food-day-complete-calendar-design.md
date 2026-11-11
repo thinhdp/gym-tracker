@@ -1,6 +1,6 @@
 # Food: complete days, month calendar, Trends filter — design spec
 
-**Status:** approved (plan: `docs/superpowers/plans/2026-11-11-food-day-complete-calendar.md`)
+**Status:** shipped (PR #170, merge `2e49199`); plan: `docs/superpowers/plans/2026-11-11-food-day-complete-calendar.md`
 **Date:** 2026-11-11
 **Issue:** #168
 **Builds on:** `docs/superpowers/specs/2026-11-02-food-tracker-design.md` (the food
