@@ -170,3 +170,65 @@ describe("weeklyIntake", () => {
     }
   });
 });
+
+describe("weeklyIntake completed-day filter", () => {
+  const today = "2026-11-04";
+  // 2026-11-02 Mon, 11-03 Tue, 11-04 Wed
+  const entries = [entry("2026-11-02", 2000), entry("2026-11-03", 1000)];
+  const run = (opts, list = entries) =>
+    weeklyIntake(list, {}, { weeks: 1, today, ...opts })[0];
+
+  it("complete counts only completed days", () => {
+    const row = run({ completedDays: ["2026-11-02"], filter: "complete" });
+    expect(row.loggedDays).toBe(1);
+    expect(row.avg.kcal).toBe(2000);
+  });
+
+  it("incomplete counts days with entries that are not completed", () => {
+    const row = run({ completedDays: ["2026-11-02"], filter: "incomplete" });
+    expect(row.loggedDays).toBe(1);
+    expect(row.avg.kcal).toBe(1000);
+  });
+
+  it("all counts days with entries plus completed days without entries", () => {
+    const row = run({
+      completedDays: ["2026-11-02", "2026-11-04"],
+      filter: "all",
+    });
+    expect(row.loggedDays).toBe(3);
+    expect(row.avg.kcal).toBe(1000);
+  });
+
+  it("complete with only a fasting day averages zeros, not null", () => {
+    const row = run({ completedDays: ["2026-11-04"], filter: "complete" }, []);
+    expect(row.loggedDays).toBe(1);
+    expect(row.avg).toEqual({ kcal: 0, protein: 0, carb: 0, fat: 0 });
+  });
+
+  it("a filter that counts no day gives loggedDays 0 and avg null", () => {
+    const row = run({ completedDays: [], filter: "complete" });
+    expect(row.loggedDays).toBe(0);
+    expect(row.avg).toBeNull();
+  });
+
+  it("weeks null starts at the earliest completed day when there are no entries", () => {
+    const rows = weeklyIntake(
+      [],
+      {},
+      { weeks: null, today, completedDays: ["2026-10-14"] },
+    );
+    expect(rows).toHaveLength(4);
+  });
+
+  it("treats a non-array completedDays as empty", () => {
+    const row = run({ completedDays: "2026-11-02", filter: "complete" });
+    expect(row.loggedDays).toBe(0);
+    expect(row.avg).toBeNull();
+  });
+
+  it("defaults to all days with no options", () => {
+    const row = weeklyIntake(entries, {}, { weeks: 1, today })[0];
+    expect(row.loggedDays).toBe(2);
+    expect(row.avg.kcal).toBe(1500);
+  });
+});
