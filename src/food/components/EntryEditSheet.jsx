@@ -21,15 +21,17 @@ export default function EntryEditSheet({
   onClose,
 }) {
   const confirm = useConfirm();
-  const [chips] = useState(() =>
-    entry.portionLabel &&
-    !portions.some((portion) => portion.label === entry.portionLabel)
-      ? [...portions, { label: entry.portionLabel, grams: entry.grams }]
-      : portions,
-  );
-  const [chip, setChip] = useState(
-    () => chips.find((portion) => portion.label === entry.portionLabel) ?? null,
-  );
+  const [{ chips, logged }] = useState(() => {
+    if (!entry.portionLabel) return { chips: portions, logged: null };
+    const match = portions.find(
+      (portion) =>
+        portion.label === entry.portionLabel && portion.grams === entry.grams,
+    );
+    if (match) return { chips: portions, logged: match };
+    const own = { label: entry.portionLabel, grams: entry.grams };
+    return { chips: [...portions, own], logged: own };
+  });
+  const [chip, setChip] = useState(logged);
   const [grams, setGrams] = useState(String(entry.grams));
   const [slot, setSlot] = useState(entry.slot);
 
@@ -44,9 +46,6 @@ export default function EntryEditSheet({
   const typeGrams = (event) => {
     const text = event.target.value;
     setGrams(text);
-    const logged = chips.find(
-      (portion) => portion.label === entry.portionLabel,
-    );
     if (logged && Number(text) === logged.grams) setChip(logged);
     else if (chip && Number(text) !== chip.grams) setChip(null);
   };

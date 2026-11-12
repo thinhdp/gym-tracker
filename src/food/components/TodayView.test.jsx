@@ -446,7 +446,42 @@ describe("TodayView", () => {
 
       await user.click(screen.getByRole("button", { name: /egg/ }));
       const sheet = within(screen.getByRole("dialog", { name: "egg" }));
-      expect(sheet.queryByRole("button", { name: "2 eggs" })).toBeNull();
+      const pressable = sheet
+        .getAllByRole("button")
+        .filter((button) => button.hasAttribute("aria-pressed"));
+      // Only the slot buttons remain; no portion chip renders.
+      expect(pressable).toHaveLength(SLOTS.length);
+    });
+
+    it("keeps the logged chip when the food's portion has the same label but other grams", async () => {
+      saveLS(K_FOOD_RECENT, [
+        {
+          ...eggRecent,
+          portions: [{ label: "1 large egg", grams: 60 }],
+        },
+      ]);
+      const row = entry("egg", { grams: 50, portionLabel: "1 large egg" });
+      saveLS(K_FOOD_ENTRIES, [row]);
+      const { user } = setup();
+
+      await user.click(screen.getByRole("button", { name: /egg/ }));
+      const sheet = within(screen.getByRole("dialog", { name: "egg" }));
+      const chips = sheet.getAllByRole("button", { name: "1 large egg" });
+      expect(chips.map((c) => c.getAttribute("aria-pressed"))).toEqual([
+        "false",
+        "true",
+      ]);
+      expect(grams()).toHaveValue(50);
+
+      await setGrams(user, "50");
+      expect(
+        sheet
+          .getAllByRole("button", { name: "1 large egg" })
+          .map((c) => c.getAttribute("aria-pressed")),
+      ).toEqual(["false", "true"]);
+      await user.click(sheet.getByRole("button", { name: "Save" }));
+
+      expect(storedRow("egg")).toEqual(row);
     });
 
     it("picking another chip sets grams and Save stores its label and grams", async () => {
