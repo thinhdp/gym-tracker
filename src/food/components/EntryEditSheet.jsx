@@ -44,7 +44,11 @@ export default function EntryEditSheet({
   const typeGrams = (event) => {
     const text = event.target.value;
     setGrams(text);
-    if (chip && Number(text) !== chip.grams) setChip(null);
+    const logged = chips.find(
+      (portion) => portion.label === entry.portionLabel,
+    );
+    if (logged && Number(text) === logged.grams) setChip(logged);
+    else if (chip && Number(text) !== chip.grams) setChip(null);
   };
 
   const save = () => {

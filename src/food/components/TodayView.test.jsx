@@ -357,6 +357,7 @@ describe("TodayView", () => {
     const { user } = setup();
 
     await user.click(screen.getByRole("button", { name: /egg/ }));
+    await setGrams(user, "50");
     await user.click(screen.getByRole("button", { name: "Dinner" }));
     await user.click(screen.getByRole("button", { name: "Save" }));
 
