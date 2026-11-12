@@ -89,7 +89,7 @@ export default function TodayView({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center flex-wrap justify-between gap-x-2 gap-y-2">
         <div className="flex items-center gap-2">
           <Button
             type="button"
@@ -99,7 +99,7 @@ export default function TodayView({
           >
             ‹
           </Button>
-          <h2 className="font-medium">
+          <h2 className="whitespace-nowrap font-medium">
             <button
               type="button"
               aria-label={`Open calendar, ${formatDayHeader(date)}`}
@@ -121,7 +121,7 @@ export default function TodayView({
           {date <= todayLocal() && (
             <button
               type="button"
-              className={`whitespace-nowrap rounded-xl border px-3 py-1.5 text-sm ${
+              className={`whitespace-nowrap rounded-xl border px-2 py-1 text-xs ${
                 isComplete
                   ? "border-green-300 bg-green-100 text-green-900 dark:border-green-800 dark:bg-green-900/50 dark:text-green-100"
                   : "border-neutral-300 bg-white text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
