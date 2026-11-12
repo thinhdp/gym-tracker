@@ -415,14 +415,109 @@ describe("LiveSession", () => {
         clientX: 10,
         clientY: 10,
       });
-      const early = new Event("touchmove", { cancelable: true });
-      window.dispatchEvent(early);
+      const early = new Event("touchmove", { bubbles: true, cancelable: true });
+      first.dispatchEvent(early);
       expect(early.defaultPrevented).toBe(false);
       act(() => vi.advanceTimersByTime(400));
-      const late = new Event("touchmove", { cancelable: true });
-      window.dispatchEvent(late);
+      const late = new Event("touchmove", { bubbles: true, cancelable: true });
+      first.dispatchEvent(late);
       expect(late.defaultPrevented).toBe(true);
       fireEvent.pointerUp(window);
+      const after = new Event("touchmove", { bubbles: true, cancelable: true });
+      first.dispatchEvent(after);
+      expect(after.defaultPrevented).toBe(false);
+    });
+
+    it("registers the non-passive touchmove listener before any touch starts", () => {
+      const spy = vi.spyOn(HTMLElement.prototype, "addEventListener");
+      seedTwo();
+      const calls = spy.mock.calls.filter(
+        ([type, , opts]) => type === "touchmove" && opts?.passive === false,
+      );
+      spy.mockRestore();
+      expect(calls.length).toBeGreaterThan(0);
+    });
+
+    it("suppresses the native context menu on chips", () => {
+      seedTwo();
+      const first = screen.getByRole("button", { name: /1\. Bench/ });
+      expect(fireEvent.contextMenu(first)).toBe(false);
+    });
+
+    it("a tap still jumps to that exercise", () => {
+      seedTwo();
+      fireEvent.pointerDown(screen.getByRole("button", { name: /2\. Squat/ }), {
+        pointerType: "touch",
+        pointerId: 1,
+        clientX: 10,
+        clientY: 10,
+      });
+      fireEvent.pointerUp(window, { pointerId: 1 });
+      fireEvent.click(screen.getByRole("button", { name: /2\. Squat/ }));
+      expect(screen.getByText("Exercise 2 of 2")).toBeInTheDocument();
+    });
+
+    it("a drag released off the chip does not eat the next tap", () => {
+      seedTwo();
+      const first = screen.getByRole("button", { name: /1\. Bench/ });
+      const second = screen.getByRole("button", { name: /2\. Squat/ });
+      document.elementFromPoint = vi.fn(() => second);
+      fireEvent.pointerDown(first, {
+        pointerType: "touch",
+        pointerId: 1,
+        clientX: 10,
+        clientY: 10,
+      });
+      act(() => vi.advanceTimersByTime(400));
+      fireEvent.pointerMove(window, { pointerId: 1, clientX: 60, clientY: 10 });
+      fireEvent.pointerUp(window, { pointerId: 1 }); // no click follows
+      // Next tap on the (now first) Squat chip must navigate.
+      const squat = screen.getByRole("button", { name: /1\. Squat/ });
+      fireEvent.pointerDown(squat, {
+        pointerType: "touch",
+        pointerId: 2,
+        clientX: 10,
+        clientY: 10,
+      });
+      fireEvent.pointerUp(window, { pointerId: 2 });
+      fireEvent.click(squat);
+      expect(screen.getByText("Exercise 1 of 2")).toBeInTheDocument();
+    });
+
+    it("ignores moves and releases from another pointer", () => {
+      seedTwo();
+      const first = screen.getByRole("button", { name: /1\. Bench/ });
+      const second = screen.getByRole("button", { name: /2\. Squat/ });
+      document.elementFromPoint = vi.fn(() => second);
+      fireEvent.pointerDown(first, {
+        pointerType: "touch",
+        pointerId: 1,
+        clientX: 10,
+        clientY: 10,
+      });
+      act(() => vi.advanceTimersByTime(400));
+      fireEvent.pointerUp(window, { pointerId: 2 });
+      fireEvent.pointerMove(window, { pointerId: 1, clientX: 60, clientY: 10 });
+      expect(
+        screen.getByRole("button", { name: /1\. Squat/ }),
+      ).toBeInTheDocument();
+      fireEvent.pointerUp(window, { pointerId: 1 });
+    });
+
+    it("removes its listeners when unmounted mid-gesture", () => {
+      const { unmount } = seedTwo();
+      fireEvent.pointerDown(screen.getByRole("button", { name: /1\. Bench/ }), {
+        pointerType: "touch",
+        clientX: 10,
+        clientY: 10,
+      });
+      const spy = vi.spyOn(window, "removeEventListener");
+      unmount();
+      const removed = spy.mock.calls.map(([type]) => type);
+      spy.mockRestore();
+      expect(removed).toEqual(
+        expect.arrayContaining(["pointermove", "pointerup", "pointercancel"]),
+      );
     });
 
     it("chips do not disable native touch panning", () => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "../context/AppContext";
 import { toDisplayWeight, fromDisplayWeight } from "../lib/units";
 import { createExerciseEntry } from "../lib/exerciseUtils";
@@ -87,6 +87,24 @@ export default function LiveSession() {
   // Tears down the in-flight chip drag (listeners + hold timer), if any.
   const endChipDragRef = useRef(null);
   useEffect(() => () => endChipDragRef.current?.(), []);
+  // True while a touch drag is armed. The chip row carries a permanent
+  // non-passive touchmove listener (registered before any touch starts, since
+  // Chrome fixes cancelability at touchstart) that only blocks scrolling then.
+  const chipArmedRef = useRef(false);
+  const chipRowNodeRef = useRef(null);
+  const chipTouchMoveRef = useRef((ev) => {
+    if (chipArmedRef.current && ev.cancelable) ev.preventDefault();
+  });
+  const chipRowRef = useCallback((node) => {
+    const prev = chipRowNodeRef.current;
+    if (prev) prev.removeEventListener("touchmove", chipTouchMoveRef.current);
+    chipRowNodeRef.current = node;
+    if (node) {
+      node.addEventListener("touchmove", chipTouchMoveRef.current, {
+        passive: false,
+      });
+    }
+  }, []);
   // Inline "replace exercise" picker for the current exercise.
   const [swapping, setSwapping] = useState(false);
   // Exercise whose past-workout history is shown in the modal (null = closed).
@@ -213,25 +231,24 @@ export default function LiveSession() {
   // row natively. Moving early cancels the pending drag.
   const startChipDrag = (e, fromIdx) => {
     endChipDragRef.current?.();
+    setDragIdx(null);
+    suppressClickRef.current = false; // a stale flag must not eat this tap
+    const pointerId = e.pointerId;
     const start = { x: e.clientX, y: e.clientY };
     let idx = fromIdx;
     let active = false;
     let armed = e.pointerType === "mouse";
     let timer = null;
-    // Once armed, stop the browser scrolling for the rest of the gesture.
-    // React's onTouchMove is passive, so this one is added by hand.
-    const blockScroll = (ev) => {
-      if (ev.cancelable) ev.preventDefault();
-    };
     const end = () => {
       clearTimeout(timer);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
-      window.removeEventListener("touchmove", blockScroll);
+      chipArmedRef.current = false;
       endChipDragRef.current = null;
     };
     const onMove = (ev) => {
+      if (ev.pointerId !== pointerId) return; // another finger
       if (!armed) {
         // Moved before the hold elapsed: it's a swipe, let the browser scroll.
         if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) >= 6) {
@@ -255,7 +272,8 @@ export default function LiveSession() {
         setDragIdx(over);
       }
     };
-    const onUp = () => {
+    const onUp = (ev) => {
+      if (ev.pointerId !== pointerId) return;
       if (active) suppressClickRef.current = true; // swallow the trailing click
       setDragIdx(null);
       end();
@@ -267,7 +285,7 @@ export default function LiveSession() {
     if (!armed) {
       timer = setTimeout(() => {
         armed = true;
-        window.addEventListener("touchmove", blockScroll, { passive: false });
+        chipArmedRef.current = true; // the row's touchmove listener now blocks scroll
         setDragIdx(idx); // dim the chip to show the drag is armed
         navigator.vibrate?.(15);
       }, CHIP_HOLD_MS);
@@ -380,13 +398,14 @@ export default function LiveSession() {
         <div className="mx-auto max-w-3xl space-y-4">
           {/* Exercise nav chips — tap to jump, drag to reorder */}
           {exs.length > 0 && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div ref={chipRowRef} className="flex gap-2 overflow-x-auto pb-1">
               {exs.map((ex, i) => (
                 <button
                   key={i}
                   type="button"
                   data-chip-idx={i}
                   onPointerDown={(e) => startChipDrag(e, i)}
+                  onContextMenu={(e) => e.preventDefault()}
                   onClick={() => {
                     if (suppressClickRef.current) {
                       suppressClickRef.current = false;
@@ -395,7 +414,7 @@ export default function LiveSession() {
                     goTo(i);
                   }}
                   className={[
-                    "cursor-grab select-none whitespace-nowrap rounded-full px-3 py-1 text-xs transition active:cursor-grabbing",
+                    "cursor-grab select-none [-webkit-touch-callout:none] whitespace-nowrap rounded-full px-3 py-1 text-xs transition active:cursor-grabbing",
                     dragIdx === i ? "opacity-60 " : "",
                     i === currentIdx
                       ? "bg-blue-600 text-white"
