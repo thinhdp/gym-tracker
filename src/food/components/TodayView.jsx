@@ -58,6 +58,8 @@ export default function TodayView({
 }) {
   const {
     entries,
+    recent,
+    customFoods,
     targets,
     completedDays,
     addEntry,
@@ -76,6 +78,14 @@ export default function TodayView({
   const dayEntries = entries.filter((entry) => entry.date === date);
   const target = targetForDate(targets, date);
   const isComplete = completedDays.includes(date);
+
+  const portionsFor = (food) => {
+    if (food.kind === "custom") {
+      return customFoods.find((row) => row.id === food.id)?.portions ?? [];
+    }
+    const key = recentKey(food);
+    return recent.find((row) => recentKey(row.food) === key)?.portions ?? [];
+  };
 
   return (
     <div className="space-y-4">
@@ -233,6 +243,7 @@ export default function TodayView({
         <EntryEditSheet
           key={editing.id}
           entry={editing}
+          portions={portionsFor(editing.food)}
           onSave={(patch) => {
             updateEntry(editing.id, patch);
             setEditing(null);

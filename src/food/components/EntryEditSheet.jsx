@@ -8,20 +8,50 @@ import { SLOTS } from "../lib/slots";
 
 const SLOT_OPTIONS = SLOTS.map((slot) => [slot.id, slot.label]);
 
-/** Bottom sheet that changes one logged entry's grams and slot, or deletes it. */
-export default function EntryEditSheet({ entry, onSave, onDelete, onClose }) {
+/**
+ * Bottom sheet that changes one logged entry's portion, grams and slot, or
+ * deletes it. `portions` are the food's known portions; the entry's own
+ * portion label is always shown even when the food has no matching portion.
+ */
+export default function EntryEditSheet({
+  entry,
+  portions = [],
+  onSave,
+  onDelete,
+  onClose,
+}) {
   const confirm = useConfirm();
+  const [{ chips, logged }] = useState(() => {
+    if (!entry.portionLabel) return { chips: portions, logged: null };
+    const match = portions.find(
+      (portion) =>
+        portion.label === entry.portionLabel && portion.grams === entry.grams,
+    );
+    if (match) return { chips: portions, logged: match };
+    const own = { label: entry.portionLabel, grams: entry.grams };
+    return { chips: [...portions, own], logged: own };
+  });
+  const [chip, setChip] = useState(logged);
   const [grams, setGrams] = useState(String(entry.grams));
   const [slot, setSlot] = useState(entry.slot);
 
   const amount = Number(grams);
   const valid = Number.isFinite(amount) && amount > 0;
 
+  const pickChip = (portion) => {
+    setChip(portion);
+    setGrams(String(portion.grams));
+  };
+
+  const typeGrams = (event) => {
+    const text = event.target.value;
+    setGrams(text);
+    if (logged && Number(text) === logged.grams) setChip(logged);
+    else if (chip && Number(text) !== chip.grams) setChip(null);
+  };
+
   const save = () => {
-    const patch = { grams: amount, slot };
-    // A label such as "1 large egg" no longer describes a changed amount.
-    if (amount !== entry.grams) patch.portionLabel = undefined;
-    onSave(patch);
+    onSave({ grams: amount, slot, portionLabel: chip?.label });
   };
 
   const remove = async () => {
@@ -54,6 +84,23 @@ export default function EntryEditSheet({ entry, onSave, onDelete, onClose }) {
           </Button>
         </div>
 
+        {chips.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {chips.map((portion, index) => (
+              <Button
+                key={`${portion.label}-${index}`}
+                type="button"
+                size="sm"
+                variant={portion === chip ? "primary" : "secondary"}
+                aria-pressed={portion === chip}
+                onClick={() => pickChip(portion)}
+              >
+                {portion.label}
+              </Button>
+            ))}
+          </div>
+        )}
+
         <label className="block text-sm">
           <span className="mb-1 block">Grams</span>
           <span
@@ -65,7 +112,7 @@ export default function EntryEditSheet({ entry, onSave, onDelete, onClose }) {
               min="0"
               step="any"
               value={grams}
-              onChange={(event) => setGrams(event.target.value)}
+              onChange={typeGrams}
               aria-invalid={!valid}
             />
           </span>
