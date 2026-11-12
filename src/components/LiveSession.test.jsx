@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AppProvider } from "../context/AppContext";
 import { ConfirmProvider } from "./ConfirmDialog";
@@ -323,5 +323,112 @@ describe("LiveSession", () => {
 
     expect(screen.getByText(/1\/2 sets/)).toBeInTheDocument();
     expect(firstReps).toHaveValue(9);
+  });
+
+  describe("chip drag", () => {
+    // Pointer-drag the first chip onto the second; jsdom has no layout, so
+    // elementFromPoint is stubbed to return the target chip.
+    function dragFirstOntoSecond(pointerType, { holdMs = 0 } = {}) {
+      seedTwo();
+      const first = screen.getByRole("button", { name: /1\. Bench/ });
+      const second = screen.getByRole("button", { name: /2\. Squat/ });
+      document.elementFromPoint = vi.fn(() => second);
+      fireEvent.pointerDown(first, { pointerType, clientX: 10, clientY: 10 });
+      if (holdMs) act(() => vi.advanceTimersByTime(holdMs));
+      fireEvent.pointerMove(window, {
+        pointerType,
+        clientX: 60,
+        clientY: 10,
+      });
+      fireEvent.pointerUp(window, { pointerType, clientX: 60, clientY: 10 });
+    }
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+      vi.useRealTimers();
+      delete document.elementFromPoint;
+    });
+
+    it("does not reorder when a touch moves before the hold time", () => {
+      dragFirstOntoSecond("touch");
+      expect(
+        screen.getByRole("button", { name: /1\. Bench/ }),
+      ).toBeInTheDocument();
+    });
+
+    it("reorders after a touch is held, then moved", () => {
+      dragFirstOntoSecond("touch", { holdMs: 400 });
+      expect(
+        screen.getByRole("button", { name: /1\. Squat/ }),
+      ).toBeInTheDocument();
+    });
+
+    it("does not arm the drag if the touch moves, even after the hold time", () => {
+      seedTwo();
+      const first = screen.getByRole("button", { name: /1\. Bench/ });
+      const second = screen.getByRole("button", { name: /2\. Squat/ });
+      document.elementFromPoint = vi.fn(() => second);
+      fireEvent.pointerDown(first, {
+        pointerType: "touch",
+        clientX: 10,
+        clientY: 10,
+      });
+      fireEvent.pointerMove(window, { clientX: 60, clientY: 10 });
+      act(() => vi.advanceTimersByTime(400));
+      fireEvent.pointerMove(window, { clientX: 90, clientY: 10 });
+      fireEvent.pointerUp(window);
+      expect(
+        screen.getByRole("button", { name: /1\. Bench/ }),
+      ).toBeInTheDocument();
+    });
+
+    it("reorders a mouse drag at once, with no hold", () => {
+      dragFirstOntoSecond("mouse");
+      expect(
+        screen.getByRole("button", { name: /1\. Squat/ }),
+      ).toBeInTheDocument();
+    });
+
+    it("ends the drag on pointercancel", () => {
+      seedTwo();
+      const first = screen.getByRole("button", { name: /1\. Bench/ });
+      const second = screen.getByRole("button", { name: /2\. Squat/ });
+      document.elementFromPoint = vi.fn(() => second);
+      fireEvent.pointerDown(first, {
+        pointerType: "touch",
+        clientX: 10,
+        clientY: 10,
+      });
+      act(() => vi.advanceTimersByTime(400));
+      fireEvent.pointerCancel(window);
+      fireEvent.pointerMove(window, { clientX: 60, clientY: 10 });
+      expect(
+        screen.getByRole("button", { name: /1\. Bench/ }),
+      ).toBeInTheDocument();
+    });
+
+    it("blocks native scrolling once the drag is armed", () => {
+      seedTwo();
+      const first = screen.getByRole("button", { name: /1\. Bench/ });
+      fireEvent.pointerDown(first, {
+        pointerType: "touch",
+        clientX: 10,
+        clientY: 10,
+      });
+      const early = new Event("touchmove", { cancelable: true });
+      window.dispatchEvent(early);
+      expect(early.defaultPrevented).toBe(false);
+      act(() => vi.advanceTimersByTime(400));
+      const late = new Event("touchmove", { cancelable: true });
+      window.dispatchEvent(late);
+      expect(late.defaultPrevented).toBe(true);
+      fireEvent.pointerUp(window);
+    });
+
+    it("chips do not disable native touch panning", () => {
+      seedTwo();
+      const first = screen.getByRole("button", { name: /1\. Bench/ });
+      expect(first.style.touchAction).not.toBe("none");
+    });
   });
 });

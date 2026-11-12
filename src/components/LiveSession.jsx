@@ -21,6 +21,9 @@ import ExerciseHistoryModal from "./ExerciseHistoryModal";
 import { Trash2 } from "./ui/Icons";
 import { useConfirm } from "./ConfirmDialog";
 
+// Touch press-and-hold time before a chip can be dragged to reorder.
+const CHIP_HOLD_MS = 300;
+
 // Rest-timer presets: [label, seconds].
 const REST_PRESETS = [
   ["3 min", 180],
@@ -81,6 +84,9 @@ export default function LiveSession() {
   // mouse alike (HTML5 drag-and-drop doesn't fire on touch).
   const [dragIdx, setDragIdx] = useState(null);
   const suppressClickRef = useRef(false);
+  // Tears down the in-flight chip drag (listeners + hold timer), if any.
+  const endChipDragRef = useRef(null);
+  useEffect(() => () => endChipDragRef.current?.(), []);
   // Inline "replace exercise" picker for the current exercise.
   const [swapping, setSwapping] = useState(false);
   // Exercise whose past-workout history is shown in the modal (null = closed).
@@ -202,12 +208,37 @@ export default function LiveSession() {
 
   // Begin a chip drag. Window listeners live only for the duration of the drag
   // and close over the current `moveExercise`, reordering live as the pointer
-  // passes over other chips.
+  // passes over other chips. A mouse drags once it moves past the threshold; a
+  // touch must be held still for CHIP_HOLD_MS first, so a swipe scrolls the chip
+  // row natively. Moving early cancels the pending drag.
   const startChipDrag = (e, fromIdx) => {
+    endChipDragRef.current?.();
     const start = { x: e.clientX, y: e.clientY };
     let idx = fromIdx;
     let active = false;
+    let armed = e.pointerType === "mouse";
+    let timer = null;
+    // Once armed, stop the browser scrolling for the rest of the gesture.
+    // React's onTouchMove is passive, so this one is added by hand.
+    const blockScroll = (ev) => {
+      if (ev.cancelable) ev.preventDefault();
+    };
+    const end = () => {
+      clearTimeout(timer);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      window.removeEventListener("touchmove", blockScroll);
+      endChipDragRef.current = null;
+    };
     const onMove = (ev) => {
+      if (!armed) {
+        // Moved before the hold elapsed: it's a swipe, let the browser scroll.
+        if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) >= 6) {
+          end();
+        }
+        return;
+      }
       if (!active) {
         if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) < 6) return;
         active = true;
@@ -227,11 +258,20 @@ export default function LiveSession() {
     const onUp = () => {
       if (active) suppressClickRef.current = true; // swallow the trailing click
       setDragIdx(null);
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
+      end();
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    endChipDragRef.current = end;
+    if (!armed) {
+      timer = setTimeout(() => {
+        armed = true;
+        window.addEventListener("touchmove", blockScroll, { passive: false });
+        setDragIdx(idx); // dim the chip to show the drag is armed
+        navigator.vibrate?.(15);
+      }, CHIP_HOLD_MS);
+    }
   };
 
   const goTo = (idx) => {
@@ -346,7 +386,6 @@ export default function LiveSession() {
                   key={i}
                   type="button"
                   data-chip-idx={i}
-                  style={{ touchAction: "none" }}
                   onPointerDown={(e) => startChipDrag(e, i)}
                   onClick={() => {
                     if (suppressClickRef.current) {
