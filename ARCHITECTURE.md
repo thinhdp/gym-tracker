@@ -110,7 +110,7 @@ gym-tracker/
     │   │   ├── MacroBars.jsx        # Day totals: bars against the target, or plain numbers
     │   │   ├── MealSlot.jsx         # One meal slot: total, EntryRows, + and … buttons
     │   │   ├── EntryRow.jsx         # One logged entry
-    │   │   ├── EntryEditSheet.jsx   # Edit grams or slot, or delete (useConfirm)
+    │   │   ├── EntryEditSheet.jsx   # Edit portion, grams or slot, or delete (useConfirm)
     │   │   ├── RecentRow.jsx        # Recent chips: one tap logs lastGrams, with an undo Toast
     │   │   ├── Toast.jsx            # Timed message with one action button
     │   │   ├── PortionSheet.jsx     # Pick portion, grams and slot, then Add

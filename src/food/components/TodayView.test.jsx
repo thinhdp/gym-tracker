@@ -6,6 +6,7 @@ import { loadLS, saveLS } from "../../lib/storage";
 import { FoodProvider } from "../context/FoodContext";
 import {
   K_FOOD_COMPLETED,
+  K_FOOD_CUSTOM,
   K_FOOD_ENTRIES,
   K_FOOD_MEALS,
   K_FOOD_RECENT,
@@ -356,7 +357,6 @@ describe("TodayView", () => {
     const { user } = setup();
 
     await user.click(screen.getByRole("button", { name: /egg/ }));
-    await setGrams(user, "50");
     await user.click(screen.getByRole("button", { name: "Dinner" }));
     await user.click(screen.getByRole("button", { name: "Save" }));
 
@@ -399,13 +399,102 @@ describe("TodayView", () => {
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
-  it("offers no portion picker in the sheet", async () => {
-    saveLS(K_FOOD_ENTRIES, [entry("egg", { portionLabel: "1 large egg" })]);
-    const { user } = setup();
+  describe("portion picker in the entry sheet", () => {
+    const EGG_PORTIONS = [
+      { label: "1 large egg", grams: 50 },
+      { label: "2 eggs", grams: 100 },
+    ];
+    const eggRecent = {
+      food: { kind: "db", id: "food-egg" },
+      name: "Boiled",
+      per100: PER100,
+      portions: EGG_PORTIONS,
+      lastGrams: 50,
+      lastAt: 1000,
+    };
+    const chipButton = (label) =>
+      within(screen.getByRole("dialog", { name: "egg" })).getByRole("button", {
+        name: label,
+      });
 
-    await user.click(screen.getByRole("button", { name: /egg/ }));
-    const sheet = within(screen.getByRole("dialog", { name: "egg" }));
-    expect(sheet.queryByRole("button", { name: "1 large egg" })).toBeNull();
+    it("shows the food's portions with the logged label pressed", async () => {
+      saveLS(K_FOOD_RECENT, [eggRecent]);
+      saveLS(K_FOOD_ENTRIES, [
+        entry("egg", { grams: 50, portionLabel: "1 large egg" }),
+      ]);
+      const { user } = setup();
+
+      await user.click(screen.getByRole("button", { name: /egg/ }));
+      expect(chipButton("1 large egg")).toHaveAttribute("aria-pressed", "true");
+      expect(chipButton("2 eggs")).toHaveAttribute("aria-pressed", "false");
+    });
+
+    it("shows the logged label as a pressed chip when no recent row exists", async () => {
+      saveLS(K_FOOD_ENTRIES, [
+        entry("egg", { grams: 50, portionLabel: "1 large egg" }),
+      ]);
+      const { user } = setup();
+
+      await user.click(screen.getByRole("button", { name: /egg/ }));
+      expect(chipButton("1 large egg")).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("shows no chips for an entry without a label or portions", async () => {
+      saveLS(K_FOOD_ENTRIES, [entry("egg")]);
+      const { user } = setup();
+
+      await user.click(screen.getByRole("button", { name: /egg/ }));
+      const sheet = within(screen.getByRole("dialog", { name: "egg" }));
+      expect(sheet.queryByRole("button", { name: "2 eggs" })).toBeNull();
+    });
+
+    it("picking another chip sets grams and Save stores its label and grams", async () => {
+      saveLS(K_FOOD_RECENT, [eggRecent]);
+      saveLS(K_FOOD_ENTRIES, [
+        entry("egg", { grams: 50, portionLabel: "1 large egg" }),
+      ]);
+      const { user } = setup();
+
+      await user.click(screen.getByRole("button", { name: /egg/ }));
+      await user.click(chipButton("2 eggs"));
+      expect(grams()).toHaveValue(100);
+      expect(chipButton("2 eggs")).toHaveAttribute("aria-pressed", "true");
+      await user.click(screen.getByRole("button", { name: "Save" }));
+
+      expect(storedRow("egg").grams).toBe(100);
+      expect(storedRow("egg").portionLabel).toBe("2 eggs");
+    });
+
+    it("saving without changes keeps the portionLabel", async () => {
+      saveLS(K_FOOD_RECENT, [eggRecent]);
+      const row = entry("egg", { grams: 50, portionLabel: "1 large egg" });
+      saveLS(K_FOOD_ENTRIES, [row]);
+      const { user } = setup();
+
+      await user.click(screen.getByRole("button", { name: /egg/ }));
+      await user.click(screen.getByRole("button", { name: "Save" }));
+
+      expect(storedRow("egg")).toEqual(row);
+    });
+
+    it("uses a custom food's own portions", async () => {
+      saveLS(K_FOOD_CUSTOM, [
+        {
+          id: "bar",
+          name: "egg",
+          per100: PER100,
+          portions: [{ label: "1 bar", grams: 45 }],
+          createdAt: 1,
+        },
+      ]);
+      saveLS(K_FOOD_ENTRIES, [
+        entry("egg", { food: { kind: "custom", id: "bar" } }),
+      ]);
+      const { user } = setup();
+
+      await user.click(screen.getByRole("button", { name: /egg/ }));
+      expect(chipButton("1 bar")).toHaveAttribute("aria-pressed", "false");
+    });
   });
 
   it("Close leaves the entry unchanged", async () => {
