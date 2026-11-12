@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "../../components/ui/Button";
 import { dayTotals, monthGrid } from "../lib/calendar";
+import { targetForDate } from "../lib/targets";
 import { localDateFromYmd, todayLocal } from "../lib/localDate";
 
 const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -10,6 +11,7 @@ export default function CalendarSheet({
   date,
   entries,
   completedDays,
+  targets = [],
   onPick,
   onClose,
 }) {
@@ -75,9 +77,13 @@ export default function CalendarSheet({
             if (!day) return <div key={i} />;
             const isDone = completed.has(day);
             const kcal = totals.has(day) ? totals.get(day) : isDone ? 0 : null;
+            const dayTarget =
+              kcal !== null ? targetForDate(targets, day) : null;
+            const isOver = dayTarget !== null && kcal > dayTarget.kcal;
             const label = [
               day,
               kcal !== null ? `${kcal} kcal` : null,
+              isOver ? "over target" : null,
               isDone ? "completed" : null,
             ]
               .filter(Boolean)
@@ -98,7 +104,19 @@ export default function CalendarSheet({
                 }`}
               >
                 <span>{Number(day.slice(8))}</span>
-                {kcal !== null && <span className="text-[10px]">{kcal}</span>}
+                {kcal !== null && (
+                  <span
+                    className={`text-[10px] ${
+                      isOver
+                        ? isDone
+                          ? "text-red-700 dark:text-red-300"
+                          : "text-red-600 dark:text-red-400"
+                        : ""
+                    }`}
+                  >
+                    {kcal}
+                  </span>
+                )}
               </button>
             );
           })}

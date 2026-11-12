@@ -830,25 +830,49 @@ describe("TodayView", () => {
 
   describe("complete button and calendar", () => {
     const complete = () =>
-      screen.queryByRole("button", { name: /Mark day complete|Completed/ });
+      screen.queryByRole("button", { name: "Mark day complete" });
 
-    it("toggles on today between Mark day complete and Completed", async () => {
+    it("toggles on today between Mark complete and ✓ Complete", async () => {
       const { user } = setup(todayLocal());
       const button = screen.getByRole("button", { name: "Mark day complete" });
       expect(button).toHaveAttribute("aria-pressed", "false");
+      expect(button).toHaveTextContent("Mark complete");
       await user.click(button);
-      expect(complete()).toHaveTextContent("Completed ✓");
+      expect(complete()).toHaveTextContent("✓ Complete");
       expect(complete()).toHaveAttribute("aria-pressed", "true");
       await user.click(complete());
-      expect(complete()).toHaveTextContent("Mark day complete");
+      expect(complete()).toHaveTextContent("Mark complete");
       expect(complete()).toHaveAttribute("aria-pressed", "false");
     });
 
     it("renders completed when the date is stored as completed", () => {
       saveLS(K_FOOD_COMPLETED, ["2026-11-02"]);
       setup("2026-11-02");
-      expect(complete()).toHaveTextContent("Completed ✓");
+      expect(complete()).toHaveTextContent("✓ Complete");
       expect(complete()).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("sits in the header row with the date button and no button follows the meal slots", () => {
+      setup(todayLocal());
+      const dateButton = screen.getByRole("button", {
+        name: /^Open calendar/,
+      });
+      const toggle = complete();
+      const row = dateButton.closest("div.flex.justify-between");
+      expect(row).not.toBeNull();
+      expect(row).toContainElement(toggle);
+      expect(row).toContainElement(
+        screen.getByRole("button", { name: "Previous day" }),
+      );
+      const buttons = screen.getAllByRole("button");
+      expect(buttons.filter((b) => b === toggle)).toHaveLength(1);
+      const lastSlot = screen
+        .getAllByRole("button", { name: /^Add to / })
+        .at(-1);
+      expect(
+        lastSlot.compareDocumentPosition(toggle) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBe(0);
     });
 
     it("is not rendered after today and is rendered before today", () => {
@@ -878,8 +902,25 @@ describe("TodayView", () => {
         screen.getAllByRole("button", { name: "Delete" }).at(-1),
       );
       expect(loadLS(K_FOOD_ENTRIES)).toEqual([]);
-      expect(complete()).toHaveTextContent("Completed ✓");
+      expect(complete()).toHaveTextContent("✓ Complete");
       expect(loadLS(K_FOOD_COMPLETED)).toEqual(["2026-11-02"]);
+    });
+
+    it("the calendar flags an over-target day using the stored targets", async () => {
+      saveLS(K_FOOD_TARGETS, [
+        { from: "2026-11-01", kcal: 100, protein: 100, carb: 200, fat: 50 },
+      ]);
+      saveLS(K_FOOD_ENTRIES, [entry("rice", { grams: 200 })]);
+      const { user } = setup("2026-11-02");
+      await user.click(
+        screen.getByRole("button", {
+          name: `Open calendar, ${formatDayHeader("2026-11-02")}`,
+        }),
+      );
+      const dialog = within(screen.getByRole("dialog", { name: "Calendar" }));
+      expect(
+        dialog.getByRole("button", { name: /^2026-11-02.*over target/ }),
+      ).toBeInTheDocument();
     });
 
     it("the header date opens the calendar; picking a day changes date and closes it", async () => {
