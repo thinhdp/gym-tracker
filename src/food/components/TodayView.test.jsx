@@ -906,6 +906,23 @@ describe("TodayView", () => {
       expect(loadLS(K_FOOD_COMPLETED)).toEqual(["2026-11-02"]);
     });
 
+    it("the calendar flags an over-target day using the stored targets", async () => {
+      saveLS(K_FOOD_TARGETS, [
+        { from: "2026-11-01", kcal: 100, protein: 100, carb: 200, fat: 50 },
+      ]);
+      saveLS(K_FOOD_ENTRIES, [entry("rice", { grams: 200 })]);
+      const { user } = setup("2026-11-02");
+      await user.click(
+        screen.getByRole("button", {
+          name: `Open calendar, ${formatDayHeader("2026-11-02")}`,
+        }),
+      );
+      const dialog = within(screen.getByRole("dialog", { name: "Calendar" }));
+      expect(
+        dialog.getByRole("button", { name: /^2026-11-02.*over target/ }),
+      ).toBeInTheDocument();
+    });
+
     it("the header date opens the calendar; picking a day changes date and closes it", async () => {
       const onChangeDate = vi.fn();
       const user = userEvent.setup();
