@@ -89,6 +89,69 @@ describe("CalendarSheet", () => {
     expect(props.onClose).toHaveBeenCalled();
   });
 
+  describe("over-target kcal", () => {
+    const target = (from, kcal) => ({
+      from,
+      kcal,
+      protein: 100,
+      carb: 200,
+      fat: 50,
+    });
+    const kcalSpan = (name) =>
+      screen.getByRole("button", { name }).querySelector("span:last-child");
+
+    it("shows an over-target day in red and labels it", () => {
+      setup({ targets: [target("2026-01-01", 1800)] });
+      const name = "2026-11-05, 1850 kcal, over target, completed";
+      expect(kcalSpan(name)).toHaveClass("text-red-700", "dark:text-red-300");
+    });
+
+    it("uses the normal red on an incomplete over-target day", () => {
+      setup({
+        entries: [entry("2026-11-05", 2000)],
+        completedDays: [],
+        targets: [target("2026-01-01", 1800)],
+      });
+      const name = "2026-11-05, 2000 kcal, over target";
+      expect(kcalSpan(name)).toHaveClass("text-red-600", "dark:text-red-400");
+      expect(screen.getByRole("button", { name })).not.toHaveClass(
+        "text-red-600",
+      );
+    });
+
+    it("does not flag a day equal to the target", () => {
+      setup({
+        completedDays: [],
+        targets: [target("2026-01-01", 1850)],
+      });
+      const name = "2026-11-05, 1850 kcal";
+      expect(kcalSpan(name).className).not.toMatch(/text-red/);
+    });
+
+    it("does not flag a day before the first target row", () => {
+      setup({
+        completedDays: [],
+        targets: [target("2026-11-06", 1000)],
+      });
+      const name = "2026-11-05, 1850 kcal";
+      expect(kcalSpan(name).className).not.toMatch(/text-red/);
+    });
+
+    it("uses the target in force on that date", () => {
+      setup({
+        entries: [entry("2026-11-05", 1500), entry("2026-11-08", 1500)],
+        completedDays: [],
+        targets: [target("2026-01-01", 1400), target("2026-11-07", 2000)],
+      });
+      expect(kcalSpan("2026-11-05, 1500 kcal, over target")).toHaveClass(
+        "text-red-600",
+      );
+      expect(kcalSpan("2026-11-08, 1500 kcal").className).not.toMatch(
+        /text-red/,
+      );
+    });
+  });
+
   describe("today and shown-date styling", () => {
     const today = todayLocal();
     // A different day in today's month, so the sheet opens on today's month.
