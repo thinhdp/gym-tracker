@@ -504,6 +504,37 @@ describe("LiveSession", () => {
       fireEvent.pointerUp(window, { pointerId: 1 });
     });
 
+    it("ignores moves from another pointer during the hold and after arming", () => {
+      seedTwo();
+      const first = screen.getByRole("button", { name: /1\. Bench/ });
+      const second = screen.getByRole("button", { name: /2\. Squat/ });
+      document.elementFromPoint = vi.fn(() => second);
+      fireEvent.pointerDown(first, {
+        pointerType: "touch",
+        pointerId: 1,
+        clientX: 10,
+        clientY: 10,
+      });
+      // During the hold: a second finger moving far must not cancel the hold.
+      fireEvent.pointerMove(window, {
+        pointerId: 2,
+        clientX: 200,
+        clientY: 10,
+      });
+      act(() => vi.advanceTimersByTime(400));
+      // After arming: the second finger must not reorder.
+      fireEvent.pointerMove(window, { pointerId: 2, clientX: 60, clientY: 10 });
+      expect(
+        screen.getByRole("button", { name: /1\. Bench/ }),
+      ).toBeInTheDocument();
+      // The first finger still can: the hold survived the stray move.
+      fireEvent.pointerMove(window, { pointerId: 1, clientX: 60, clientY: 10 });
+      expect(
+        screen.getByRole("button", { name: /1\. Squat/ }),
+      ).toBeInTheDocument();
+      fireEvent.pointerUp(window, { pointerId: 1 });
+    });
+
     it("removes its listeners when unmounted mid-gesture", () => {
       const { unmount } = seedTwo();
       fireEvent.pointerDown(screen.getByRole("button", { name: /1\. Bench/ }), {
