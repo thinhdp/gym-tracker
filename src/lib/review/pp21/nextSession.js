@@ -35,13 +35,15 @@ export function upcomingSession(data, p, today) {
  * Build the workout Start creates from a next-session plan. Exercises already
  * done earlier in the rotation are left out; reps start at 0 with the
  * prescription carried as `targetReps` (shown as a placeholder while logging).
- * The name is the session's routine name so the engine matches it back.
+ * The name is the session's routine name so the engine matches it back; a
+ * deload session gets a " (deload)" suffix, which is how the engine recognizes
+ * it as part of the deload rotation.
  */
 export function workoutFromPlan(plan, date) {
   return {
     id: uuid(),
     date,
-    name: plan.routineName,
+    name: plan.deload ? `${plan.routineName} (deload)` : plan.routineName,
     exercises: plan.exercises
       .filter((e) => !e.doneEarlier && e.sets.length)
       .map((e) => ({
