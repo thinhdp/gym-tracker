@@ -1,15 +1,20 @@
 import { uuid, todayStr } from "./storage";
 import { MAX_SETS } from "./constants";
 import { normalizeRpe, normalizeFeedback } from "./rpe";
+const DELOAD_SUFFIX_RE = /\s*\(deload\)\s*$/i;
 
 /**
  * Build a Routine from a completed Workout.
  * Strips date/id, preserves the exercise+rep structure, resets RPE/feedback.
  */
 export function routineFromWorkout(workout) {
+  const cleanedName = (workout.name || "")
+    .trim()
+    .replace(DELOAD_SUFFIX_RE, "")
+    .trim();
   return {
     id: uuid(),
-    name: (workout.name || "").trim() || todayStr(),
+    name: cleanedName || todayStr(),
     exercises: (workout.exercises || []).slice(0, MAX_SETS).map((we) => ({
       exerciseName: we.exerciseName,
       sets: (we.sets || []).slice(0, MAX_SETS).map((s, idx) => ({

@@ -286,3 +286,28 @@ describe("mergeRoutines", () => {
     expect(merged[0].updatedAt).toBeGreaterThanOrEqual(merged[1].updatedAt);
   });
 });
+it("strips the (deload) suffix when saving a routine", () => {
+  const w = { name: "Push A (deload)", exercises: [] };
+  const r = routineFromWorkout(w);
+  expect(r.name).toBe("Push A");
+});
+
+it("strips the suffix case-insensitively", () => {
+  const w = { name: "Pull B (DELOAD)", exercises: [] };
+  const r = routineFromWorkout(w);
+  expect(r.name).toBe("Pull B");
+});
+
+it("leaves a normal name untouched", () => {
+  const w = { name: "Push A", exercises: [] };
+  const r = routineFromWorkout(w);
+  expect(r.name).toBe("Push A");
+});
+
+it("falls back to today when the name is only a deload marker", () => {
+  const w = { name: "(deload)", exercises: [] };
+  const r = routineFromWorkout(w);
+  // It should not be empty, and it should not be "(deload)"
+  expect(r.name).not.toBe("");
+  expect(r.name).not.toBe("(deload)");
+});
