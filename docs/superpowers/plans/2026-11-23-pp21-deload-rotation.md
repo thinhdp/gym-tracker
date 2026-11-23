@@ -1,6 +1,6 @@
 # PP21 Deload Rotation Implementation Plan
 
-**Status:** approved
+**Status:** shipped (PR #182, merge 169ff07)
 **Date:** 2026-11-23
 **Issue:** #178
 **Handoffs:** `docs/superpowers/plans/2026-11-23-pp21-deload-rotation-handoffs.md`

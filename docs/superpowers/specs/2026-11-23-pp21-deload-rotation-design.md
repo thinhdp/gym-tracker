@@ -1,6 +1,6 @@
 # PP21: the deload covers the whole deload rotation — design spec
 
-**Status:** approved
+**Status:** shipped (PR #182, merge 169ff07)
 **Date:** 2026-11-23
 **Issue:** #178
 
