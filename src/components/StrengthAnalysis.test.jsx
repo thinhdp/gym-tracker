@@ -37,6 +37,8 @@ const seed = () => {
 };
 
 describe("StrengthAnalysis", () => {
+  afterEach(() => vi.useRealTimers());
+
   it("shows an empty state when there is no logged data", () => {
     mockApp.workouts = [];
     mockApp.exercises = [];
@@ -79,6 +81,10 @@ describe("StrengthAnalysis", () => {
   });
 
   it("renders the per-cycle chart for the selected category and metric", async () => {
+    // Max 7/5/3 has a fixed endDate (2026-10-27); pin the clock inside it so the
+    // seeded daysAgo() dates always fall in a cycle, whatever the real date is.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 7, 15, 12, 0));
     seed();
     const user = userEvent.setup();
     const { container } = render(<StrengthAnalysis />);
