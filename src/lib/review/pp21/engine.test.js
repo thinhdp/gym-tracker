@@ -1,5 +1,6 @@
 import pp21 from "../programs/pp21";
 import fixture from "./fixture.pp21.json";
+import { workoutFromPlan } from "./nextSession";
 import {
   reviewProgram,
   nextSessionPlan,
@@ -116,6 +117,33 @@ describe("reviewProgram: sessions, rotations, global calls", () => {
     expect(plan.routineName).toBe("Push A");
     expect(plan.deload).toBe(true);
     for (const e of plan.exercises) expect(e.sets).toHaveLength(1);
+  });
+  it("keeps the deload for the whole rotation started from the plan", () => {
+    let data = { ...fixture, workouts: [...fixture.workouts] };
+    let benchTop;
+    for (let i = 0; i < 4; i++) {
+      const review = reviewProgram(data, pp21);
+      const plan = nextSessionPlan(review, pp21);
+      expect(plan.deload).toBe(true);
+      if (i === 0)
+        benchTop = review.exercises.find((e) => e.exId === "bench").next.top;
+      const w = workoutFromPlan(plan, review.global.nextSessionDate);
+      for (const e of w.exercises)
+        for (const s of e.sets) s.reps = s.targetReps;
+      data = { ...data, workouts: [...data.workouts, w] };
+    }
+    const after = reviewProgram(data, pp21);
+    expect(nextSessionPlan(after, pp21).deload).toBe(false);
+    expect(after.global.deload.rotationsSinceDeload).toBe(0);
+    const last = after.rotations[after.rotations.length - 1];
+    expect(last.deload).toBe(true);
+    expect(last.sessions).toHaveLength(4);
+    expect(after.exercises.find((e) => e.exId === "bench").next.top).toBe(
+      benchTop,
+    );
+    expect(after.exercises.find((e) => e.exId === "bench").decision).toBe(
+      "DELOAD_DONE",
+    );
   });
   it("returns an empty review with no in-program workouts", () => {
     const empty = reviewProgram({ workouts: [] }, pp21);

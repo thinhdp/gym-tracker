@@ -1,5 +1,6 @@
 import fixture from "./fixture.pp21.json";
 import pp21 from "../programs/pp21";
+import { reviewProgram, nextSessionPlan } from "./engine";
 import {
   upcomingSession,
   workoutFromPlan,
@@ -91,6 +92,15 @@ describe("workoutFromPlan", () => {
       "Standing Calf Raise Barbell",
     ]);
     expect(w.exercises[1].optional).toBe(true);
+  });
+
+  it("marks a deload workout in its name", () => {
+    const dPlan = nextSessionPlan(reviewProgram(fixture, pp21), pp21);
+    expect(dPlan.deload).toBe(true);
+    expect(workoutFromPlan(dPlan, "2026-11-21").name).toBe("Push A (deload)");
+    expect(
+      workoutFromPlan({ ...dPlan, deload: false }, "2026-11-21").name,
+    ).toBe("Push A");
   });
 
   it("is matched back to its session by the engine", () => {
