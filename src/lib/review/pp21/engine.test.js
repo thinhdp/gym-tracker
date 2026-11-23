@@ -141,6 +141,9 @@ describe("reviewProgram: sessions, rotations, global calls", () => {
     expect(after.exercises.find((e) => e.exId === "bench").next.top).toBe(
       benchTop,
     );
+    expect(after.exercises.find((e) => e.exId === "bench").decision).toBe(
+      "DELOAD_DONE",
+    );
   });
   it("returns an empty review with no in-program workouts", () => {
     const empty = reviewProgram({ workouts: [] }, pp21);
